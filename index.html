@@ -858,7 +858,7 @@ function renderProfile() {
 let cardAngle = 0;
 function cardSet(a, anim = true) {
   const t = $("#tcard"); cardAngle = a; if (!t) return;
-  t.style.transition = anim ? "" : "none"; t.style.transform = `rotateY(${a}deg)`;
+  t.style.transition = anim ? "" : "none"; t.style.transform = `rotateX(0deg) rotateY(${a}deg)`;
   t.classList.toggle("flip", Math.abs(Math.round(a / 180)) % 2 === 1);
 }
 function cardFlip(dir) { cardSet(Math.round(cardAngle / 180) * 180 + 180 * (dir < 0 ? -1 : 1)); }
