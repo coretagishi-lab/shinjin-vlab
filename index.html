@@ -63,6 +63,16 @@ a{color:inherit;text-decoration:none}
 .vid{display:block}
 .thumb{display:block;position:relative;aspect-ratio:16/9;width:100%;max-width:100%;border-radius:12px;overflow:hidden;background:var(--chip)}
 .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.ph + img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.disc-empty{height:100%;overflow-y:auto;padding:calc(env(safe-area-inset-top,0px) + 24px) max(16px,env(safe-area-inset-right,0px)) calc(var(--nav-h) + 24px) max(16px,env(safe-area-inset-left,0px));color:#fff;background:#0F0E15}
+.disc-empty h2{font-family:var(--f-display);font-size:20px;margin:0 0 6px}
+.disc-empty p{color:#B8B4CC;margin:0 0 18px;font-size:13px}
+.nx{display:flex;gap:12px;align-items:center;padding:10px 0;border-top:1px solid #2A2738;cursor:pointer}
+.nx .tb{position:relative;flex:0 0 128px;aspect-ratio:16/9;border-radius:8px;overflow:hidden;background:#222}
+.nx .tb .ph{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--f-display);font-size:26px;color:#fff}
+.nx .tx{min-width:0;font-size:13px;line-height:1.45}
+.nx .tx b{display:block;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.nx .tx span{color:var(--accent);font-family:var(--f-num);font-size:12px}
 .thumb{cursor:pointer}
 .thumb iframe,.vbox iframe{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none;z-index:1}
 .thumb .bdg{z-index:2}
@@ -499,10 +509,15 @@ function renderDiscover() {
   if (!discOrder) {
     const arr = [...CH];
     arr.sort((a, b) => a.viewers_month - b.viewers_month || Math.random() - .5);
-    const lv = arr.filter((c) => liveOf(c.id)); discOrder = [...lv, ...arr.filter((c) => !liveOf(c.id))];
+    discOrder = arr.filter((c) => liveOf(c.id));
   }
   const v = $("#v-discover");
-  if (!discOrder.length) { v.innerHTML = `<div class="empty pad">新人を集めています。少し待ってからもう一度開いてください。</div>`; return; }
+  if (!discOrder.length) {
+    io?.disconnect();
+    const up = ST.filter((s) => s.status === "upcoming" && isUpcomingSoon(s) && byId.has(s.channel_id)).sort((a, b) => Date.parse(a.scheduled_start_at) - Date.parse(b.scheduled_start_at)).slice(0, 12);
+    v.innerHTML = `<div class="disc-empty"><h2>いま配信中の新人はいません</h2><p>新人さんの配信は夜に集中します。始まるとここに映像付きで流れます。</p>${up.map((s) => { const c = byId.get(s.channel_id); return `<div class="nx" data-open="${esc(c.id)}"><div class="tb">${img(s.thumbnail_url, c)}</div><div class="tx"><b>${esc(s.title)}</b>${esc(c.title)}<br><span>${md(s.scheduled_start_at)} ${hm(s.scheduled_start_at)}（${rel(s.scheduled_start_at)}）</span></div></div>`; }).join("") || `<p>配信予定もまだありません。</p>`}</div>`;
+    return;
+  }
   v.innerHTML = discOrder.map((c) => {
     const n = nextOf(c.id), L = liveOf(c.id), d = debutDays(c);
     return `<div class="slide" data-id="${esc(c.id)}">
@@ -677,7 +692,7 @@ load().then(() => {
   const id = new URLSearchParams(location.search).get("c");
   if (id && byId.has(id)) openProfile(id, false);
   setInterval(() => { if (tab === "home" && !curId && !playing) renderHome(); }, 60000);
-  setInterval(async () => { if (!live) return; try { const s = await rest("streams?select=id,channel_id,title,thumbnail_url,status,scheduled_start_at,actual_start_at,actual_end_at,peak_viewers,last_viewers,is_first_stream,embeddable&status=neq.none&order=updated_at.desc&limit=3000"); ST = s.filter((x) => byId.has(x.channel_id)); } catch {} }, 5 * 60000);
+  setInterval(async () => { if (!live) return; try { const s = await rest("streams?select=id,channel_id,title,thumbnail_url,status,scheduled_start_at,actual_start_at,actual_end_at,peak_viewers,last_viewers,is_first_stream,embeddable&status=neq.none&order=updated_at.desc&limit=3000"); ST = s.filter((x) => byId.has(x.channel_id)); if (tab !== "discover") discOrder = null; } catch {} }, 5 * 60000);
 });
 })();
 </script>
