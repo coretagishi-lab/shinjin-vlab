@@ -105,7 +105,12 @@ a{color:inherit;text-decoration:none}
 .w-chat{overflow:hidden}
 .w-chat iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 .w-chat.crop iframe{height:calc(100% + 76px)}
-.wsnd{position:absolute;right:10px;bottom:10px;z-index:3;background:rgba(0,0,0,.72);color:#fff}
+.wsnd{position:absolute;right:10px;bottom:10px;z-index:4;background:rgba(0,0,0,.72);color:#fff}
+.wtouch{position:absolute;inset:0;z-index:3;touch-action:none}
+.wpause{position:absolute;inset:0;z-index:2;display:grid;place-items:center;pointer-events:none;font-size:46px;color:#fff;background:rgba(0,0,0,.35)}
+.wpause[hidden]{display:none}
+.watch.drag{transition:none}
+.w-grab{width:38px;height:4px;border-radius:2px;background:#4A4660;margin:6px auto 0}
 .wsnd[hidden]{display:none}
 .w-note{flex:1;padding:18px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));color:#B8B4CC;font-size:13px;line-height:1.7;overflow-y:auto}
 .w-note b{color:#fff}
@@ -341,6 +346,7 @@ body.dark-nav .nav button[aria-current="page"]{color:#fff}
   <div class="body pad" id="shBody"></div>
 </div>
 <div class="watch" id="watch" role="dialog" aria-modal="true" aria-label="配信を見る" hidden>
+  <div class="w-grab" aria-hidden="true"></div>
   <div class="w-top"><button class="iconbtn" id="wClose" aria-label="閉じる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button><div class="ttl" id="wTitle"></div></div>
   <div class="w-player" id="wPlayer"></div>
   <div class="w-bar" id="wBar"></div>
@@ -516,15 +522,49 @@ function openExt(url) {
   }
   window.open(url, "_blank", "noopener");
 }
-let watchVid = null;
+let watchVid = null, watchSound = false, watchPaused = false;
+function setWatchSound(on) {
+  const fr = $("#wPlayer iframe"); watchSound = on;
+  if (on) { ytCmd(fr, "unMute"); ytCmd(fr, "setVolume", [80]); ytCmd(fr, "playVideo"); } else ytCmd(fr, "mute");
+  const b = $("#wSnd"); if (b) b.textContent = on ? "🔊 音あり（タップで消す）" : "🔇 タップで音を出す";
+}
+window.__vlabWatchLoaded = () => { watchSound = false; if (soundOn) { setTimeout(() => setWatchSound(true), 500); setTimeout(() => watchSound && setWatchSound(true), 1500); } };
+(() => {
+  let y0 = null, x0 = 0, dy = 0, t0 = 0;
+  const w = () => $("#watch");
+  document.addEventListener("touchstart", (e) => {
+    if (!e.target.closest("#wTouch, .w-top, .w-grab, #wBar")) return;
+    y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; dy = 0; t0 = Date.now(); w().classList.add("drag");
+  }, { passive: true });
+  document.addEventListener("touchmove", (e) => {
+    if (y0 == null) return;
+    const dx = Math.abs(e.touches[0].clientX - x0);
+    dy = Math.max(0, e.touches[0].clientY - y0);
+    if (dx > dy && dy < 20) { dy = 0; return; }
+    w().style.transform = dy ? `translateY(${dy}px)` : "";
+  }, { passive: true });
+  document.addEventListener("touchend", (e) => {
+    if (y0 == null) return;
+    const wasTouch = e.target.closest && e.target.closest("#wTouch");
+    const moved = dy, dt = Date.now() - t0; y0 = null;
+    const el = w(); el.classList.remove("drag"); el.style.transform = "";
+    if (moved > 90 || (moved > 40 && dt < 250)) return closeWatch();
+    if (wasTouch && moved < 8) togglePause();
+  });
+})();
+function togglePause() {
+  const fr = $("#wPlayer iframe"); watchPaused = !watchPaused;
+  ytCmd(fr, watchPaused ? "pauseVideo" : "playVideo");
+  const p = $("#wPause"); if (p) p.hidden = !watchPaused;
+}
 function openWatch(vid, push = true) {
   const s = ST.find((x) => x.id === vid); const c = s && byId.get(s.channel_id);
   if (!s || !c) return;
   if (s.embeddable === false) return openExt(ytWatch(vid));
-  stopPlayer(); watchVid = vid;
+  stopPlayer(); watchVid = vid; watchPaused = false;
   const o = encodeURIComponent(location.origin);
   $("#wTitle").textContent = s.title;
-  $("#wPlayer").innerHTML = `<button class="snd wsnd" id="wSnd">🔇 タップで音を出す</button><iframe src="https://www.youtube.com/embed/${encodeURIComponent(vid)}?autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=${o}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="${esc(s.title)}"></iframe>`;
+  $("#wPlayer").innerHTML = `<div class="wtouch" id="wTouch" aria-label="タップで一時停止、下にスワイプで閉じる"></div><div class="wpause" id="wPause" hidden>❚❚</div><button class="snd wsnd" id="wSnd">${soundOn ? "🔊 音あり（タップで消す）" : "🔇 タップで音を出す"}</button><iframe onload="window.__vlabWatchLoaded&&window.__vlabWatchLoaded(this)" src="https://www.youtube.com/embed/${encodeURIComponent(vid)}?autoplay=1&mute=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=${o}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="${esc(s.title)}"></iframe>`;
   const sub = s.status === "live" ? `${s.last_viewers != null ? s.last_viewers + "人が視聴中" : "配信中"}` : s.status === "upcoming" ? `${md(s.scheduled_start_at)} ${hm(s.scheduled_start_at)}開始` : "アーカイブ";
   $("#wBar").innerHTML = `<div class="who"><button class="av" data-wopen="${esc(c.id)}" aria-label="カードを見る">${img(c.thumbnail_url, c)}</button>
     <div class="nm"><b>${esc(c.title)}</b><span>${sub}</span></div></div><div class="acts">
@@ -745,10 +785,11 @@ function refreshCurrent() {
 }
 
 document.addEventListener("click", (e) => {
-  if (e.target.closest("#wSnd")) { const b = $("#wSnd"); const fr = $("#wPlayer iframe"); ytCmd(fr, "unMute"); ytCmd(fr, "setVolume", [80]); ytCmd(fr, "playVideo"); b.hidden = true; return; }
+  if (e.target.closest("#wSnd")) { soundOn = !watchSound; store.set("sound", soundOn); setWatchSound(soundOn); return; }
   const snd = e.target.closest(".snd");
   if (snd) { const th = snd.closest(".thumb"); if (th === playing) { soundOn = !!th.dataset.muted; store.set("sound", soundOn); setSound(th, soundOn); } return; }
   if (e.target.closest("#wClose")) return closeWatch();
+  if (e.target.closest("#wTouch")) { if (!("ontouchstart" in window)) togglePause(); return; }
   const th = e.target.closest(".thumb[data-url]");
   if (th) {
     logEvent("click_watch", th.dataset.cid);
