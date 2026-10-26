@@ -258,8 +258,7 @@ body.dark-nav .nav button[aria-current="page"]{color:#fff}
 .sheet .sh-top .ttl{flex:1;font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sheet .body{flex:1;overflow-y:auto;padding-bottom:calc(30px + env(safe-area-inset-bottom,0px))}
 .stage{perspective:1400px;display:flex;justify-content:center;padding-top:6px}
-.tcard{width:min(330px,84vw);aspect-ratio:63/88;max-width:100%;position:relative;transform-style:preserve-3d;transition:transform .6s cubic-bezier(.2,.8,.2,1);cursor:pointer}
-.tcard.flip{transform:rotateY(180deg)}
+.tcard{width:min(330px,84vw);aspect-ratio:63/88;max-width:100%;position:relative;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.2,.8,.2,1);cursor:pointer;touch-action:pan-y}
 .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:16px;overflow:hidden;box-shadow:0 14px 40px rgba(20,14,40,.35)}
 .front{padding:9px;background:linear-gradient(135deg,#d8dce4 0%,#9aa1b1 22%,#eef0f4 45%,#8c93a3 70%,#dfe2e8 100%)}
 .front .inner{height:100%;border-radius:10px;background:var(--card-navy);color:#fff;display:flex;flex-direction:column;overflow:hidden;position:relative}
@@ -282,13 +281,25 @@ body.dark-nav .nav button[aria-current="page"]{color:#fff}
 .front .stats span{font-size:10px;opacity:.75}
 .front .ft{display:flex;justify-content:space-between;align-items:center;padding:8px 12px 10px;font-size:10.5px;opacity:.8}
 .front .ft .tap{font-family:var(--f-num);letter-spacing:.08em}
-.back{transform:rotateY(180deg);background:var(--card-navy);color:#fff;padding:10px;display:flex;flex-direction:column}
-.back .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:9px;padding:3px}
-.back .tabs button{flex:1;font-size:11.5px;font-weight:700;padding:7px 0;border-radius:7px;color:rgba(255,255,255,.7)}
+.back{transform:rotateY(180deg);padding:9px;background:linear-gradient(225deg,#d8dce4 0%,#9aa1b1 22%,#eef0f4 45%,#8c93a3 70%,#dfe2e8 100%)}
+.back .inner{height:100%;box-sizing:border-box;border-radius:10px;color:#fff;display:flex;flex-direction:column;gap:8px;padding:9px 10px 7px;overflow:hidden;position:relative;
+  background:radial-gradient(120% 60% at 15% 0%,rgba(233,184,74,.16),transparent 60%),radial-gradient(90% 50% at 100% 100%,rgba(255,174,26,.10),transparent 60%),repeating-linear-gradient(135deg,rgba(255,255,255,.035) 0 2px,transparent 2px 11px),var(--card-navy)}
+.back .bhd{display:flex;align-items:center;gap:7px}
+.back .bhd .mk{width:22px;height:22px;border-radius:6px;background:var(--accent);color:#2b2340;display:grid;place-items:center;font-family:var(--f-display);font-size:13px;line-height:1}
+.back .bhd .bt{font-family:var(--f-display);font-size:13px;flex:1;letter-spacing:.02em}
+.back .bhd .bno{font-family:var(--f-num);font-weight:700;font-size:11.5px;color:var(--card-gold)}
+.back .bft{display:flex;justify-content:space-between;font-family:var(--f-num);font-size:9.5px;letter-spacing:.14em;color:rgba(255,255,255,.55);padding-top:6px;border-top:1px solid rgba(255,255,255,.12)}
+.back .box{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px 10px;margin-bottom:8px}
+.back .lbl{font-size:10.5px;font-weight:700;letter-spacing:.12em;color:var(--card-gold);margin:2px 0 6px}
+.back .tabs{display:flex;gap:4px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.08);border-radius:9px;padding:3px}
+.back .tabs button{flex:1;min-width:0;font-size:10.5px;font-weight:700;padding:7px 0;border-radius:7px;color:rgba(255,255,255,.7);white-space:nowrap;letter-spacing:-.02em}
 .back .tabs button[aria-selected="true"]{background:var(--card-gold);color:#2a1b00}
-.back .pane{flex:1;overflow-y:auto;padding:10px 4px 4px;font-size:12.5px;line-height:1.65;min-height:0}
+.back .pane{flex:1;overflow-y:auto;padding:2px 1px;font-size:12.5px;line-height:1.65;min-height:0;scrollbar-width:none}
+.back .pane::-webkit-scrollbar{display:none}
 .back .pane p{margin:0 0 8px}
-.back .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin-bottom:10px}
+.back .kv{display:grid;grid-template-columns:auto 1fr;margin:0}
+.back .kv dt,.back .kv dd{padding:5px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.back .kv dt:nth-last-child(2),.back .kv dd:last-child{border-bottom:0}
 .back .kv dt{opacity:.65}
 .back .kv dd{margin:0;font-family:var(--f-num);text-align:right}
 .back .desc{white-space:pre-wrap;word-break:break-word;opacity:.9}
@@ -764,7 +775,7 @@ function renderDiscover() {
 let curId = null, backTab = "prof";
 function openProfile(id, push = true) {
   const c = byId.get(id); if (!c) return;
-  curId = id; backTab = "prof";
+  curId = id; backTab = "prof"; cardAngle = 0;
   seen.add(id); store.set("seen", [...seen]);
   logEvent("page_view", id);
   $("#shTitle").textContent = c.title;
@@ -792,13 +803,13 @@ function spark(id) {
 }
 function backPane(c) {
   const ss = streamsOf(c.id).filter((s) => s.actual_start_at).sort((a, b) => Date.parse(b.actual_start_at) - Date.parse(a.actual_start_at));
-  if (backTab === "prof") return `<dl class="kv"><dt>デビュー</dt><dd>${c.first_stream_at ? jst(c.first_stream_at, { year: "numeric", month: "numeric", day: "numeric" }) : "初配信前"}</dd>
+  if (backTab === "prof") return `<div class="box"><dl class="kv"><dt>デビュー</dt><dd>${c.first_stream_at ? jst(c.first_stream_at, { year: "numeric", month: "numeric", day: "numeric" }) : "初配信前"}</dd>
       <dt>チャンネル開設</dt><dd>${c.channel_created_at ? jst(c.channel_created_at, { year: "numeric", month: "numeric", day: "numeric" }) : "-"}</dd>
-      <dt>ハンドル</dt><dd>${esc(c.handle || "-")}</dd><dt>名鑑に登録</dt><dd>${noStr(c)}</dd></dl>
-    <div class="desc">${esc((c.description || "自己紹介はまだありません。").slice(0, 600))}</div>`;
-  if (backTab === "log") return `${spark(c.id)}
-    <div style="font-weight:700;margin:4px 0 2px">配信の記録</div>
-    ${ss.length ? ss.slice(0, 30).map((s) => { const sec = s.actual_end_at ? (Date.parse(s.actual_end_at) - Date.parse(s.actual_start_at)) / 1000 : (now() - Date.parse(s.actual_start_at)) / 1000; return `<div class="srow"><span class="t">${jst(s.actual_start_at, { month: "numeric", day: "numeric" })} ${esc(s.title)}</span><span class="v">${hours(sec)}h${s.peak_viewers ? `・${s.peak_viewers}人` : ""}</span></div>`; }).join("") : `<p style="opacity:.75">まだ配信の記録がありません。</p>`}`;
+      <dt>ハンドル</dt><dd>${esc(c.handle || "-")}</dd><dt>名鑑に登録</dt><dd>${noStr(c)}</dd></dl></div>
+    <div class="lbl">PROFILE</div><div class="box desc">${esc((c.description || "自己紹介はまだありません。").slice(0, 600))}</div>`;
+  if (backTab === "log") return `<div class="lbl">SUBSCRIBERS</div><div class="box">${spark(c.id)}</div>
+    <div class="lbl">STREAM LOG</div><div class="box">
+    ${ss.length ? ss.slice(0, 30).map((s) => { const sec = s.actual_end_at ? (Date.parse(s.actual_end_at) - Date.parse(s.actual_start_at)) / 1000 : (now() - Date.parse(s.actual_start_at)) / 1000; return `<div class="srow"><span class="t">${jst(s.actual_start_at, { month: "numeric", day: "numeric" })} ${esc(s.title)}</span><span class="v">${hours(sec)}h${s.peak_viewers ? `・${s.peak_viewers}人` : ""}</span></div>`; }).join("") : `<p style="opacity:.75;margin:0">まだ配信の記録がありません。</p>`}</div>`;
   if (backTab === "cards") return `<p style="opacity:.8">応援が集まると、本物のトレカになって応援した人に届きます。</p>
     <div class="grades">
       <div class="gcard got"><span>NORMAL<small>獲得済み</small></span></div>
@@ -824,12 +835,14 @@ function renderProfile() {
         <div class="stats"><div><b>${fmtSubs(c)}</b><span>登録者</span></div><div><b>${c.stream_count}</b><span>配信回数</span></div><div><b>${hours(c.total_stream_sec)}</b><span>合計時間</span></div></div>
         <div class="ft"><span>今月 ${c.viewers_month}人が見た</span><span class="tap">TAP ▸</span></div>
       </div></div>
-      <div class="face back">
+      <div class="face back"><div class="inner">
+        <div class="bhd"><span class="mk">V</span><span class="bt">新人Vラボ</span><span class="bno">${noStr(c)}</span></div>
         <div class="tabs" role="tablist">${tabs.map(([k, l]) => `<button role="tab" data-btab="${k}" aria-selected="${backTab === k}">${l}</button>`).join("")}</div>
         <div class="pane" id="pane">${backPane(c)}</div>
-      </div>
+        <div class="bft"><span>SHINJIN V LAB</span><span>NORMAL・${noStr(c)}</span></div>
+      </div></div>
     </div></div>
-    <div class="flipnote">タップか横スワイプで裏返ります（裏面は縦にスクロールできます）</div>
+    <div class="flipnote">タップか横スワイプでめくれます</div>
     <div class="cta">
       <a class="btn red" href="${L ? ytWatch(L.id) : n ? ytWatch(n.id) : ytChan(c.id)}" target="_blank" rel="noopener" data-watch="${esc(c.id)}"${(L || n) && (L || n).embeddable !== false && live ? ` data-wv="${esc((L || n).id)}" data-cid="${esc(c.id)}"` : ""}><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>${L ? "配信を見る" : n ? "配信予約を見る" : "チャンネルへ"}</a>
       <a class="btn plain" href="${ytChan(c.id)}?sub_confirmation=1" target="_blank" rel="noopener" data-sub="${esc(c.id)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>チャンネル登録</a>
@@ -838,32 +851,42 @@ function renderProfile() {
     ${n ? `<div class="views">次の配信 <b>${md(n.scheduled_start_at)} ${hm(n.scheduled_start_at)}</b>（${rel(n.scheduled_start_at)}）</div>` : ""}
     ${near.length ? `<div class="sec-h">いま配信中・同じ時期にデビューした子<span>${near.length}人</span></div><div class="hscroll">${near.map((x) => miniCard(x, true)).join("")}</div>` : ""}
     <div class="cta"><button class="btn gold wide" data-go="discover">次の新人を発掘する</button></div>`;
+  cardSet(cardAngle, false);
 }
 
-/* ---------- カードを横スワイプでめくる（縦は裏面のスクロール） ---------- */
+/* ---------- カードのめくり（角度で管理して、逆回転しないようにする） ---------- */
+let cardAngle = 0;
+function cardSet(a, anim = true) {
+  const t = $("#tcard"); cardAngle = a; if (!t) return;
+  t.style.transition = anim ? "" : "none"; t.style.transform = `rotateY(${a}deg)`;
+  t.classList.toggle("flip", Math.abs(Math.round(a / 180)) % 2 === 1);
+}
+function cardFlip(dir) { cardSet(Math.round(cardAngle / 180) * 180 + 180 * (dir < 0 ? -1 : 1)); }
 (() => {
-  let x0 = 0, y0 = 0, dx = 0, dir = "", card = null, swiped = 0;
+  let x0 = 0, y0 = 0, t0 = 0, dx = 0, dy = 0, dir = "", card = null, swiped = 0;
   document.addEventListener("touchstart", (e) => {
-    card = e.target.closest("#tcard"); if (!card) return;
-    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; dx = 0; dir = "";
+    card = e.target.closest("#tcard"); if (!card || e.touches.length > 1) { card = null; return; }
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; t0 = Date.now(); dx = dy = 0; dir = "";
   }, { passive: true });
   document.addEventListener("touchmove", (e) => {
     if (!card) return;
-    const mx = e.touches[0].clientX - x0, my = e.touches[0].clientY - y0;
-    if (!dir) { if (Math.abs(mx) > 10 && Math.abs(mx) > Math.abs(my) * 1.3) dir = "h"; else if (Math.abs(my) > 10) dir = "v"; }
+    dx = e.touches[0].clientX - x0; dy = e.touches[0].clientY - y0;
+    if (!dir) { if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 1.2) dir = "h"; else if (Math.abs(dy) > 8) dir = "v"; }
     if (dir !== "h") return;
-    dx = mx; const base = card.classList.contains("flip") ? 180 : 0;
-    card.style.transition = "none"; card.style.transform = `rotateY(${base + Math.max(-90, Math.min(90, dx * 0.6))}deg)`;
+    const tilt = Math.max(-8, Math.min(8, -dy * 0.08));
+    card.style.transition = "none"; card.style.transform = `rotateX(${tilt}deg) rotateY(${cardAngle + dx * 0.55}deg)`;
   }, { passive: true });
-  document.addEventListener("touchend", () => {
+  const end = () => {
     if (!card) return;
     if (dir === "h") {
-      card.style.transition = ""; card.style.transform = "";
-      if (Math.abs(dx) > 50) { card.classList.toggle("flip"); swiped = Date.now(); }
+      const v = Math.abs(dx) / Math.max(1, Date.now() - t0);
+      if (Math.abs(dx) > 45 || v > 0.45) cardFlip(dx); else cardSet(cardAngle);
+      swiped = Date.now();
     }
-    card = null;
-  });
-  document.addEventListener("click", (e) => { if (Date.now() - swiped < 400 && e.target.closest("#tcard")) { e.stopPropagation(); e.preventDefault(); } }, true);
+    card = null; dir = "";
+  };
+  document.addEventListener("touchend", end); document.addEventListener("touchcancel", end);
+  document.addEventListener("click", (e) => { if (Date.now() - swiped < 450 && e.target.closest("#tcard")) { e.stopPropagation(); e.preventDefault(); } }, true);
 })();
 
 /* ---------- TABS ---------- */
@@ -920,14 +943,14 @@ document.addEventListener("click", (e) => {
   }
   if (t.dataset.go) { if (curId) closeProfile(); return setTab(t.dataset.go); }
   if (t.id === "back") return closeProfile();
-  if (t.id === "tcard") { if (e.target.closest("a,button,[data-btab],input")) return; t.classList.toggle("flip"); return; }
+  if (t.id === "tcard") { if (e.target.closest("a,button,[data-btab],input")) return; cardFlip(1); return; }
   if (t.id === "share") {
     const url = `${location.origin}${location.pathname}?c=${encodeURIComponent(curId)}`;
     navigator.clipboard?.writeText(url).then(() => toast("リンクをコピーしました"), () => toast(url));
   }
 });
 document.addEventListener("keydown", (e) => {
-  if ((e.key === "Enter" || e.key === " ") && e.target.id === "tcard") { e.preventDefault(); e.target.classList.toggle("flip"); }
+  if ((e.key === "Enter" || e.key === " ") && e.target.id === "tcard") { e.preventDefault(); cardFlip(1); }
   if (e.key === "Escape" && curId) closeProfile();
 });
 $("#q").addEventListener("input", renderDir);
