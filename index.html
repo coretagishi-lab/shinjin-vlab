@@ -107,6 +107,9 @@ a{color:inherit;text-decoration:none}
 .w-chat.crop iframe{height:calc(100% + 76px)}
 #fp{position:fixed;left:0;top:0;width:0;height:0;z-index:6;background:#000;overflow:hidden;pointer-events:none}
 #fp.fp-feed{border-radius:12px}
+#fp{transition:opacity .12s ease}
+#fp.hush{opacity:0}
+#fp.hush *{pointer-events:none!important}
 #fp.fp-watch{z-index:41}
 #fp iframe{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none}
 #fp .fp-tap{position:absolute;inset:0;z-index:1;pointer-events:none}
@@ -242,7 +245,7 @@ body.dark-nav .nav button{color:#8d89a0}
 body.dark-nav .nav button[aria-current="page"]{color:#fff}
 
 /* profile sheet */
-.sheet{position:fixed;inset:0;z-index:50;background:rgba(10,8,18,.66);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);color:#fff;display:flex;flex-direction:column;opacity:0;transition:opacity .22s ease;
+.sheet{position:fixed;inset:0;z-index:50;background:rgba(10,8,18,.66);color:#fff;display:flex;flex-direction:column;opacity:0;transition:opacity .22s ease;
   padding-top:env(safe-area-inset-top,0px)}
 .sheet.open{opacity:1}
 .sheet .iconbtn{color:#fff}
@@ -504,7 +507,7 @@ function vidCard(s) {
 /* ---------- FLOAT PLAYER（1つのプレイヤーを画面間で使い回す。音の状態がずっと続く） ---------- */
 let soundOn = store.get("sound", false);
 const ytCmd = (fr, func, args = []) => fr?.contentWindow?.postMessage(JSON.stringify({ event: "command", func, args }), "*");
-const FP = { el: null, fr: null, vid: null, target: null, clip: null, mode: "feed", muted: true, state: -1, raf: 0, ctlT: 0 };
+const FP = { el: null, fr: null, vid: null, target: null, clip: null, mode: "feed", muted: true, state: -1, raf: 0, ctlT: 0, loading: false, loadT: 0 };
 function fpInit() {
   if (FP.el) return;
   const el = document.createElement("div"); el.id = "fp"; el.hidden = true;
@@ -515,7 +518,7 @@ function fpInit() {
     let d; try { d = typeof e.data === "string" ? JSON.parse(e.data) : e.data; } catch { return; }
     const info = d && d.info; if (!info) return;
     if (typeof info.muted === "boolean") { FP.muted = info.muted; fpPaint(); }
-    if (typeof info.playerState === "number") { FP.state = info.playerState; fpPaint(); }
+    if (typeof info.playerState === "number") { FP.state = info.playerState; fpPaint(); if (info.playerState === 1) fpLoaded(); }
   });
 }
 function fpPaint() {
@@ -532,13 +535,18 @@ function fpCreate(vid) {
     if (soundOn && !isIOS) setTimeout(() => fpSound(true), 700);
   });
 }
+let fpScrollT = 0;
+function fpHush(ms) { if (!FP.el) return; FP.el.classList.add("hush"); clearTimeout(fpScrollT); fpScrollT = setTimeout(() => { if (!FP.loading) FP.el.classList.remove("hush"); }, ms); }
+function fpLoading() { FP.loading = true; FP.el.classList.add("hush"); clearTimeout(FP.loadT); FP.loadT = setTimeout(() => { FP.loading = false; FP.el.classList.remove("hush"); }, 3500); }
+function fpLoaded() { if (!FP.loading) return; FP.loading = false; clearTimeout(FP.loadT); setTimeout(() => FP.el.classList.remove("hush"), 150); }
+["v-home", "v-discover"].forEach((id) => document.getElementById(id)?.addEventListener("scroll", () => { if (FP.target && FP.mode !== "watch") fpHush(180); }, { passive: true }));
 function fpAttach(target, vid, mode, clip) {
-  fpInit();
-  if (!FP.fr) fpCreate(vid);
-  else if (FP.vid !== vid) { ytCmd(FP.fr, "loadVideoById", [vid]); FP.state = 3; }
+  fpInit(); const hushed = FP.el.classList.contains("hush"); FP.el.className = "fp-" + mode + (hushed ? " hush" : "");
+  if (!FP.fr) { fpCreate(vid); fpLoading(); }
+  else if (FP.vid !== vid) { ytCmd(FP.fr, "loadVideoById", [vid]); FP.state = 3; fpLoading(); }
   else if (FP.state !== 1 && FP.state !== 3) ytCmd(FP.fr, "playVideo");
   FP.vid = vid; FP.target = target; FP.mode = mode; FP.clip = clip || null;
-  FP.el.className = "fp-" + mode; FP.el.hidden = false; fpPaint();
+  FP.el.hidden = false; fpPaint();
   cancelAnimationFrame(FP.raf); fpTick();
 }
 function fpDetach() {
@@ -658,8 +666,8 @@ function closeWatch(fromPop) {
 document.addEventListener("click", (e) => { const b = e.target.closest("[data-wopen]"); if (!b) return; e.stopPropagation(); openProfile(b.dataset.wopen); }, true);
 
 /* ---------- MINI CARD ---------- */
-function miniCard(c) {
-  const lv = liveOf(c.id) ? `<span class="lv">LIVE</span>` : "";
+function miniCard(c, noLive) {
+  const lv = !noLive && liveOf(c.id) ? `<span class="lv">LIVE</span>` : "";
   return `<button class="mini" data-open="${esc(c.id)}"><div class="in"><div class="art">${img(c.thumbnail_url, c)}<span class="n">${noStr(c)}</span>${lv}</div>
     <div class="tx"><div class="nm">${esc(c.title)}</div><div class="s"><span>登録 ${fmtSubs(c)}</span><span>${c.stream_count}回・${hours(c.total_stream_sec)}h</span></div></div></div></button>`;
 }
@@ -810,8 +818,8 @@ function renderProfile() {
   const c = byId.get(curId); if (!c) return;
   const L = liveOf(c.id), n = nextOf(c.id), d = debutDays(c);
   const tabs = [["prof", "プロフィール"], ["log", "配信記録"], ["cards", "歴代トレカ"], ["goods", "グッズ"]];
-  const near = CH.filter((x) => x.id !== c.id && debutBase(x) && debutBase(c) && Math.abs(Date.parse(debutBase(x)) - Date.parse(debutBase(c))) < 21 * 864e5)
-    .sort((a, b) => Math.abs(Date.parse(debutBase(a)) - Date.parse(debutBase(c))) - Math.abs(Date.parse(debutBase(b)) - Date.parse(debutBase(c)))).slice(0, 10);
+  const gap = (x) => debutBase(x) && debutBase(c) ? Math.abs(Date.parse(debutBase(x)) - Date.parse(debutBase(c))) : 9e15;
+  const near = CH.filter((x) => x.id !== c.id && liveOf(x.id)).sort((a, b) => gap(a) - gap(b)).slice(0, 10);
   $("#shBody").innerHTML = `
     <div class="stage"><div class="tcard" id="tcard" role="button" tabindex="0" aria-label="カードをめくる">
       <div class="face front"><div class="inner">
@@ -826,16 +834,42 @@ function renderProfile() {
         <div class="pane" id="pane">${backPane(c)}</div>
       </div>
     </div></div>
-    <div class="flipnote">カードをタップすると裏返ります（裏面はスクロールもできます）</div>
+    <div class="flipnote">タップか横スワイプで裏返ります（裏面は縦にスクロールできます）</div>
     <div class="cta">
       <a class="btn red" href="${L ? ytWatch(L.id) : n ? ytWatch(n.id) : ytChan(c.id)}" target="_blank" rel="noopener" data-watch="${esc(c.id)}"${(L || n) && (L || n).embeddable !== false && live ? ` data-wv="${esc((L || n).id)}" data-cid="${esc(c.id)}"` : ""}><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>${L ? "配信を見る" : n ? "配信予約を見る" : "チャンネルへ"}</a>
       <a class="btn plain" href="${ytChan(c.id)}?sub_confirmation=1" target="_blank" rel="noopener" data-sub="${esc(c.id)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>チャンネル登録</a>
       <button class="btn plain wide" data-fav="${esc(c.id)}" aria-pressed="${favs.has(c.id)}">${favs.has(c.id) ? "推しリストに入っています" : "推しリストに入れる"}</button>
     </div>
     ${n ? `<div class="views">次の配信 <b>${md(n.scheduled_start_at)} ${hm(n.scheduled_start_at)}</b>（${rel(n.scheduled_start_at)}）</div>` : ""}
-    ${near.length ? `<div class="sec-h">同じ時期にデビューした子<span>${near.length}人</span></div><div class="hscroll">${near.map(miniCard).join("")}</div>` : ""}
+    ${near.length ? `<div class="sec-h">いま配信中・同じ時期にデビューした子<span>${near.length}人</span></div><div class="hscroll">${near.map((x) => miniCard(x, true)).join("")}</div>` : ""}
     <div class="cta"><button class="btn gold wide" data-go="discover">次の新人を発掘する</button></div>`;
 }
+
+/* ---------- カードを横スワイプでめくる（縦は裏面のスクロール） ---------- */
+(() => {
+  let x0 = 0, y0 = 0, dx = 0, dir = "", card = null, swiped = 0;
+  document.addEventListener("touchstart", (e) => {
+    card = e.target.closest("#tcard"); if (!card) return;
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; dx = 0; dir = "";
+  }, { passive: true });
+  document.addEventListener("touchmove", (e) => {
+    if (!card) return;
+    const mx = e.touches[0].clientX - x0, my = e.touches[0].clientY - y0;
+    if (!dir) { if (Math.abs(mx) > 10 && Math.abs(mx) > Math.abs(my) * 1.3) dir = "h"; else if (Math.abs(my) > 10) dir = "v"; }
+    if (dir !== "h") return;
+    dx = mx; const base = card.classList.contains("flip") ? 180 : 0;
+    card.style.transition = "none"; card.style.transform = `rotateY(${base + Math.max(-90, Math.min(90, dx * 0.6))}deg)`;
+  }, { passive: true });
+  document.addEventListener("touchend", () => {
+    if (!card) return;
+    if (dir === "h") {
+      card.style.transition = ""; card.style.transform = "";
+      if (Math.abs(dx) > 50) { card.classList.toggle("flip"); swiped = Date.now(); }
+    }
+    card = null;
+  });
+  document.addEventListener("click", (e) => { if (Date.now() - swiped < 400 && e.target.closest("#tcard")) { e.stopPropagation(); e.preventDefault(); } }, true);
+})();
 
 /* ---------- TABS ---------- */
 let tab = "home";
@@ -858,7 +892,8 @@ function refreshCurrent() {
 }
 
 document.addEventListener("click", (e) => {
-  if (curId && e.target.matches("#sheet, #shBody, .stage, .sh-top, .cta, .hscroll, .flipnote, .views, .sec-h")) return closeProfile();
+  if (curId && e.target.matches("#sheet, #shBody, .sh-top, .cta, .hscroll, .flipnote, .views, .sec-h")) return closeProfile();
+  if (curId && e.target.matches(".stage")) { const r = $("#tcard")?.getBoundingClientRect(); if (r && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) return closeProfile(); return; }
   if (e.target.closest("#fpSnd")) { soundOn = FP.muted; store.set("sound", soundOn); fpSound(soundOn); return; }
   if (e.target.closest("#fpPP")) { ytCmd(FP.fr, FP.state === 1 || FP.state === 3 ? "pauseVideo" : "playVideo"); FP.state = FP.state === 1 || FP.state === 3 ? 2 : 1; fpPaint(); fpShowCtl(); return; }
   if (e.target.closest("#fpTap")) {
