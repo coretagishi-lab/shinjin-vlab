@@ -105,22 +105,24 @@ a{color:inherit;text-decoration:none}
 .w-chat{overflow:hidden}
 .w-chat iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 .w-chat.crop iframe{height:calc(100% + 76px)}
-#fp{position:fixed;left:0;top:0;width:0;height:0;z-index:6;background:#000;overflow:hidden;pointer-events:none}
-#fp.fp-feed{border-radius:12px}
-#fp{transition:opacity .12s ease}
-#fp.hush{opacity:0}
-#fp.hush *{pointer-events:none!important}
-#fp.fp-watch{z-index:41}
-#fp iframe{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none}
-#fp .fp-tap{position:absolute;inset:0;z-index:1;pointer-events:none}
-#fp.fp-watch .fp-tap{pointer-events:auto;touch-action:none}
-#fp .fp-live{position:absolute;left:8px;bottom:8px;z-index:2;background:var(--live);color:#fff;font-family:var(--f-num);font-weight:700;font-size:11px;padding:2px 8px;border-radius:4px}
-#fp.fp-watch .fp-live,#fp:not([data-live="1"]) .fp-live{display:none}
-#fp .fp-ctl{position:absolute;inset:0;z-index:2;display:grid;place-items:center;background:rgba(0,0,0,.28);pointer-events:none}
-#fp .fp-ctl[hidden]{display:none}
-#fp .fp-pp{pointer-events:auto;width:64px;height:64px;border-radius:50%;border:0;background:rgba(0,0,0,.55);color:#fff;display:grid;place-items:center;cursor:pointer}
-#fp .fp-pp svg{width:30px;height:30px}
-#fp .fp-snd{position:absolute;right:8px;bottom:8px;z-index:3;pointer-events:auto;background:rgba(0,0,0,.72);color:#fff}
+#v-home,#v-discover{position:relative}
+#discList{height:100%}
+.pl{position:absolute;z-index:3;background:#000;overflow:hidden;pointer-events:none;transition:opacity .12s ease}
+.pl-feed{border-radius:12px}
+.pl-watch{z-index:2}
+.pl.hush{opacity:0}
+.pl.hush *{pointer-events:none!important}
+.pl iframe{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none}
+.pl .pl-tap{position:absolute;inset:0;z-index:1;pointer-events:none}
+.pl-watch .pl-tap{pointer-events:auto;touch-action:none}
+.pl .pl-live{position:absolute;left:8px;bottom:8px;z-index:2;background:var(--live);color:#fff;font-family:var(--f-num);font-weight:700;font-size:11px;padding:2px 8px;border-radius:4px}
+.pl-watch .pl-live,.pl:not([data-live="1"]) .pl-live{display:none}
+.pl .pl-ctl{position:absolute;inset:0;z-index:2;display:grid;place-items:center;background:rgba(0,0,0,.28);pointer-events:none}
+.pl .pl-ctl[hidden]{display:none}
+.pl .pl-pp{pointer-events:auto;width:64px;height:64px;border-radius:50%;border:0;background:rgba(0,0,0,.55);color:#fff;display:grid;place-items:center;cursor:pointer}
+.pl .pl-pp svg{width:30px;height:30px}
+.pl .pl-snd{position:absolute;right:8px;bottom:8px;z-index:3;pointer-events:auto;background:rgba(0,0,0,.72);color:#fff}
+.w-off{flex:1;display:grid;place-items:center;text-align:center;color:#B8B4CC;font-size:13px;line-height:1.7;padding:24px}
 .wtouch{position:absolute;inset:0;z-index:3;touch-action:none}
 .wpause{position:absolute;inset:0;z-index:2;display:grid;place-items:center;pointer-events:none;font-size:46px;color:#fff;background:rgba(0,0,0,.35)}
 .wpause[hidden]{display:none}
@@ -424,7 +426,7 @@ async function load() {
     const since = new Date(Date.now() - 60 * 864e5).toISOString().slice(0, 10);
     const [c, s, d] = await Promise.all([
       rest("channel_list?select=*&order=listed_at.asc"),
-      rest("streams?select=id,channel_id,title,thumbnail_url,status,scheduled_start_at,actual_start_at,actual_end_at,peak_viewers,last_viewers,is_first_stream,embeddable,is_vertical&status=neq.none&order=updated_at.desc&limit=3000"),
+      rest("streams?select=id,channel_id,title,thumbnail_url,status,scheduled_start_at,actual_start_at,actual_end_at,peak_viewers,last_viewers,is_first_stream,embeddable,is_vertical,chat_enabled&status=neq.none&order=updated_at.desc&limit=3000"),
       rest(`channel_daily?select=*&day=gte.${since}`),
     ]);
     CH = c; ST = s; DAILY = d; live = true;
@@ -433,7 +435,7 @@ async function load() {
     CH = snap.channels || []; ST = snap.streams || []; DAILY = snap.daily || [];
   }
   CH.forEach((c, i) => { c.no = i + 1; c.subscriber_count = c.subscriber_count == null ? null : Number(c.subscriber_count); c.stream_count = Number(c.stream_count || 0); c.total_stream_sec = Number(c.total_stream_sec || 0); c.viewers_month = Number(c.viewers_month || 0); byId.set(c.id, c); });
-  ST = ST.filter((s) => byId.has(s.channel_id));
+  ST = ST.filter((s) => byId.has(s.channel_id) && s.embeddable !== false);
 }
 
 /* ---------- helpers ---------- */
@@ -445,7 +447,7 @@ const md = (iso) => jst(iso, { month: "numeric", day: "numeric", weekday: "short
 const hours = (sec) => (sec / 3600 >= 10 ? Math.round(sec / 3600) : Math.round(sec / 360) / 10);
 const fmtSubs = (c) => (c.subscriber_hidden || c.subscriber_count == null ? "非公開" : c.subscriber_count.toLocaleString("ja-JP"));
 const debutBase = (c) => c.first_stream_at || c.channel_created_at;
-const debutDays = (c) => { const b = debutBase(c); return b ? Math.max(1, Math.floor((now() - Date.parse(b)) / 864e5) + 1) : null; };
+const debutDays = (c) => { const b = c.first_stream_at; return b ? Math.max(1, Math.floor((now() - Date.parse(b)) / 864e5) + 1) : null; };
 const noStr = (c) => "No." + String(c.no).padStart(4, "0");
 function hue(id) { let h = 0; for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) % 360; return h; }
 function initial(c) { const t = (c.title || "?").replace(/^[\s【\[「『(（]+/, ""); return [...t][0] || "?"; }
@@ -504,93 +506,81 @@ function vidCard(s) {
   </article>`;
 }
 
-/* ---------- FLOAT PLAYER（1つのプレイヤーを画面間で使い回す。音の状態がずっと続く） ---------- */
+/* ---------- PLAYER（画面ごとに1つのプレイヤーを使い回す。スクロールしても音が続く） ---------- */
 let soundOn = store.get("sound", false);
 const ytCmd = (fr, func, args = []) => fr?.contentWindow?.postMessage(JSON.stringify({ event: "command", func, args }), "*");
-const FP = { el: null, fr: null, vid: null, target: null, clip: null, mode: "feed", muted: true, state: -1, raf: 0, ctlT: 0, loading: false, loadT: 0 };
-function fpInit() {
-  if (FP.el) return;
-  const el = document.createElement("div"); el.id = "fp"; el.hidden = true;
-  el.innerHTML = `<div class="fp-tap" id="fpTap"></div><span class="fp-live">LIVE</span><div class="fp-ctl" id="fpCtl" hidden><button class="fp-pp" id="fpPP" aria-label="再生・一時停止"></button></div><button class="snd fp-snd" id="fpSnd" aria-label="音のオンオフ"></button>`;
-  document.body.appendChild(el); FP.el = el;
-  addEventListener("message", (e) => {
-    if (!FP.fr || e.source !== FP.fr.contentWindow) return;
-    let d; try { d = typeof e.data === "string" ? JSON.parse(e.data) : e.data; } catch { return; }
-    const info = d && d.info; if (!info) return;
-    if (typeof info.muted === "boolean") { FP.muted = info.muted; fpPaint(); }
-    if (typeof info.playerState === "number") { FP.state = info.playerState; fpPaint(); if (info.playerState === 1) fpLoaded(); }
-  });
-}
-function fpPaint() {
-  const b = $("#fpSnd"); if (b) b.textContent = FP.muted ? "🔇 タップで音を出す" : "🔊 音あり（タップで消す）";
-  const pp = $("#fpPP"); if (pp) pp.innerHTML = FP.state === 1 || FP.state === 3 ? `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>` : `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
-}
-function fpCreate(vid) {
-  const o = encodeURIComponent(location.origin);
-  FP.el.insertAdjacentHTML("afterbegin", `<iframe id="fpFrame" src="https://www.youtube.com/embed/${encodeURIComponent(vid)}?autoplay=1&mute=1&playsinline=1&controls=0&rel=0&modestbranding=1&iv_load_policy=3&enablejsapi=1&origin=${o}" allow="autoplay; encrypted-media; picture-in-picture" title="配信"></iframe>`);
-  FP.fr = $("#fpFrame"); FP.muted = true; FP.state = -1;
-  FP.fr.addEventListener("load", () => {
-    const ping = () => FP.fr?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: "fp", channel: "widget" }), "*");
-    ping(); setTimeout(ping, 500); setTimeout(ping, 1500);
-    if (soundOn && !isIOS) setTimeout(() => fpSound(true), 700);
-  });
-}
-let fpScrollT = 0;
-function fpHush(ms) { if (!FP.el) return; FP.el.classList.add("hush"); clearTimeout(fpScrollT); fpScrollT = setTimeout(() => { if (!FP.loading) FP.el.classList.remove("hush"); }, ms); }
-function fpLoading() { FP.loading = true; FP.el.classList.add("hush"); clearTimeout(FP.loadT); FP.loadT = setTimeout(() => { FP.loading = false; FP.el.classList.remove("hush"); }, 3500); }
-function fpLoaded() { if (!FP.loading) return; FP.loading = false; clearTimeout(FP.loadT); setTimeout(() => FP.el.classList.remove("hush"), 150); }
-["v-home", "v-discover"].forEach((id) => document.getElementById(id)?.addEventListener("scroll", () => { if (FP.target && FP.mode !== "watch") fpHush(180); }, { passive: true }));
-function fpAttach(target, vid, mode, clip) {
-  fpInit(); const hushed = FP.el.classList.contains("hush"); FP.el.className = "fp-" + mode + (hushed ? " hush" : "");
-  if (!FP.fr) { fpCreate(vid); fpLoading(); }
-  else if (FP.vid !== vid) { ytCmd(FP.fr, "loadVideoById", [vid]); FP.state = 3; fpLoading(); }
-  else if (FP.state !== 1 && FP.state !== 3) ytCmd(FP.fr, "playVideo");
-  FP.vid = vid; FP.target = target; FP.mode = mode; FP.clip = clip || null;
-  FP.el.hidden = false; fpPaint();
-  cancelAnimationFrame(FP.raf); fpTick();
-}
-function fpDetach() {
-  if (!FP.el || !FP.target) return;
-  FP.target = null; cancelAnimationFrame(FP.raf); FP.el.hidden = true; ytCmd(FP.fr, "pauseVideo");
-}
-function fpTick() {
-  const t = FP.target; if (!t) return;
-  const r = t.getBoundingClientRect(), st = FP.el.style;
-  if (!t.isConnected || !r.width) { st.visibility = "hidden"; }
-  else {
-    st.visibility = "visible"; st.left = r.left + "px"; st.top = r.top + "px"; st.width = r.width + "px"; st.height = r.height + "px";
-    if (FP.clip) { const c = FP.clip(); const top = Math.max(0, c.top - r.top), bot = Math.max(0, r.bottom - c.bottom); st.clipPath = top + bot >= r.height ? "inset(50%)" : `inset(${top}px 0 ${bot}px 0)`; }
-    else st.clipPath = "none";
+const PLAYERS = [];
+addEventListener("message", (e) => {
+  const pl = PLAYERS.find((x) => x.fr && e.source === x.fr.contentWindow); if (!pl) return;
+  let d; try { d = typeof e.data === "string" ? JSON.parse(e.data) : e.data; } catch { return; }
+  const info = d && d.info; if (!info) return;
+  if (typeof info.muted === "boolean") pl.muted = info.muted;
+  if (typeof info.playerState === "number") { pl.state = info.playerState; if (info.playerState === 1) pl.loaded(); }
+  pl.paint();
+});
+class Player {
+  constructor(kind) {
+    this.kind = kind; this.fr = null; this.vid = null; this.target = null; this.muted = true; this.state = -1; this.loadT = 0; this.ctlT = 0;
+    const el = document.createElement("div"); el.className = "pl pl-" + kind + " hush"; el.hidden = true;
+    el.innerHTML = `<div class="pl-tap"></div><span class="pl-live">LIVE</span><div class="pl-ctl" hidden><button class="pl-pp" aria-label="再生・一時停止"></button></div><button class="snd pl-snd" aria-label="音のオンオフ"></button>`;
+    el.querySelector(".pl-snd").addEventListener("click", (ev) => { ev.stopPropagation(); soundOn = this.muted; store.set("sound", soundOn); this.sound(soundOn); });
+    el.querySelector(".pl-pp").addEventListener("click", (ev) => { ev.stopPropagation(); const on = this.state === 1 || this.state === 3; ytCmd(this.fr, on ? "pauseVideo" : "playVideo"); this.state = on ? 2 : 1; this.paint(); this.ctl(); });
+    el.querySelector(".pl-tap").addEventListener("click", (ev) => { ev.stopPropagation(); this.ctl(); });
+    this.el = el; PLAYERS.push(this); this.paint();
   }
-  FP.raf = requestAnimationFrame(fpTick);
+  paint() {
+    this.el.querySelector(".pl-snd").textContent = this.muted ? "🔇 タップで音を出す" : "🔊 音あり（タップで消す）";
+    this.el.querySelector(".pl-pp").innerHTML = this.state === 1 || this.state === 3 ? `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>` : `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
+  }
+  ctl() { const c = this.el.querySelector(".pl-ctl"); c.hidden = false; clearTimeout(this.ctlT); this.ctlT = setTimeout(() => { c.hidden = true; }, 2800); }
+  loading() { this.el.classList.add("hush"); clearTimeout(this.loadT); this.loadT = setTimeout(() => this.el.classList.remove("hush"), 3500); }
+  loaded() { clearTimeout(this.loadT); setTimeout(() => this.el.classList.remove("hush"), 150); }
+  host(parent) { if (this.el.parentNode !== parent) parent.appendChild(this.el); }
+  create(vid) {
+    const o = encodeURIComponent(location.origin);
+    this.el.insertAdjacentHTML("afterbegin", `<iframe src="https://www.youtube.com/embed/${encodeURIComponent(vid)}?autoplay=1&mute=1&playsinline=1&controls=0&rel=0&modestbranding=1&iv_load_policy=3&enablejsapi=1&origin=${o}" allow="autoplay; encrypted-media; picture-in-picture" title="配信"></iframe>`);
+    this.fr = this.el.querySelector("iframe"); this.muted = true; this.state = -1;
+    this.fr.addEventListener("load", () => {
+      const ping = () => this.fr?.contentWindow?.postMessage(JSON.stringify({ event: "listening", id: this.kind, channel: "widget" }), "*");
+      ping(); setTimeout(ping, 500); setTimeout(ping, 1500);
+      if (soundOn && !isIOS) setTimeout(() => this.sound(true), 700);
+    });
+  }
+  play(target, vid, live) {
+    if (!this.fr) { this.create(vid); this.loading(); }
+    else if (this.vid !== vid) { ytCmd(this.fr, "loadVideoById", [vid]); this.state = 3; this.loading(); }
+    else if (this.state !== 1 && this.state !== 3) ytCmd(this.fr, "playVideo");
+    this.vid = vid; this.target = target; this.el.dataset.live = live ? "1" : ""; this.el.hidden = false; this.place(); this.paint();
+  }
+  place() {
+    const t = this.target, p = this.el.parentNode; if (!t || !p) return;
+    if (p === t) { Object.assign(this.el.style, { left: "0", top: "0", width: "100%", height: "100%" }); return; }
+    const tr = t.getBoundingClientRect(), pr = p.getBoundingClientRect();
+    Object.assign(this.el.style, { left: tr.left - pr.left + p.scrollLeft + "px", top: tr.top - pr.top + p.scrollTop + "px", width: tr.width + "px", height: tr.height + "px" });
+  }
+  stop() { if (!this.target) return; this.target = null; this.el.hidden = true; ytCmd(this.fr, "pauseVideo"); }
+  sound(on) { if (!this.fr) return; if (on) { ytCmd(this.fr, "unMute"); ytCmd(this.fr, "setVolume", [80]); ytCmd(this.fr, "playVideo"); } else ytCmd(this.fr, "mute"); this.muted = !on; this.paint(); }
 }
-function fpSound(on) {
-  if (!FP.fr) return;
-  if (on) { ytCmd(FP.fr, "unMute"); ytCmd(FP.fr, "setVolume", [80]); ytCmd(FP.fr, "playVideo"); } else ytCmd(FP.fr, "mute");
-  FP.muted = !on; fpPaint();
-}
-function fpShowCtl() {
-  const c = $("#fpCtl"); if (!c) return; c.hidden = false; clearTimeout(FP.ctlT); FP.ctlT = setTimeout(() => { c.hidden = true; }, 2800);
-}
-const navTop = () => ($(".nav")?.getBoundingClientRect().top ?? innerHeight);
-const clipHome = () => ({ top: $("#homeChips")?.getBoundingClientRect().bottom ?? 0, bottom: navTop() });
-const clipDisc = () => ({ top: $("#v-discover").getBoundingClientRect().top, bottom: navTop() });
+let HP = null, DP = null, WP = null;
+addEventListener("resize", () => PLAYERS.forEach((p) => p.place()));
+setInterval(() => PLAYERS.forEach((p) => p.target && p.place()), 1000);
 let homeIO = null;
-const stopPlayer = () => fpDetach();
+const stopPlayer = () => HP?.stop();
 function watchHome() {
   homeIO?.disconnect();
-  if (!live) { fpDetach(); return; }
+  if (!live) { HP?.stop(); return; }
+  if (!HP) HP = new Player("feed");
+  HP.host($("#v-home"));
   const ratios = new Map(); let cur = null;
   homeIO = new IntersectionObserver((ents) => {
     ents.forEach((e) => ratios.set(e.target, e.intersectionRatio));
-    if (watchVid || curId && FP.mode === "watch") return;
     let best = null, br = 0.75;
     ratios.forEach((r, el) => { if (r > br + 0.01 || (r >= br && !best)) { best = el; br = r; } });
-    if (best && best !== cur) { cur = best; fpAttach(best, best.dataset.vid, "feed", clipHome); }
-    else if (!best && cur && (ratios.get(cur) ?? 0) < 0.4) { cur = null; fpDetach(); }
+    if (best && best !== cur) { cur = best; if (!watchVid) HP.play(best, best.dataset.vid, true); else HP.target = best; }
+    else if (!best && cur && (ratios.get(cur) ?? 0) < 0.4) { cur = null; HP.stop(); }
   }, { root: $("#v-home"), threshold: [0, .4, .75, 1] });
   const ts = document.querySelectorAll("#feed .thumb[data-emb]");
-  if (!ts.length) fpDetach();
+  if (!ts.length) HP.stop();
   ts.forEach((t) => homeIO.observe(t));
 }
 
@@ -615,7 +605,7 @@ let watchVid = null;
   let y0 = null, x0 = 0, dy = 0, t0 = 0;
   const w = () => $("#watch");
   document.addEventListener("touchstart", (e) => {
-    if (!e.target.closest(".w-top, .w-grab, #wBar .who") && !(FP.mode === "watch" && e.target.closest("#fpTap"))) return;
+    if (!e.target.closest(".w-top, .w-grab, #wBar .who") && !e.target.closest("#wPlayer .pl-tap")) return;
     if (!watchVid) return;
     y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; dy = 0; t0 = Date.now(); w().classList.add("drag");
   }, { passive: true });
@@ -640,7 +630,7 @@ function openWatch(vid, push = true) {
   if (s.embeddable === false) return openExt(ytWatch(vid));
   watchVid = vid;
   $("#wTitle").textContent = s.title;
-  $("#wPlayer").innerHTML = ""; $("#wPlayer").classList.toggle("vert", !!s.is_vertical);
+  $("#wPlayer").classList.toggle("vert", !!s.is_vertical);
   const sub = s.status === "live" ? `${s.last_viewers != null ? s.last_viewers + "人が視聴中" : "配信中"}` : s.status === "upcoming" ? `${md(s.scheduled_start_at)} ${hm(s.scheduled_start_at)}開始` : "アーカイブ";
   $("#wBar").innerHTML = `<div class="who"><button class="av" data-wopen="${esc(c.id)}" aria-label="カードを見る">${img(c.thumbnail_url, c)}</button>
     <div class="nm"><b>${esc(c.title)}</b><span>${sub}</span></div></div><div class="acts">
@@ -648,12 +638,14 @@ function openWatch(vid, push = true) {
     <button class="wb" data-fav="${esc(c.id)}" aria-pressed="${favs.has(c.id)}">♡ 推す</button>
     <button class="wb" data-wopen="${esc(c.id)}">カード</button>
     <a class="wb" href="${ytWatch(vid)}" target="_blank" rel="noopener">YouTubeで開く</a></div>`;
-  const canChat = s.status === "live" || s.status === "upcoming";
+  const canChat = (s.status === "live" || s.status === "upcoming") && s.chat_enabled !== false;
+  const chatOff = (s.status === "live" || s.status === "upcoming") && s.chat_enabled === false;
   $("#wLower").innerHTML = canChat
     ? `<div class="w-chat${isIOS ? " crop" : ""}"><iframe src="https://www.youtube.com/live_chat?v=${encodeURIComponent(vid)}&embed_domain=${encodeURIComponent(location.hostname)}" title="チャット"></iframe></div>${isIOS ? `<a class="w-cmt" href="${ytWatch(vid)}" target="_blank" rel="noopener" data-watch="${esc(c.id)}">💬 コメントする（YouTubeアプリで開く）</a>` : ""}`
-    : `<div class="w-note"><b>アーカイブを再生中</b><br>配信中の枠では、ここにチャットが出て、そのままコメントできます。</div>`;
+    : chatOff ? `<div class="w-off">この配信はチャットがオフになっています。<br>映像と音声だけ楽しめます。</div>` : `<div class="w-note"><b>アーカイブを再生中</b><br>配信中の枠では、ここにチャットが出て、そのままコメントできます。</div>`;
   const w = $("#watch"); w.hidden = false; requestAnimationFrame(() => w.classList.add("open"));
-  fpAttach($("#wPlayer"), vid, "watch", null); FP.el.dataset.live = s.status === "live" ? "1" : "";
+  HP?.stop(); DP?.stop();
+  if (!WP) WP = new Player("watch"); WP.host($("#wPlayer")); WP.play($("#wPlayer"), vid, s.status === "live");
   if (push) try { history.pushState({ w: vid }, "", `?w=${encodeURIComponent(vid)}`); } catch {}
 }
 function closeWatch(fromPop) {
@@ -661,7 +653,8 @@ function closeWatch(fromPop) {
   const w = $("#watch"); w.classList.remove("open"); watchVid = null;
   setTimeout(() => { if (!watchVid) { w.hidden = true; $("#wLower").innerHTML = ""; } }, 260);
   if (!fromPop) try { history.pushState({}, "", curId ? `?c=${encodeURIComponent(curId)}` : location.pathname); } catch {}
-  setTimeout(() => { if (watchVid) return; if (tab === "home") watchHome(); else if (tab === "discover") discAttach(); else fpDetach(); }, 270);
+  WP?.stop();
+  setTimeout(() => { if (watchVid) return; if (tab === "home") watchHome(); else if (tab === "discover") discAttach(); }, 270);
 }
 document.addEventListener("click", (e) => { const b = e.target.closest("[data-wopen]"); if (!b) return; e.stopPropagation(); openProfile(b.dataset.wopen); }, true);
 
@@ -718,7 +711,7 @@ function renderMy() {
 /* ---------- DISCOVER ---------- */
 let discOrder = null, io = null;
 let discCur = null;
-function discAttach() { if (discCur && discCur.isConnected) { fpAttach(discCur, discCur.dataset.vid, "disc", clipDisc); FP.el.dataset.live = "1"; } else fpDetach(); }
+function discAttach() { if (discCur && discCur.isConnected) { if (!DP) DP = new Player("disc"); DP.host($("#v-discover")); DP.play(discCur, discCur.dataset.vid, true); } else DP?.stop(); }
 function renderDiscover() {
   if (!discOrder) {
     const arr = [...CH];
@@ -726,18 +719,20 @@ function renderDiscover() {
     discOrder = arr.filter((c) => liveOf(c.id));
   }
   const v = $("#v-discover");
+  let list = $("#discList"); if (!list) { list = document.createElement("div"); list.id = "discList"; v.prepend(list); }
   if (!discOrder.length) {
     io?.disconnect();
     const up = ST.filter((s) => s.status === "upcoming" && isUpcomingSoon(s) && byId.has(s.channel_id)).sort((a, b) => Date.parse(a.scheduled_start_at) - Date.parse(b.scheduled_start_at)).slice(0, 12);
-    v.innerHTML = `<div class="disc-empty"><h2>いま配信中の新人はいません</h2><p>新人さんの配信は夜に集中します。始まるとここに映像付きで流れます。</p>${up.map((s) => { const c = byId.get(s.channel_id); return `<div class="nx" data-open="${esc(c.id)}"><div class="tb">${img(s.thumbnail_url, c)}</div><div class="tx"><b>${esc(s.title)}</b>${esc(c.title)}<br><span>${md(s.scheduled_start_at)} ${hm(s.scheduled_start_at)}（${rel(s.scheduled_start_at)}）</span></div></div>`; }).join("") || `<p>配信予定もまだありません。</p>`}</div>`;
+    DP?.stop(); list.innerHTML = `<div class="disc-empty"><h2>いま配信中の新人はいません</h2><p>新人さんの配信は夜に集中します。始まるとここに映像付きで流れます。</p>${up.map((s) => { const c = byId.get(s.channel_id); return `<div class="nx" data-open="${esc(c.id)}"><div class="tb">${img(s.thumbnail_url, c)}</div><div class="tx"><b>${esc(s.title)}</b>${esc(c.title)}<br><span>${md(s.scheduled_start_at)} ${hm(s.scheduled_start_at)}（${rel(s.scheduled_start_at)}）</span></div></div>`; }).join("") || `<p>配信予定もまだありません。</p>`}</div>`;
     return;
   }
-  v.innerHTML = discOrder.map((c) => {
+  list.innerHTML = discOrder.map((c) => {
     const n = nextOf(c.id), L = liveOf(c.id), d = debutDays(c);
-    return `<div class="slide${L && L.embeddable !== false && live ? " has-chat" + (L.is_vertical ? " vert" : "") : ""}" data-id="${esc(c.id)}">
+    const chatOk = L && L.embeddable !== false && live && L.chat_enabled !== false;
+    return `<div class="slide${chatOk ? " has-chat" + (L.is_vertical ? " vert" : "") : ""}" data-id="${esc(c.id)}">
       <div class="bg" style="background-image:${c.thumbnail_url ? `url('${esc(c.thumbnail_url)}'),` : ""}linear-gradient(135deg,hsl(${hue(c.id)} 55% 45%),hsl(${(hue(c.id) + 60) % 360} 60% 25%))"></div><div class="grad"></div>
       <div class="hd">発掘<small>上にスワイプで次の新人</small></div>
-      ${L && L.embeddable !== false && live ? `<div class="vbox" data-vid="${esc(L.id)}" data-wv="${esc(L.id)}" data-cid="${esc(c.id)}">${img(L.thumbnail_url, c)}<span class="live-tag">LIVE ${L.last_viewers != null ? L.last_viewers + "人" : ""}</span></div><div class="dchat" data-chat="${esc(L.id)}"><button data-wv="${esc(L.id)}" data-cid="${esc(c.id)}" aria-label="配信に参加する"></button><span class="lbl">タップして参加</span></div>` : `${L ? `<span class="live-tag">LIVE ${L.last_viewers != null ? L.last_viewers + "人" : ""}</span>` : ""}<div class="big">${img(c.thumbnail_url, c)}</div>`}
+      ${L && L.embeddable !== false && live ? `<div class="vbox" data-vid="${esc(L.id)}" data-wv="${esc(L.id)}" data-cid="${esc(c.id)}">${img(L.thumbnail_url, c)}<span class="live-tag">LIVE ${L.last_viewers != null ? L.last_viewers + "人" : ""}</span></div>${chatOk ? `<div class="dchat" data-chat="${esc(L.id)}"><button data-wv="${esc(L.id)}" data-cid="${esc(c.id)}" aria-label="配信に参加する"></button><span class="lbl">タップして参加</span></div>` : ""}` : `${L ? `<span class="live-tag">LIVE ${L.last_viewers != null ? L.last_viewers + "人" : ""}</span>` : ""}<div class="big">${img(c.thumbnail_url, c)}</div>`}
       <div class="info"><span class="no">${noStr(c)}${d ? `・デビュー${d}日目` : ""}</span>
         <div class="nm">${esc(c.title)}</div>
         <div class="st"><span><b>${fmtSubs(c)}</b>登録者</span><span><b>${c.stream_count}</b>回配信</span><span><b>${hours(c.total_stream_sec)}</b>時間</span></div>
@@ -757,8 +752,8 @@ function renderDiscover() {
       if (!shown.has(id)) { shown.add(id); logEvent("impression", id); seen.add(id); store.set("seen", [...seen]); }
       timers.set(id, setTimeout(() => logEvent("dwell", id), 3000));
       const vb = e.target.querySelector(".vbox"); discCur = vb || null;
-      if (vb && !watchVid && tab === "discover") { fpAttach(vb, vb.dataset.vid, "disc", clipDisc); FP.el.dataset.live = "1"; }
-      else if (!vb && FP.mode === "disc") fpDetach();
+      if (vb && !watchVid && tab === "discover") discAttach();
+      else if (!vb) DP?.stop();
       const dc = e.target.querySelector(".dchat"); if (dc && !dc.querySelector("iframe")) dc.insertAdjacentHTML("afterbegin", `<iframe src="https://www.youtube.com/live_chat?v=${encodeURIComponent(dc.dataset.chat)}&embed_domain=${encodeURIComponent(location.hostname)}&dark_theme=1" title="チャットのプレビュー" tabindex="-1"></iframe>`);
     } else { clearTimeout(timers.get(id)); timers.delete(id); e.target.querySelector(".dchat iframe")?.remove(); }
   }), { root: v, threshold: [0, .6, 1] });
@@ -878,7 +873,8 @@ function setTab(t) {
   document.querySelectorAll(".view").forEach((v) => (v.hidden = v.id !== "v-" + t));
   document.querySelectorAll(".nav button").forEach((b) => b.dataset.tab === t ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current"));
   document.body.classList.toggle("dark-nav", t === "discover");
-  if (t !== "home" && t !== "discover") fpDetach();
+  if (t !== "home") HP?.stop();
+  if (t !== "discover") DP?.stop();
   if (t !== "discover") document.querySelectorAll("#v-discover .dchat iframe").forEach((f) => f.remove());
   store.set("tab", t);
   refreshCurrent();
@@ -894,13 +890,6 @@ function refreshCurrent() {
 document.addEventListener("click", (e) => {
   if (curId && e.target.matches("#sheet, #shBody, .sh-top, .cta, .hscroll, .flipnote, .views, .sec-h")) return closeProfile();
   if (curId && e.target.matches(".stage")) { const r = $("#tcard")?.getBoundingClientRect(); if (r && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) return closeProfile(); return; }
-  if (e.target.closest("#fpSnd")) { soundOn = FP.muted; store.set("sound", soundOn); fpSound(soundOn); return; }
-  if (e.target.closest("#fpPP")) { ytCmd(FP.fr, FP.state === 1 || FP.state === 3 ? "pauseVideo" : "playVideo"); FP.state = FP.state === 1 || FP.state === 3 ? 2 : 1; fpPaint(); fpShowCtl(); return; }
-  if (e.target.closest("#fpTap")) {
-    if (FP.mode === "watch") { fpShowCtl(); return; }
-    const sid = FP.vid; const s0 = ST.find((x) => x.id === sid); if (s0) logEvent("click_watch", s0.channel_id);
-    return openWatch(sid);
-  }
   if (e.target.closest("#wClose")) return closeWatch();
 
   const th = e.target.closest(".thumb[data-url]");
@@ -955,8 +944,8 @@ load().then(() => {
   if (id && byId.has(id)) openProfile(id, false);
   const wq = new URLSearchParams(location.search).get("w");
   if (wq) openWatch(wq, false);
-  setInterval(() => { if (tab === "home" && !curId && !FP.target) renderHome(); }, 60000);
-  setInterval(async () => { if (!live) return; try { const s = await rest("streams?select=id,channel_id,title,thumbnail_url,status,scheduled_start_at,actual_start_at,actual_end_at,peak_viewers,last_viewers,is_first_stream,embeddable,is_vertical&status=neq.none&order=updated_at.desc&limit=3000"); ST = s.filter((x) => byId.has(x.channel_id)); if (tab !== "discover") discOrder = null; } catch {} }, 5 * 60000);
+  setInterval(() => { if (tab === "home" && !curId && !HP?.target) renderHome(); }, 60000);
+  setInterval(async () => { if (!live) return; try { const s = await rest("streams?select=id,channel_id,title,thumbnail_url,status,scheduled_start_at,actual_start_at,actual_end_at,peak_viewers,last_viewers,is_first_stream,embeddable,is_vertical,chat_enabled&status=neq.none&order=updated_at.desc&limit=3000"); ST = s.filter((x) => byId.has(x.channel_id) && x.embeddable !== false); if (tab !== "discover") discOrder = null; } catch {} }, 5 * 60000);
 });
 })();
 </script>
