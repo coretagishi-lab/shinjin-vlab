@@ -1,0 +1,686 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0F0E15">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232B2340'/%3E%3Cpath d='M32 10l6 14 15 1-11 10 4 15-14-8-14 8 4-15-11-10 15-1z' fill='%23FFAE1A'/%3E%3C/svg%3E">
+<style>html{-webkit-text-size-adjust:100%}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+<title>新人Vラボ</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="見つけてもらえない個人勢の新人VTuberを、毎日自動で集めて紹介する名鑑。配信中・初配信予定・配信回数と合計時間がひと目でわかります。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Chakra+Petch:wght@500;700&display=swap">
+<style>
+/* Layout: one-screen phone app — scrolling main area + fixed bottom tab bar; profile opens as a full-screen sheet with a flippable trading card. */
+:root{
+  --bg:#F5F5F8; --surface:#FFFFFF; --ink:#1D1A2B; --muted:#6B6880; --line:#E4E2EC; --chip:#EBEAF1;
+  --accent:#FFAE1A; --accent-ink:#3A2600; --live:#E5333D; --ok:#1F9D6B;
+  --card-navy:#2B2340; --card-gold:#E9B84A;
+  --f-display:"Dela Gothic One","Hiragino Sans","Noto Sans JP",sans-serif;
+  --f-body:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  --f-num:"Chakra Petch","Zen Kaku Gothic New",ui-monospace,sans-serif;
+  --nav-h:62px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F0E15; --surface:#1A1824; --ink:#F1EFF7; --muted:#9C98AE; --line:#2C2939; --chip:#25222F;
+  --accent:#FFC24A; --accent-ink:#2A1B00; --live:#FF4A53; --ok:#3CC48F; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0F0E15; --surface:#1A1824; --ink:#F1EFF7; --muted:#9C98AE; --line:#2C2939; --chip:#25222F;
+  --accent:#FFC24A; --accent-ink:#2A1B00; --live:#FF4A53; --ok:#3CC48F; color-scheme:dark }
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;overflow:hidden;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+input{-webkit-user-select:text;user-select:text}
+img{-webkit-user-drag:none}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.app{height:100%;display:flex;flex-direction:column}
+.view{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--nav-h) + 12px)}
+.view[hidden]{display:none!important}
+.pad{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* top bar */
+.top{position:sticky;top:0;z-index:5;background:var(--bg);display:flex;align-items:center;gap:10px;padding-block:10px}
+.logo{font-family:var(--f-display);font-size:19px;letter-spacing:.02em;display:flex;align-items:center;gap:6px}
+.logo .mk{width:26px;height:26px;border-radius:7px;background:var(--card-navy);display:grid;place-items:center;color:var(--card-gold);font-size:14px}
+.logo small{font-family:var(--f-num);font-size:10px;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 4px}
+.top .sp{flex:1}
+.iconbtn{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:var(--ink)}
+.iconbtn svg{width:22px;height:22px}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-block:2px 10px;position:sticky;top:56px;z-index:4;background:var(--bg)}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;padding:7px 12px;border-radius:9px;background:var(--chip);font-weight:500;font-size:13px;white-space:nowrap}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.chip b{font-family:var(--f-num);margin-left:4px}
+
+/* home feed (YouTube-like) */
+.feed{display:flex;flex-direction:column;gap:18px}
+.vid{display:block}
+.thumb{display:block;position:relative;aspect-ratio:16/9;width:100%;max-width:100%;border-radius:12px;overflow:hidden;background:var(--chip)}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb{cursor:pointer}
+.thumb iframe,.vbox iframe{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none;z-index:1}
+.thumb .bdg{z-index:2}
+.snd{position:absolute;right:8px;bottom:8px;z-index:3;background:rgba(0,0,0,.72);color:#fff;font-size:11.5px;font-weight:700;border-radius:14px;padding:4px 10px}
+.snd[hidden]{display:none}
+.vbox{position:absolute;left:0;right:0;top:15%;aspect-ratio:16/9;max-width:100%;background:#000;overflow:hidden}
+.vbox .ph{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--f-display);font-size:60px}
+.vbox img{width:100%;height:100%;object-fit:cover}
+.thumb .ph{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--f-display);font-size:42px;color:#fff}
+.bdg{position:absolute;font-family:var(--f-num);font-weight:700;font-size:11px;padding:2px 6px;border-radius:4px;letter-spacing:.04em}
+.bdg.live{left:8px;bottom:8px;background:var(--live);color:#fff}
+.bdg.time{right:8px;bottom:8px;background:rgba(0,0,0,.78);color:#fff}
+.bdg.debut{left:8px;top:8px;background:var(--card-navy);color:var(--card-gold)}
+.bdg.first{right:8px;top:8px;background:var(--accent);color:var(--accent-ink)}
+.meta{display:flex;gap:10px;padding-top:10px}
+.av{flex:none;width:36px;height:36px;border-radius:50%;overflow:hidden;background:var(--chip);position:relative}
+.av img{width:100%;height:100%;object-fit:cover;display:block}
+.av .ph{position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-weight:700;font-size:15px}
+.meta .t{font-weight:700;font-size:14.5px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.meta .s{color:var(--muted);font-size:12.5px;margin-top:3px}
+.meta>div{min-width:0}
+.empty{padding:40px 8px;text-align:center;color:var(--muted);line-height:1.8}
+.empty strong{display:block;color:var(--ink);font-size:15px;margin-bottom:4px}
+.sec-h{font-weight:700;font-size:16px;margin:22px 0 10px;display:flex;align-items:baseline;gap:8px}
+.sec-h span{font-size:12px;color:var(--muted);font-weight:500}
+
+/* discover (shorts) */
+#v-discover{padding:0;overflow-y:scroll;scroll-snap-type:y mandatory;padding-bottom:0}
+.slide{height:calc(100% - var(--nav-h));scroll-snap-align:start;scroll-snap-stop:always;position:relative;overflow:hidden;background:#14111f;color:#fff}
+#v-discover .slide{height:calc(100% - var(--nav-h) - env(safe-area-inset-bottom,0px))}
+.slide .bg{position:absolute;inset:-20%;background-size:cover;background-position:center;filter:blur(38px) saturate(1.2) brightness(.55)}
+.slide .grad{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,8,20,.2) 0%,rgba(10,8,20,.1) 40%,rgba(10,8,20,.85) 100%)}
+.slide .hd{position:absolute;top:0;left:0;right:0;text-align:center;padding-top:12px;font-weight:700;font-size:15px}
+.slide .hd small{display:block;font-weight:500;font-size:11px;opacity:.75;margin-top:2px}
+.slide .big{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);width:min(56vw,230px);aspect-ratio:1;border-radius:50%;overflow:hidden;box-shadow:0 0 0 4px rgba(255,255,255,.12),0 18px 50px rgba(0,0,0,.5)}
+.slide .big img{width:100%;height:100%;object-fit:cover}
+.slide .big .ph{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--f-display);font-size:72px}
+.slide .info{position:absolute;left:max(16px,env(safe-area-inset-left,0px));right:76px;bottom:22px}
+.slide .no{display:inline-block;font-family:var(--f-num);font-weight:700;font-size:11px;background:var(--card-gold);color:#2a1b00;border-radius:4px;padding:1px 7px}
+.slide .nm{font-family:var(--f-display);font-size:22px;margin:8px 0 6px;line-height:1.25;word-break:break-word}
+.slide .st{display:flex;gap:14px;font-size:12.5px;opacity:.92;flex-wrap:wrap}
+.slide .st b{font-family:var(--f-num);font-size:15px;margin-right:2px}
+.slide .next{margin-top:8px;font-size:12.5px;color:#ffd98a}
+.slide .go{margin-top:12px;display:inline-flex;align-items:center;gap:6px;background:#fff;color:#1d1a2b;font-weight:700;border-radius:20px;padding:8px 14px;font-size:13px}
+.slide .rail{position:absolute;right:max(10px,env(safe-area-inset-right,0px));bottom:26px;display:flex;flex-direction:column;gap:18px;align-items:center}
+.rail button{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:#fff}
+.rail .ic{width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.14);display:grid;place-items:center;backdrop-filter:blur(6px)}
+.rail .ic svg{width:24px;height:24px}
+.rail button[aria-pressed="true"] .ic{background:var(--live)}
+.slide .live-tag{position:absolute;top:44px;left:50%;transform:translateX(-50%);background:var(--live);font-family:var(--f-num);font-weight:700;font-size:11px;padding:2px 8px;border-radius:4px}
+
+/* directory */
+.search{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:0 12px;height:42px}
+.search svg{width:18px;height:18px;color:var(--muted);flex:none}
+.search input{flex:1;min-width:0;border:0;background:none;font:inherit;font-size:16px;color:var(--ink);outline:none}
+.count{color:var(--muted);font-size:12px;margin:10px 0 8px;font-family:var(--f-num)}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (min-width:640px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.mini{display:block;border-radius:12px;padding:6px;background:linear-gradient(145deg,#cfd3dc,#8f96a6 40%,#e6e9ef 60%,#9aa1b0);color:var(--card-navy)}
+.mini .in{background:var(--card-navy);border-radius:8px;overflow:hidden;color:#fff}
+.mini .art{aspect-ratio:1;position:relative;background:#3a3156;max-width:100%}
+.mini .art img{width:100%;height:100%;object-fit:cover;display:block}
+.mini .art .ph{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--f-display);font-size:40px}
+.mini .art .n{position:absolute;left:6px;top:6px;font-family:var(--f-num);font-size:10px;font-weight:700;background:rgba(0,0,0,.55);padding:1px 5px;border-radius:3px}
+.mini .art .lv{position:absolute;right:6px;top:6px;font-family:var(--f-num);font-size:10px;font-weight:700;background:var(--live);padding:1px 5px;border-radius:3px}
+.mini .tx{padding:7px 8px 8px}
+.mini .tx .nm{font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini .tx .s{display:flex;justify-content:space-between;font-size:10.5px;opacity:.8;margin-top:3px;font-family:var(--f-num)}
+
+/* schedule */
+.day{margin-top:18px}
+.day h3{font-size:13px;color:var(--muted);font-weight:700;margin:0 0 8px;font-family:var(--f-num);letter-spacing:.04em}
+.row{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.row .tm{width:46px;flex:none;font-family:var(--f-num);font-weight:700;font-size:15px}
+.row .bd{flex:1;min-width:0}
+.row .bd .nm{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .bd .ti{color:var(--muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tag{display:inline-block;font-size:10.5px;font-weight:700;border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:1px}
+.tag.first{background:var(--accent);color:var(--accent-ink)}
+.cd{flex:none;font-family:var(--f-num);font-size:12px;color:var(--muted);text-align:right}
+
+/* my */
+.stat-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;align-items:center;gap:14px;margin-top:6px}
+.stat-card .big{font-family:var(--f-num);font-weight:700;font-size:30px}
+.stat-card .big small{font-size:14px;color:var(--muted)}
+.bar{height:8px;background:var(--chip);border-radius:6px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:6px}
+.note{color:var(--muted);font-size:12.5px;line-height:1.7;margin-top:14px}
+
+/* bottom nav */
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:space-around;
+  padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
+.nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;color:var(--muted);padding:4px 0}
+.nav svg{width:24px;height:24px}
+.nav button[aria-current="page"]{color:var(--ink);font-weight:700}
+.nav button[aria-current="page"] .dot{background:var(--accent)}
+.nav .dot{width:4px;height:4px;border-radius:50%;background:transparent}
+body.dark-nav .nav{background:#0d0b14;border-color:#221f2d}
+body.dark-nav .nav button{color:#8d89a0}
+body.dark-nav .nav button[aria-current="page"]{color:#fff}
+
+/* profile sheet */
+.sheet{position:fixed;inset:0;z-index:30;background:var(--bg);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .28s cubic-bezier(.2,.8,.2,1);
+  padding-top:env(safe-area-inset-top,0px)}
+.sheet.open{transform:none}
+.sheet .sh-top{display:flex;align-items:center;gap:6px;padding-block:8px}
+.sheet .sh-top .ttl{flex:1;font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sheet .body{flex:1;overflow-y:auto;padding-bottom:calc(30px + env(safe-area-inset-bottom,0px))}
+.stage{perspective:1400px;display:flex;justify-content:center;padding-top:6px}
+.tcard{width:min(330px,84vw);aspect-ratio:63/88;max-width:100%;position:relative;transform-style:preserve-3d;transition:transform .6s cubic-bezier(.2,.8,.2,1);cursor:pointer}
+.tcard.flip{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:16px;overflow:hidden;box-shadow:0 14px 40px rgba(20,14,40,.35)}
+.front{padding:9px;background:linear-gradient(135deg,#d8dce4 0%,#9aa1b1 22%,#eef0f4 45%,#8c93a3 70%,#dfe2e8 100%)}
+.front .inner{height:100%;border-radius:10px;background:var(--card-navy);color:#fff;display:flex;flex-direction:column;overflow:hidden;position:relative}
+.front .hd{display:flex;align-items:center;gap:8px;padding:9px 11px 6px}
+.front .hd .grade{font-family:var(--f-num);font-weight:700;font-size:11px;letter-spacing:.12em;color:#2b2340;background:linear-gradient(90deg,#e8ebf0,#b9bfcb);padding:2px 7px;border-radius:4px}
+.front .hd .no{font-family:var(--f-num);font-weight:700;font-size:12px;opacity:.85;flex:1}
+.front .hd .lv{font-family:var(--f-num);font-weight:700;font-size:11px;background:var(--live);padding:2px 7px;border-radius:4px}
+.front .art{margin:0 11px;flex:1;min-height:0;border-radius:8px;overflow:hidden;position:relative;background:#3a3156}
+.front .art img{width:100%;height:100%;object-fit:cover;display:block}
+.front .art .ph{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--f-display);font-size:96px}
+.front .art .shine{position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.22) 45%,transparent 60%);background-size:250% 100%;animation:shine 5s ease-in-out infinite}
+@keyframes shine{0%,100%{background-position:120% 0}50%{background-position:-20% 0}}
+.front .nmrow{padding:9px 12px 2px}
+.front .nm{font-family:var(--f-display);font-size:21px;line-height:1.2;word-break:break-word;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.front .sub{font-size:11px;opacity:.7;margin-top:2px;font-family:var(--f-num)}
+.front .stats{display:grid;grid-template-columns:repeat(3,1fr);margin:8px 11px 0;border-top:1px solid rgba(255,255,255,.14)}
+.front .stats div{padding:7px 0 2px;text-align:center}
+.front .stats div+div{border-left:1px solid rgba(255,255,255,.14)}
+.front .stats b{display:block;font-family:var(--f-num);font-size:19px;font-weight:700;color:var(--card-gold)}
+.front .stats span{font-size:10px;opacity:.75}
+.front .ft{display:flex;justify-content:space-between;align-items:center;padding:8px 12px 10px;font-size:10.5px;opacity:.8}
+.front .ft .tap{font-family:var(--f-num);letter-spacing:.08em}
+.back{transform:rotateY(180deg);background:var(--card-navy);color:#fff;padding:10px;display:flex;flex-direction:column}
+.back .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:9px;padding:3px}
+.back .tabs button{flex:1;font-size:11.5px;font-weight:700;padding:7px 0;border-radius:7px;color:rgba(255,255,255,.7)}
+.back .tabs button[aria-selected="true"]{background:var(--card-gold);color:#2a1b00}
+.back .pane{flex:1;overflow-y:auto;padding:10px 4px 4px;font-size:12.5px;line-height:1.65;min-height:0}
+.back .pane p{margin:0 0 8px}
+.back .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin-bottom:10px}
+.back .kv dt{opacity:.65}
+.back .kv dd{margin:0;font-family:var(--f-num);text-align:right}
+.back .desc{white-space:pre-wrap;word-break:break-word;opacity:.9}
+.back .srow{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.1)}
+.back .srow .t{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.back .srow .v{flex:none;font-family:var(--f-num);opacity:.85}
+.back .spark{width:100%;height:70px;display:block;margin:4px 0 10px}
+.grades{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.gcard{aspect-ratio:63/88;border-radius:7px;display:flex;flex-direction:column;justify-content:flex-end;padding:6px;font-family:var(--f-num);font-size:10px;font-weight:700;position:relative;overflow:hidden}
+.gcard.got{background:linear-gradient(135deg,#d8dce4,#9aa1b1 40%,#eef0f4)}
+.gcard.got::after{content:"";position:absolute;inset:4px 4px 22px;border-radius:4px;background:#3a3156}
+.gcard.lock{background:repeating-linear-gradient(45deg,rgba(255,255,255,.06) 0 6px,rgba(255,255,255,.02) 6px 12px);border:1px dashed rgba(255,255,255,.25);color:rgba(255,255,255,.75)}
+.gcard span{position:relative;z-index:1}
+.gcard.got span{color:#2b2340}
+.gcard small{display:block;font-weight:500;opacity:.8}
+.cta{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.btn{height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:6px;font-weight:700;font-size:14px}
+.btn svg{width:18px;height:18px}
+.btn.red{background:var(--live);color:#fff}
+.btn.plain{background:var(--surface);border:1px solid var(--line)}
+.btn.gold{background:var(--accent);color:var(--accent-ink)}
+.btn.wide{grid-column:1/-1}
+.views{margin-top:12px;text-align:center;font-size:12.5px;color:var(--muted)}
+.views b{font-family:var(--f-num);color:var(--ink);font-size:15px}
+.hscroll{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
+.hscroll::-webkit-scrollbar{display:none}
+.hscroll .mini{width:118px;flex:none}
+.toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + 20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);opacity:0;transition:.25s;background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:20px;font-size:13px;z-index:50;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%)}
+.flipnote{text-align:center;color:var(--muted);font-size:11.5px;margin-top:8px}
+@media (prefers-reduced-motion:reduce){.tcard,.sheet{transition:none}.front .art .shine{animation:none}}
+</style>
+</head>
+<body>
+
+
+<div class="app">
+  <!-- HOME -->
+  <section class="view pad" id="v-home" aria-label="ホーム">
+    <div class="top">
+      <div class="logo"><span class="mk">V</span>新人Vラボ<small>β</small></div>
+      <div class="sp"></div>
+      <button class="iconbtn" aria-label="名鑑で探す" data-go="dir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
+    </div>
+    <div class="chips" id="homeChips" role="toolbar" aria-label="表示の切り替え"></div>
+    <div class="feed" id="feed"></div>
+  </section>
+
+  <!-- DISCOVER -->
+  <section class="view" id="v-discover" aria-label="発掘" hidden></section>
+
+  <!-- DIRECTORY -->
+  <section class="view pad" id="v-dir" aria-label="名鑑" hidden>
+    <div class="top"><div class="logo">名鑑</div><div class="sp"></div></div>
+    <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="名前で探す" autocomplete="off" enterkeyhint="search"></label>
+    <div class="chips" id="sortChips" style="position:static;padding-top:10px" role="toolbar" aria-label="並び替え"></div>
+    <div class="count" id="dirCount"></div>
+    <div class="grid" id="dirGrid"></div>
+  </section>
+
+  <!-- SCHEDULE -->
+  <section class="view pad" id="v-sched" aria-label="予定" hidden>
+    <div class="top"><div class="logo">配信予定</div><div class="sp"></div></div>
+    <div id="sched"></div>
+  </section>
+
+  <!-- MY -->
+  <section class="view pad" id="v-my" aria-label="マイ" hidden>
+    <div class="top"><div class="logo">マイページ</div><div class="sp"></div></div>
+    <div id="my"></div>
+  </section>
+</div>
+
+<nav class="nav" aria-label="メインメニュー">
+  <button data-tab="home" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>ホーム<i class="dot"></i></button>
+  <button data-tab="discover"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="m10.5 9 4 3-4 3z" fill="currentColor"/></svg>発掘<i class="dot"></i></button>
+  <button data-tab="dir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="4" width="7.5" height="10" rx="1.5"/><rect x="13.5" y="4" width="7.5" height="10" rx="1.5"/><path d="M3 18h18M3 21h12"/></svg>名鑑<i class="dot"></i></button>
+  <button data-tab="sched"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>予定<i class="dot"></i></button>
+  <button data-tab="my"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>マイ<i class="dot"></i></button>
+</nav>
+
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="VTuberの詳細" hidden>
+  <div class="sh-top pad">
+    <button class="iconbtn" id="back" aria-label="戻る"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 5-7 7 7 7"/></svg></button>
+    <div class="ttl" id="shTitle"></div>
+    <button class="iconbtn" id="share" aria-label="リンクをコピー"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button>
+  </div>
+  <div class="body pad" id="shBody"></div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script type="application/json" id="snap">{"channels": [{"id": "UC_K5Jtmx9uAm3plKcZMSdgQ", "title": "雫 りりん(SHIZUKU RIRIN)", "handle": "@shizukuririn", "thumbnail_url": "https://yt3.ggpht.com/ZjvmfEKXJ67oaWmo2Qunlga1ZPo1LkxPW0Tg509O9uSoPo_VxzJjfes9UElxhX9MO5EjmwVlnyQ=s800-c-k-c0x00ffffff-no-rj", "subscriber_count": 2, "subscriber_hidden": false, "channel_created_at": "2026-10-20T10:52:18.603505+00:00", "first_stream_at": "2026-10-25T01:52:40+00:00", "status": "active", "description": "はじめまして！ 雫りりん（しずくりりん） です💧\n\n低めの声で、ゆるく楽しくおしゃべりしています。\n\n雑談では日常のことから、ゲーム配信では一緒に楽しみながら、のんびり過ごせたら嬉しいです！\n\nいつかギターや音楽に関する発信もしていく予定です🎸\n\n疲れたときも、暇なときも、ふらっと立ち寄れる場所になれたらいいな。\n\n気軽にコメントしていってね！\nこれからよろしくお願いします！\n\n💧 チャンネル登録して、また会いに来てくれたら嬉しいです。\n\n#雫りりん #VTuber #雑談配信 #新人VTuber #クリリン\n", "stream_count": 4, "total_stream_sec": 16378, "best_peak_viewers": null, "viewers_month": 0, "listed_at": "2026-10-26T02:54:25.720121+00:00"}, {"id": "UC_LN_GRN9jiuMCjWm5tYTdg", "title": "癒音ゆらむ-Yura Yuramu-", "handle": "@lumicode000x", "thumbnail_url": "https://yt3.ggpht.com/E2zkxBgARRLDOCu6l0QkNtPDY1_Y5x2CrD0uWfnpiPMU55lN6DWY18nplkDCCPUp9s_-PTrsLQ=s800-c-k-c0x00ffffff-no-rj", "subscriber_count": 962, "subscriber_hidden": false, "channel_created_at": "2026-03-03T06:44:33.874519+00:00", "first_stream_at": "2026-10-18T12:00:17+00:00", "status": "active", "description": "みんなを癒したい見習い天使VTuber💫🪽￤個人勢￤第一目標はYouTube収益化￤🔗 ▷ https://lit.link/lumicode_0x￤ 🏷️ ▷ #癒音ゆらむ￤ 👤 ▷ #ゆらむ民￤🎨 ▷ #ゆらむーと￤🎙▷ #ゆらむたいむ￤mom / dad ▷ @MahirU_M_ 様", "stream_count": 6, "total_stream_sec": 46118, "best_peak_viewers": null, "viewers_month": 0, "listed_at": "2026-10-26T02:54:25.720121+00:00"}, {"id": "UC-k1-ui_Il2_kFF4FsHUe9w", "title": "未雲みく☁️〰️💜", "handle": "@39_mo_39", "thumbnail_url": "https://yt3.ggpht.com/j7B-ETheCdU8dTLO6-vyse4VLhlDxwvEq23qmE8m_e4yEPnNBsdcGp0nIU0KPuMH_DSfH7x6NQ=s800-c-k-c0x00ffffff-no-rj", "subscriber_count": 543, "subscriber_hidden": false, "channel_created_at": "2025-12-15T15:04:53.092048+00:00", "first_stream_at": "2026-10-14T11:57:40+00:00", "status": "active", "description": "元気なサイバーキャット🐾💜\n\n未来から雲に乗ってやってきた☁️✨️\n元気なサイバーキャットVTuberの【未雲 みく】だみゃ〜💜\n\n楽しく！幸せと癒しの時間を一緒に過ごそうみゃ🐾\n\n· · ──────────·✧· ───────── · ·‬\n\n＊𝕏(旧Twitter)···▸ 未雲 みく  @39_mo_39 \n    (待ち受け、ヘッダーなど配布してるみゃ！要チェック✅)\n\n＊ファンネーム···▸ みくなー\n＊ファンアート···▸ みくみゃーと\n＊ファンマーク···▸ ☁️〰️💜\n\n· · ──────────·✧· ───────── · ·‬\n\n☁️💜みくとの指切りげんまん💜☁️\n※守れない人はブロックされちゃうかもだから気を付けてみゃ※\n\n・無理のない範囲での視聴とコメントをして欲しいのみゃ！\n   (画面の光は目が疲れちゃうのみゃ💦)\n\n・YouTubeくんの規制に引っかかるコメントしたら…めっ！なのみゃ！\n\n・過度なネタバレやプレイの指示はやめてほしいのみゃ！\n　どうしても指示したいときは\n　【甘々な言い方で語尾に『みゃ💜・みゃん💜』をつけてみゃ！】\n\n・みくの配信見てる時はみくだけを見ててほしいのみゃ！\n　他の猫さんのお名前出されると嫉妬でおかしくなっちゃうみゃ💥\n\n・ゲーム内フレンドは基本承認できないみゃ💦\n\n・みくに優しく！みんなに優しく！そして自分にも優しく🫶🏻\n    ※攻撃的な発言や、他の人から見て嫌な思いをするような発言や\n    コメントはみくが爪でガリガリ引っ掻きにいくみゃ🔥\n\n #vtuber #新人vtuber #個人vtuber #個人勢vtuber\n", "stream_count": 9, "total_stream_sec": 60524, "best_peak_viewers": null, "viewers_month": 0, "listed_at": "2026-10-26T02:54:25.720121+00:00"}, {"id": "UC618OMN0cr8PWNOE0i2oh6A", "title": "むぃ。新人VTuber", "handle": "@むぃ新人vtuber", "thumbnail_url": "https://yt3.ggpht.com/0iHPXXn12tyf7xDgtZ3qjwxADOEZ9Y4UH3UvWYmeGHBA1tWIMt2cdoDUJ0Uhvei58hmTCFL_pg=s800-c-k-c0x00ffffff-no-rj", "subscriber_count": 124, "subscriber_hidden": false, "channel_created_at": "2025-12-06T12:13:33.43699+00:00", "first_stream_at": "2026-10-23T10:56:12+00:00", "status": "active", "description": "YouTubeでVtuberデビューを目標に動画をこまめに上げている、【My rect key】通称マイレクの「むぃ。」こと水沫夢唯です💜\n登録者様100名様に辿り着けたらYouTubeで活動を始めていこうと思っていますので、応援よろしくお願いします🍀", "stream_count": 2, "total_stream_sec": 9483, "best_peak_viewers": null, "viewers_month": 0, "listed_at": "2026-10-26T02:54:25.720121+00:00"}, {"id": "UC6V3YTq7lTWeeyHLQqkL95A", "title": "イル・アステリオ", "handle": "@ilasterio", "thumbnail_url": "https://yt3.ggpht.com/rdbJTyG-czF40kGV968uZiztj4fUUK3SeaL0IxjifTr-eRznTgU_hzjDubvAok3n-RiHMfM8=s800-c-k-c0x00ffffff-no-rj", "subscriber_count": 21, "subscriber_hidden": false, "channel_created_at": "2026-10-18T11:04:33.33724+00:00", "first_stream_at": "2026-10-25T10:58:08+00:00", "status": "active", "description": "AN:RIEL所属", "stream_count": 1, "total_stream_sec": 2580, "best_peak_viewers": null, "viewers_month": 0, "listed_at": "2026-10-26T02:54:25.720121+00:00"}, {"id": "UCAqxeib2J0zQYXzOJPor3cg", "title": "環守しゅき", "handle": "@syuki_wamori", "thumbnail_url": "https://yt3.ggpht.com/y3bW24yB716CYnmFL_b6utxC3pwYrFomEO9eWJOuIi-zos3AV4fBufw4elHPd7fs98qqnTpjQA=s800-c-k-c0x00ffffff-no-rj", "subscriber_count": 36, "subscriber_hidden": false, "channel_created_at": "2026-10-06T06:37:39.086389+00:00", "first_stream_at": "2026-10-25T11:39:43+00:00", "status": "active", "description": "AN:RIEL所属 環守しゅき(Wamori Syuki)です🎀\n\n\n", "stream_count": 1, "total_stream_sec": 3008, "best_peak_viewers": null, "viewers_month": 0, "listed_at": "2026-10-26T02:54:25.720121+00:00"}, {"id": "UCAuEkE3lmkco1vD2km5T9XQ", "title": "七世彩雅", "handle": "@nanase_saiga", "thumbnail_url": "https://yt3.ggpht.com/z__kCJ1DTk669KmD6VWUzRMJQl7mxEvO3xdoaE702cAi7KQMUbQF1vfa4Tv6Q0ODugph59Xw4Jo=s800-c-k-c0x00ffffff-no-rj", "subscriber_count": 32, "subscriber_hidden": false, "channel_created_at": "2026-09-26T10:05:45.156772+00:00", "first_stream_at": "2026-10-25T11:31:12+00:00", "status": "active", "description": "七世彩雅(ななせさいが)と申します。\n『あなたの心を七変化』をモットーに2026/9/26にYouTube活動開始！\n\n・セルフプロデュースやキャラクタープロデュース企画\n・歌\n・雑談\nなど様々なコンテンツをお届けします。\n\n※すべてのコンテンツについてAI学習及び生成・無断転載禁止\n", "stream_count": 1, "total_stream_sec": 3821, "best_peak_viewers": null, "viewers_month": 0, "listed_at": "2026-10-26T02:54:25.720121+00:00"}, {"id": "UCFSkK3OafyxX0jNcyH5IpaA", "title": "成乃リツ / Seino Ritsu", "handle": "@seino_ritsu", "thumbnail_url": "https://yt3.ggpht.com/vPZBRe8U9MWIRnkRKqYi_qh0LZWcN5TZ_8iPjqSp7y7ru59xZcXWsaRSspPF5PiuBDFtmQaW6w=s800-c-k-c0x00ffffff-no-rj", "subscriber_count": 119, "subscriber_hidden": false, "channel_created_at": "2026-10-13T10:19:35.776141+00:00", "first_stream_at": "2026-10-25T11:01:20+00:00", "status": "active", "description": "見た目はクール、中身は案外そうでもない。\n笑いたい日も、何もしたくない日も。ふらっと寄っていきなよ。\n\n白髪スーツの男性VTuber、成乃リツ（せいのりつ）です。\n\nゲーム実況を中心に、雑談や企画、たまにちょっと変わったことも。\n普段はのんびり喋ってるけど、ゲームが始まるとそうもいかないらしい。\n\n初見も常連も関係なく、気楽に過ごせる場所にしていきたい。\n\n暇な夜にでも、また会おう。\n\n▼ X（旧Twitter）\nhttps://x.com/seino_ritsu\n\n▼ 各種リンク\nhttps://lit.link/seinoritsu\n\n#成乃リツ #男性VTuber #個人勢VTuber\n", "stream_count": 1, "total_stream_sec": 6937, "best_peak_viewers": null, "viewers_month": 0, "listed_at": "2026-10-26T02:54:25.720121+00:00"}, {"id": "UCg-EPJAoRHgk5wXnjvJsxZQ", "title": "淡白ささみ / Vtuber", "handle": "@sasami_10paku", "thumbnail_url": "https://yt3.ggpht.com/dUQq__HeaaTRJOoBZwN6QKB8J-fokIPc8x8gNnEzbembDpcYTo_4PKP08OqoV6rPlECXB9t-fGU=s800-c-k-c0x00ffffff-no-rj", "subscriber_count": 35, "subscriber_hidden": false, "channel_created_at": "2026-09-19T16:26:11.563897+00:00", "first_stream_at": null, "status": "active", "description": "11月11日 (水) 21:30〜🩶初配信\n\n🩶 キレイめお姉さんビジュのVtuber🏳️‍🌈\n🩶 恋愛｜ホラゲ｜百合漫画｜LGBTQ+\n🩶 10月毎日20:00 Shorts / TikTok更新\n🩶 色々まとめたﾘﾄﾘﾝはｺｺ👉 https://lit.link/sasami_10paku", "stream_count": 0, "total_stream_sec": 0, "best_peak_viewers": null, "viewers_month": 0, "listed_at": "2026-10-26T02:54:25.720121+00:00"}, {"id": "UCip0QXyt0zS6QKBx2XDQlDQ", "title": "紅椿茶娘🍵🐾", "handle": "@紅椿茶娘", "thumbnail_url": "https://yt3.ggpht.com/Tv1QBi07ZW8Vye_Sey675mw5410t4pQaFOU22PZiQ7T2G9jSkZNOTG3YGxihQE_CgEmlv1ARAg=s800-c-k-c0x00ffffff-no-rj", "subscriber_count": 58, "subscriber_hidden": false, "channel_created_at": "2026-05-27T09:05:53.410032+00:00", "first_stream_at": "2026-10-25T11:02:57+00:00", "status": "active", "description": "", "stream_count": 1, "total_stream_sec": 6493, "best_peak_viewers": null, "viewers_month": 0, "listed_at": "2026-10-26T02:54:25.720121+00:00"}, {"id": "UCiPZ6JSUT_m_Afo9oF-O76A", "title": "レイア･トワイニング", "handle": "@laya_twining", "thumbnail_url": "https://yt3.ggpht.com/iFxRgCy14KYzLYS6UISsrBIOefZf5rnKmCSENnABjBiM7_BG_YmOl-dMhcC2hMuxVfBAaKDg=s800-c-k-c0x00ffffff-no-rj", "subscriber_count": 35, "subscriber_hidden": false, "channel_created_at": "2026-01-12T02:09:44.285895+00:00", "first_stream_at": "2026-10-20T12:01:32+00:00", "status": "active", "description": "あなたの夜にそっとあかりを灯すVTuber\nレイア・トワイニングと申します。\n\n雑談を中心に、ゲーム・歌・作業配信、同時視聴など、\nいろいろなことを夜灯のみなさんと楽しんでいます！\n\n毎週火曜日｜雑談\n毎週木曜日｜作業配信『夜灯のアトリエ』\n毎週土曜日｜ゲーム・企画など\n毎週日曜日｜プリキュア同時視聴\n\n🕯️💫 Fan name：夜灯（よあかり）\n\n【タグ一覧】\n配信｜#レイアの灯り\n予定｜#灯りのしるべ\n感想｜#レイアの余光\nサムネ｜#夜灯の景色\n切り抜き｜#レイアの灯録\nFA｜#Layart\nエゴサ｜#レイアへ灯りを\nアクセ｜#レイアの灯飾\n\n夜灯さんたちと、ひとつの夜の景色を。\n", "stream_count": 9, "total_stream_sec": 45330, "best_peak_viewers": null, "viewers_month": 0, "listed_at": "2026-10-26T02:54:25.720121+00:00"}, {"id": "UCJggs0wA212BB6anyamPP1A", "title": "メアリア=ミーア@新人Vtuber", "handle": "@mealia_mia", "thumbnail_url": "https://yt3.ggpht.com/5zmEWi8AkbiSWHcvXLOG3hHog-M7-HQUoeQuFW0Akl_mIYomwn4z5HxIujtxoX_4-MkiMpyq=s800-c-k-c0x00ffffff-no-rj", "subscriber_count": 664, "subscriber_hidden": false, "channel_created_at": "2026-07-15T03:42:30.845788+00:00", "first_stream_at": "2026-10-14T23:25:27+00:00", "status": "active", "description": "🐾 好奇心でできた猫型電脳アイドル 🫯\n\nはじめまして！\n新人個人勢VTuber\nメアリア＝ミーアです🐾\n\n「楽しそう！」と思ったら\n気づけば何でも挑戦しちゃうタイプ。\n\n☁️ 元医学部生\n☁️ 歌・ゲーム・雑談\n☁️ ちょっぴりポンコツ\n今日からあなたも最古参✨\n\n━━━━━━━━━━━━\n\n【🐾配信予定】\n現在デビュー準備中✨\n🎤 初配信日\n公開予定です！\n\n━━━━━━━━━━━━\n\n【🎮配信・動画】\n雑談💬ゲーム実況🎮歌枠🎤\nShorts投稿🎬\n\n━━━━━━━━━━━━\n\n【🎀目標】\n短期\n✨ チャンネル登録1000人\n✨ 歌みた動画投稿\n✨ 収益化\n✨ショート動画50日連続投稿\n中期\n✨ チャネル登録1万人\n✨ オリジナル楽曲作成\n✨ メンバーシップ・FANコンテンツ登録者合計500人\n✨ グッズ\n\n━━━━━━━━━━━━\n\n【🐾ファン】\nFN｜かしこ猫\nFM｜🐾🫯\n\n━━━━━━━━━━━━\n\n【🏷タグ】\n\n総合｜#メアリアミーア\n配信｜#めありあライブ\nFA｜#めありあーと\n切り抜き｜#みーあ切り抜き\nエゴサ｜#みてみてみーあ\n\n━━━━━━━━━━━━\n\n【🎨Credit】\nMama｜Rei★ 様\nPapa｜Rei★ 様\nLogo｜Rei★ 様\n\n━━━━━━━━━━━━\n最後まで見てくれてありがとう🐾\nこれから始まるメアリア＝ミーアの物語、\nぜひ一緒に見届けてね✨\n\n", "stream_count": 3, "total_stream_sec": 14303, "best_peak_viewers": null, "viewers_month": 0, "listed_at": "2026-10-26T02:54:25.720121+00:00"}, {"id": "UCJJ2eocjvVUDbvNZRXZUEew", "title": "シエル・リラ・エトワール", "handle": "@シエルリラエトワール", "thumbnail_url": "https://yt3.ggpht.com/IDmib-sDRadq87Uxy2U7YHBzSQMXuN8nHjVsP85djeSqKZ64hR1gk2TPa2x3bQyb0iuutZE-boQ=s800-c-k-c0x00ffffff-no-rj", "subscriber_count": 160, "subscriber_hidden": false, "channel_created_at": "2026-10-07T16:32:01.183786+00:00", "first_stream_at": "2026-10-14T11:52:00+00:00", "status": "active", "description": "あなたと一緒に星を見つけたい🌟\n\n星に憧れて、空を見上げ続ける…\n天文学者見習い🔭✨\n\nシエル・リラ・エトワールです。\n気軽にシエルって呼んでください♪\n\n⋆ ✩ ⋆ ┄  ┄  ┄  ┄  ┄  ┄ ⋆ ✩ ⋆\n\n🌟シエル・リラ・エトワール\nX（旧Twitter）　@ciel_lilas_\nリットリンク     準備中\nマシュマロ　　 準備中\n\n⋆ ✩ ⋆ ┄ ┄  ┄  ┄  ┄  ┄  ⋆ ✩ ⋆\n\n🌟タグ一覧\n総合　　　　　　＃シエル観測中\nファンアート　　＃シエルリラート\nファンネーム　　＃観測員\n切り抜き　　　　＃シエルミル\n配信タグ　　　　＃シエリライブ\n\n⋆ ✩ ⋆ ┄ ┄  ┄  ┄  ┄  ┄  ⋆ ✩ ⋆\n", "stream_count": 7, "total_stream_sec": 59049, "best_peak_viewers": null, "viewers_month": 0, "listed_at": "2026-10-26T02:54:25.720121+00:00"}, {"id": "UCjWsTpImi4hsj0oSqv-kS2w", "title": "加護アレア / Kago Alea", "handle": "@加護アレア", "thumbnail_url": "https://yt3.ggpht.com/KWfg2nPRZ8w_IQrda0pHgzXArsn7-54FmHoFgl5ZEdm5V1bmVmx0hx64uhxtgCBA2mGlFRNLKg=s800-c-k-c0x00ffffff-no-rj", "subscriber_count": 72, "subscriber_hidden": false, "channel_created_at": "2026-03-23T00:32:47.909032+00:00", "first_stream_at": "2026-10-24T11:29:56+00:00", "status": "active", "description": "えらいず！1期生　統括者見習いVTuber！\nあなたの日常に、ちょっと楽しみを増やしたい\n迷ったら全部サイコロにおまかせ！\n\n✦ 総合：#加護アレア\n✦ FA：#描こアレア\n✦ FN：Diceキ\n✦ FM：🎲🛒\n\n", "stream_count": 1, "total_stream_sec": 1884, "best_peak_viewers": null, "viewers_month": 0, "listed_at": "2026-10-26T02:54:25.720121+00:00"}, {"id": "UCLJ2NANIJAoVAc7gYzbFE6A", "title": "藤宮まお", "handle": "@fujimiyamao", "thumbnail_url": "https://yt3.ggpht.com/lAcfos-BWh57sqmQFjkcuXBy0Upnf9WvM8JtE51HSrvrNlS07p4mo57OxUjdoSHegjBSIALjJQ=s800-c-k-c0x00ffffff-no-rj", "subscriber_count": 174, "subscriber_hidden": false, "channel_created_at": "2026-04-11T13:08:53.405218+00:00", "first_stream_at": "2026-10-17T12:00:50+00:00", "status": "active", "description": "にゃっほー！\nポンコツねこかぶりVTuber藤宮まお(新人)\n一緒にひなたぼっこしようよ🐾\n\n総合タグ:#藤宮まお\n配信タグ:#ぽかぽかまおらいぶ\nファンアート:#ぽかぽかまおあーと\n(FAは活動で使わせていただくかもしれません)\n\nイラスト・モデリング:秋藤志乃さん @akitoh_shino\nロゴ・配信画面デザイン:chicmeat(ﾁｯｸﾐｰﾄ)さん @ASAGYOU\n配信BGM:Yanagi Ryuさん\n", "stream_count": 3, "total_stream_sec": 20561, "best_peak_viewers": null, "viewers_month": 0, "listed_at": "2026-10-26T02:54:25.720121+00:00"}, {"id": "UCOa-0JtNfK8l6ftY0mCPwbg", "title": "羽野はた🪽絵描きマスコットVTuber", "handle": "@haneno_hata", "thumbnail_url": "https://yt3.ggpht.com/VSvv5zxp_2zHb3pmHpXK47hXWaJlKaZqo3KFtoSGkhxpLFOoyiASsgjMwPsYgwGcRZbMQBRd9w=s800-c-k-c0x00ffffff-no-rj", "subscriber_count": 406, "subscriber_hidden": false, "channel_created_at": "2026-03-02T12:22:00.413672+00:00", "first_stream_at": "2026-10-25T10:59:53+00:00", "status": "active", "description": "絵描きさん向けにプロのイラストレーター羽野がイラストの描き方や便利機能、制作風景などを発信！\nマスコットVtuberが大きな凶器を持って沢山かわいいイラスト描くよ🔨•⩊•🪽\n\n♦初配信2026年10月25日20:00〜！見に来てね\n\n\n【イラストレーター活動】\n●球団など企業マスコットデザイン複数担当\n●個人・企業Vtuber関連のイラスト制作やムービー制作多数\n●ガンホー様主催のソシャゲイラストコンテスト最優秀賞3回受賞\n●Vtuberデザイン担当\n\n\nイラスト制作のペイントソフトはCLIP STUDIO PAINT(クリスタ)を使用！\n早く描くコツなども解説します🎨\n\nイラスト制作やLive2Dモデリングを自身で行った、所謂セルフ受肉Vtuberです\n\n最新のイラストや情報は主にXにて発信！\nソシャゲ風のイラストやマスコットイラストを主に制作してます\nチャンネル登録やXのフォロー、とても励みになります•⩊•✨\n\n制作依頼や作品閲覧はホームページからどうぞ！\n", "stream_count": 1, "total_stream_sec": 6202, "best_peak_viewers": null, "viewers_month": 0, "listed_at": "2026-10-26T02:54:25.720121+00:00"}, {"id": "UCShoYnFmZ7jXDr-lETn0MnA", "title": "縫代 衣織", "handle": "@nuisiro_iori", "thumbnail_url": "https://yt3.ggpht.com/28oG9tRjMT8Un-MTdFkaPd72TyaOp8-D83t-52p1T5-4AjebkFJmIVVSeCkxI0AakbPobLbF2Js=s800-c-k-c0x00ffffff-no-rj", "subscriber_count": 11, "subscriber_hidden": false, "channel_created_at": "2026-05-02T20:30:30.50177+00:00", "first_stream_at": "2026-10-24T14:02:43+00:00", "status": "active", "description": "宵の街で案内人をしています。\n縫代 衣織/Nuishiro Ioriです🌙🪡\n\n迷い込んだ人を案内したり、\n暇な時間には工房でちくちく手仕事をしています。\n\n雑談やゲーム、朗読、手芸など好きなことを\nのんびりと楽しく予定です。\n\nあなたも少し、寄り道していきませんか？\n\n\n•─────────•°•❀•°•─────────•\n\n総合タグ ＃宵の街だより\n配信タグ ＃宵の街小話\nFAタグ    ＃宵の街カタログ\n\n•─────────•°•❀•°•─────────•\n\n\n\n\n\n無断転載・無断使用・AI学習禁止\n\n\n", "stream_count": 1, "total_stream_sec": 2480, "best_peak_viewers": null, "viewers_month": 0, "listed_at": "2026-10-26T02:54:25.720121+00:00"}, {"id": "UCToR1-NogPeiG02cKhX6C9g", "title": "星野ネモフィラ / Hoshino Nemophila", "handle": "@hoshinonemofira", "thumbnail_url": "https://yt3.ggpht.com/4QIonwzWyaiJCGdUKKs-PScJCy22g7i23c2gR3X-RI5ArdpIXXOKhrQo2SNRr-UpliVhG3VX1Yw=s800-c-k-c0x00ffffff-no-rj", "subscriber_count": 799, "subscriber_hidden": false, "channel_created_at": "2026-03-27T23:35:39.1663+00:00", "first_stream_at": "2026-10-18T21:58:41+00:00", "status": "active", "description": "歌うちいさな流れ星✧🪽\n#新人Vtuber の星野ネモフィラです！🎼\n\n✨🌐9月26日(土)デビュー❕🌐✨\n\n✩とある港町に住みつくホワイトタイガー🐾\n✩音楽、ゲーム、おしゃべりが大好き🩵\n✩得意なことは作詞、作曲、編曲🎧\n\n配信活動を楽しみながら、自分で作ったオリジナル楽曲を投稿していきます♩将来のゆめは一人前の音楽家！⭐️\n\nキミが誇れる推しになりたいっ✨\n\nママ：sametaさま(X:@samevampire)\n\n𓂃 𓈒 𓂃 𓈒 𓂃 𓈒 𓂃 𓈒 𓂃 𓈒 𓂃 𓈒 𓂃 𓈒 𓂃\n\n\nハッシュタグ\n\n総合🏷️星野ネモフィラ\n配信🏷️ねもふぃらいぶ\nFA🏷️ほしのあ〜と\n予定🏷️ほしの開港予定\n\n\n𓂃 𓈒 𓂃 𓈒 𓂃 𓈒 𓂃 𓈒 𓂃 𓈒 𓂃 𓈒 𓂃 𓈒 𓂃\n\n\n\n💫みんなへのお願い\n・過度な下ネタ、暴言、侮辱発言✖ \n・過度な連投✖ \n・鳩行為✖\n・ネタバレやお願いしていないときの指示だし✖\n ・リスナーさん同士のチャット欄での会話✖ \n・他活動者さんの名前を出すこと✖ \n・他枠で私の名前を出すこと✖\n\n楽しい時間をいっしょに作っていこう(⸝⸝˃ ᵕ ˂⸝⸝)🩵\n\n\n\n\n✧⋄⋆⋅⋆キミに出逢えて、よかった⋆⋄⋆⋅⋆✧\n\n\n\n\n✩･｡🫧｡･ﾟ✩･｡𓆩✧𓆪｡･ﾟ✩･｡🫧｡･ﾟ✩\n", "stream_count": 5, "total_stream_sec": 56278, "best_peak_viewers": null, "viewers_month": 0, "listed_at": "2026-10-26T02:54:25.720121+00:00"}, {"id": "UCu8_M3cQ48FWLEeuGtmpDWA", "title": "ホロのしおり", "handle": "@holono_shiori", "thumbnail_url": "https://yt3.ggpht.com/_lO3i5aHV9ToMVemJOcdtTFPxGuTJAL7VBTqjvukhh2-oEgXLRE4z4M3pvhaOYgEbNt1tpof9KQ=s800-c-k-c0x00ffffff-no-rj", "subscriber_count": 6, "subscriber_hidden": false, "channel_created_at": "2026-01-15T09:53:25.928874+00:00", "first_stream_at": null, "status": "active", "description": "\n", "stream_count": 0, "total_stream_sec": 0, "best_peak_viewers": null, "viewers_month": 0, "listed_at": "2026-10-26T02:54:25.720121+00:00"}, {"id": "UCv_9XRtfRaPThs-K5Uax9gw", "title": "久龍たち@Vtuber準備中", "handle": "@kuryuu_tachi", "thumbnail_url": "https://yt3.ggpht.com/P63-ArHJxB9GfMpv2Pb377isOTiVKdmvowdXI7Hgoro-FsEmnvw8DmtjJA9MTxtfr8-S-GirMCc=s800-c-k-c0x00ffffff-no-rj", "subscriber_count": 104, "subscriber_hidden": false, "channel_created_at": "2026-03-28T05:19:39.708604+00:00", "first_stream_at": "2026-10-25T12:07:05+00:00", "status": "active", "description": "", "stream_count": 1, "total_stream_sec": 4962, "best_peak_viewers": null, "viewers_month": 0, "listed_at": "2026-10-26T02:54:25.720121+00:00"}, {"id": "UCw4xTcMrVupyk1RdaKRt3gQ", "title": "汐玻らみ🐠🫧‪ Shioha Rami【新人Vtuber】", "handle": "@shioha_rami", "thumbnail_url": "https://yt3.ggpht.com/0UwQHrIhf2Q2GiS_Zx8ccY49B0ahstUV0X9wL71qfvSK-DZZFY1U5IDeC32NgrpjZdEn6mOfMQ=s800-c-k-c0x00ffffff-no-rj", "subscriber_count": 310, "subscriber_hidden": false, "channel_created_at": "2026-05-28T04:27:30.4202+00:00", "first_stream_at": "2026-10-13T10:06:20+00:00", "status": "active", "description": "2026/07/15 Debut!!\nあなたに癒しをインストール🍀\nルミセア海洋水族館システムエンジニア\n汐玻らみです🐠🫧\n\nFrutigerAeroと水族館が大好きな新人Vtuber🌎🫧\n\n雑談やゲーム配信を中心に活動します🩵\nいつか歌ってみたにも挑戦したい！\n\nチャンネル登録して、\nらみと一緒にゆっくり過ごしてね🫧🪼\n\nTikTok ▶︎ @shioha_rami\nX ▶︎ @shioha_rami\n⋆┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈⋆\n\n2026.07.15 Debut!! 🐠🫧\n\nHi! I’m Shioha Rami,\na systems engineer working at the marine aquarium\nin the bright and futuristic city of Lumicea.\n\nI’m a VTuber who loves Frutiger Aero and aquariums 🌎🫧\n\nI mainly stream chatting and games 🩵\nSomeday, I’d love to try making song covers too!\n\nSubscribe and come spend some relaxing time with me 🫧🪼", "stream_count": 10, "total_stream_sec": 243000, "best_peak_viewers": null, "viewers_month": 0, "listed_at": "2026-10-26T02:54:25.720121+00:00"}, {"id": "UCxOFRcqjN3i48Jrm7m2Bqow", "title": "諏訪園ヤマト", "handle": "@suwazonoyamato", "thumbnail_url": "https://yt3.ggpht.com/vZY9OlB9Cs1DBW0RpE2FzM8MQ6Zt73eeivcLmiLAH_3cCQ8uneErT1QnwqPD2AfjIzx3ml0_=s800-c-k-c0x00ffffff-no-rj", "subscriber_count": 14, "subscriber_hidden": false, "channel_created_at": "2025-12-30T08:07:01.986801+00:00", "first_stream_at": "2026-10-24T06:05:29+00:00", "status": "active", "description": "\n諏訪園ヤマト(Suwazono Yamato)です。\n\nゲーム好きでたまに広島弁がチラつく\n元気なスポーツ男子系Vtuber \nみんなに元気ぃお届けるよ！\n\n◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆\n\n配信タグ→【#ゾノライブ】\n\nファンネーム→【#トナカマ】\n\n◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆◇◆\n\n【X（旧Twitter）】\nhttps://x.com/swa_yma\n\n", "stream_count": 2, "total_stream_sec": 14437, "best_peak_viewers": null, "viewers_month": 0, "listed_at": "2026-10-26T02:54:25.720121+00:00"}, {"id": "UCYFtY8APNhUIUuIWmasaNhA", "title": "妖怪蟹喰チャンネル", "handle": "@妖怪蟹喰", "thumbnail_url": "https://yt3.ggpht.com/syszmAujQhsdshy7oIZ8Zxsvdi5kWquhUDOPwPCvnCrAGFuSAp_A3B2n1L8cvdnQIV45KPbbFA=s800-c-k-c0x00ffffff-no-rj", "subscriber_count": 6, "subscriber_hidden": false, "channel_created_at": "2026-06-02T12:36:17.03993+00:00", "first_stream_at": null, "status": "active", "description": "妖怪蟹喰\nようかいかにくい\n\n蟹を喰う妖怪。\nそれ以上でもそれ以下でもない。\n上位存在に妖怪アスタキサンチン喰、\n下位存在に妖怪シオマネキ喰がいる。\n\n配信場所（twitch）\ntwitch.tv/yokaikanikui", "stream_count": 0, "total_stream_sec": 0, "best_peak_viewers": null, "viewers_month": 0, "listed_at": "2026-10-26T02:54:25.720121+00:00"}], "streams": [{"id": "JGydCgX9gbk", "channel_id": "UCjWsTpImi4hsj0oSqv-kS2w", "title": "⟡ Free Chat ⟡", "thumbnail_url": "https://i.ytimg.com/vi/JGydCgX9gbk/hqdefault.jpg?v=6ade1568", "status": "upcoming", "scheduled_start_at": "2028-10-31T14:45:00+00:00", "actual_start_at": null, "actual_end_at": null, "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "6yBswlduXao", "channel_id": "UCg-EPJAoRHgk5wXnjvJsxZQ", "title": "【 #初配信 】はじめまして！インターネットメロお姉さん・淡白ささみです🩶🐓 #新人vtuber", "thumbnail_url": "https://i.ytimg.com/vi/6yBswlduXao/hqdefault.jpg", "status": "upcoming", "scheduled_start_at": "2026-11-11T12:30:00+00:00", "actual_start_at": null, "actual_end_at": null, "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "bUTUl4HTQ0M", "channel_id": "UCJggs0wA212BB6anyamPP1A", "title": "【これって浮気判定シート】健屋花那サマの診断を全部埋める雑談【#vtuber /メアリア=ミーア】#めありあらいぶ", "thumbnail_url": "https://i.ytimg.com/vi/bUTUl4HTQ0M/hqdefault.jpg?v=6adb5432", "status": "upcoming", "scheduled_start_at": "2026-11-01T12:00:00+00:00", "actual_start_at": null, "actual_end_at": null, "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "1dmJu5lf1k4", "channel_id": "UCToR1-NogPeiG02cKhX6C9g", "title": "【#朝活 】初見さん＆ROMさん大歓迎⭐おはよう目標70人!!!【#新人vtuber 】", "thumbnail_url": "https://i.ytimg.com/vi/1dmJu5lf1k4/hqdefault.jpg?v=6ade12b2", "status": "upcoming", "scheduled_start_at": "2026-10-29T22:00:00+00:00", "actual_start_at": null, "actual_end_at": null, "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "80e9ZVs-NuI", "channel_id": "UCToR1-NogPeiG02cKhX6C9g", "title": "【#マイクラ】完全初見プレイ⭐のんびり朝活建築！【#新人vtuber 】", "thumbnail_url": "https://i.ytimg.com/vi/80e9ZVs-NuI/hqdefault.jpg?v=6ade124f", "status": "upcoming", "scheduled_start_at": "2026-10-28T22:00:00+00:00", "actual_start_at": null, "actual_end_at": null, "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "hZgJWg6ET9Y", "channel_id": "UCJggs0wA212BB6anyamPP1A", "title": "【夜勤事件】深夜のコンビニに独りぼっち…元医学部生VTuberが絶叫するホラー実況【Chilla’ｓArt】#夜勤事件 #ChillasArt #ホラーゲーム", "thumbnail_url": "https://i.ytimg.com/vi/hZgJWg6ET9Y/hqdefault.jpg?v=6adb5161", "status": "upcoming", "scheduled_start_at": "2026-10-28T11:30:00+00:00", "actual_start_at": null, "actual_end_at": null, "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "ojAsrJzD11U", "channel_id": "UCToR1-NogPeiG02cKhX6C9g", "title": "【#ddlc】完全初見ドキドキ文芸部⭐おれのトキメキを返せ【#新人vtuber 】", "thumbnail_url": "https://i.ytimg.com/vi/ojAsrJzD11U/hqdefault.jpg?v=6ade119b", "status": "upcoming", "scheduled_start_at": "2026-10-27T12:00:00+00:00", "actual_start_at": null, "actual_end_at": null, "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "F3DQrazx2bw", "channel_id": "UCjWsTpImi4hsj0oSqv-kS2w", "title": "【 雑談 】初配信の振り返りをする！【#新人VTuber / えらいず！】", "thumbnail_url": "https://i.ytimg.com/vi/F3DQrazx2bw/hqdefault.jpg?v=6ade1406", "status": "upcoming", "scheduled_start_at": "2026-10-26T13:00:00+00:00", "actual_start_at": null, "actual_end_at": null, "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "QAjgc8auYEU", "channel_id": "UCJggs0wA212BB6anyamPP1A", "title": "【雑談配信】初見さんも常連の賢猫も、ゆるっとおしゃべりする配信です🐾医学部中退から成り上がり中の猫耳アイドルと、今夜もおしゃべりしませんか？#新人vtuber #雑談配信 #vtuber", "thumbnail_url": "https://i.ytimg.com/vi/QAjgc8auYEU/hqdefault.jpg?v=6adb4e69", "status": "upcoming", "scheduled_start_at": "2026-10-26T13:00:00+00:00", "actual_start_at": null, "actual_end_at": null, "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "9HRXNFzWW0s", "channel_id": "UC6V3YTq7lTWeeyHLQqkL95A", "title": "【裏話】集合！みんなで振り返るゾ！", "thumbnail_url": "https://i.ytimg.com/vi/9HRXNFzWW0s/hqdefault.jpg?v=6addfba9", "status": "upcoming", "scheduled_start_at": "2026-10-26T12:00:00+00:00", "actual_start_at": null, "actual_end_at": null, "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "xtMeZMgUjjE", "channel_id": "UCToR1-NogPeiG02cKhX6C9g", "title": "【#雑談】１ヶ月記念配信⭐初見さん＆ROMさん大歓迎♩【#新人vtuber 】", "thumbnail_url": "https://i.ytimg.com/vi/xtMeZMgUjjE/hqdefault.jpg?v=6ad6e438", "status": "upcoming", "scheduled_start_at": "2026-10-26T12:00:00+00:00", "actual_start_at": null, "actual_end_at": null, "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "PviZH4K8rFE", "channel_id": "UCFSkK3OafyxX0jNcyH5IpaA", "title": "【初見歓迎】儚くてメロい無職がホラゲーします【成乃リツ／#新人VTuber】", "thumbnail_url": "https://i.ytimg.com/vi/PviZH4K8rFE/hqdefault.jpg?v=6ade7fba", "status": "upcoming", "scheduled_start_at": "2026-10-26T10:00:00+00:00", "actual_start_at": null, "actual_end_at": null, "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "AkB_dWX58ik", "channel_id": "UCAqxeib2J0zQYXzOJPor3cg", "title": "【振り返るゾ】話し切れなかったことはなそ～♡【#新人vtuber】", "thumbnail_url": "https://i.ytimg.com/vi/AkB_dWX58ik/hqdefault.jpg?v=6ade347f", "status": "upcoming", "scheduled_start_at": "2026-10-26T10:00:00+00:00", "actual_start_at": null, "actual_end_at": null, "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "DPWzzBIhyZ8", "channel_id": "UCiPZ6JSUT_m_Afo9oF-O76A", "title": "【雑談配信】 アイスのちアイス | レイア・トワイニング 【新人Vtuber】", "thumbnail_url": "https://i.ytimg.com/vi/DPWzzBIhyZ8/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-25T12:55:59+00:00", "actual_start_at": "2026-10-25T12:59:42+00:00", "actual_end_at": "2026-10-25T14:06:45+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "rV1goTeczLQ", "channel_id": "UCJJ2eocjvVUDbvNZRXZUEew", "title": "【歌枠│リクエスト歓迎】今月デビュー新人Vtuber歌います🌟【シエル・リラ・エトワール / 個人Vtuber】", "thumbnail_url": "https://i.ytimg.com/vi/rV1goTeczLQ/hqdefault.jpg?v=6addfbd9", "status": "ended", "scheduled_start_at": "2026-10-25T12:55:00+00:00", "actual_start_at": "2026-10-25T12:56:35+00:00", "actual_end_at": "2026-10-25T14:20:56+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "qY0p58z4xBU", "channel_id": "UC_K5Jtmx9uAm3plKcZMSdgQ", "title": "【初見プレイ】Minishoot' Adventures｜冒険に出発！初めての探索＆シューティング💧#3【雫りりん】", "thumbnail_url": "https://i.ytimg.com/vi/qY0p58z4xBU/hqdefault.jpg?v=6addf7f1", "status": "ended", "scheduled_start_at": "2026-10-25T12:35:00+00:00", "actual_start_at": "2026-10-25T12:40:36+00:00", "actual_end_at": "2026-10-25T14:32:48+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "WcNQKzlfBL0", "channel_id": "UCv_9XRtfRaPThs-K5Uax9gw", "title": "【初配信】初めまして！久龍たち と言います！【#新人vtuber /久龍たち】", "thumbnail_url": "https://i.ytimg.com/vi/WcNQKzlfBL0/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-25T12:05:00+00:00", "actual_start_at": "2026-10-25T12:07:05+00:00", "actual_end_at": "2026-10-25T13:29:47+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": true}, {"id": "DO2Uuwnyk8Q", "channel_id": "UC_LN_GRN9jiuMCjWm5tYTdg", "title": "【縦型歌枠】みんなを寝かしつけたい💫🪽【#新人vtuber/#癒音ゆらむ配信】", "thumbnail_url": "https://i.ytimg.com/vi/DO2Uuwnyk8Q/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-25T12:00:00+00:00", "actual_start_at": "2026-10-25T12:00:14+00:00", "actual_end_at": "2026-10-25T14:12:25+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "1EhTtWi8CA0", "channel_id": "UCAqxeib2J0zQYXzOJPor3cg", "title": "【初配信】はじめまして！メイドの環守しゅきです♪【#新人vtuber】", "thumbnail_url": "https://i.ytimg.com/vi/1EhTtWi8CA0/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-25T11:30:00+00:00", "actual_start_at": "2026-10-25T11:39:43+00:00", "actual_end_at": "2026-10-25T12:29:51+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": true}, {"id": "i19IgmdpyQk", "channel_id": "UCAuEkE3lmkco1vD2km5T9XQ", "title": "【初配信】リアルタイムでは初めまして、新人プロデューサー七世彩雅（ななせさいが）と申します【七世彩雅/新人VTuber】", "thumbnail_url": "https://i.ytimg.com/vi/i19IgmdpyQk/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-25T11:30:00+00:00", "actual_start_at": "2026-10-25T11:31:12+00:00", "actual_end_at": "2026-10-25T12:34:53+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": true}, {"id": "m6qwxpQbYVY", "channel_id": "UCip0QXyt0zS6QKBx2XDQlDQ", "title": "【#初配信】はじめまして！紅椿茶娘と申します🍵🐾🌸#新人Vtuber #個人vtuber  #紅椿茶娘 #茶屋紅椿 #自己紹介", "thumbnail_url": "https://i.ytimg.com/vi/m6qwxpQbYVY/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-25T11:00:00+00:00", "actual_start_at": "2026-10-25T11:02:57+00:00", "actual_end_at": "2026-10-25T12:51:10+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": true}, {"id": "dhVtX1QnXN0", "channel_id": "UCFSkK3OafyxX0jNcyH5IpaA", "title": "【#初配信】顔がいいだけで許されたい。経歴に難あり。【成乃リツ／#新人VTuber】", "thumbnail_url": "https://i.ytimg.com/vi/dhVtX1QnXN0/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-25T11:00:00+00:00", "actual_start_at": "2026-10-25T11:01:20+00:00", "actual_end_at": "2026-10-25T12:56:57+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": true}, {"id": "gP6AgGBGRbU", "channel_id": "UCOa-0JtNfK8l6ftY0mCPwbg", "title": "【初配信】はじめまして！絵描きマスコットVtuber羽野はたです🔨🪽【イラストレーター/新人Vtuber】", "thumbnail_url": "https://i.ytimg.com/vi/gP6AgGBGRbU/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-25T11:00:00+00:00", "actual_start_at": "2026-10-25T10:59:53+00:00", "actual_end_at": "2026-10-25T12:43:15+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": true}, {"id": "Es7_wPhxaMA", "channel_id": "UC6V3YTq7lTWeeyHLQqkL95A", "title": "【初配信】イルです！いざ参る #新人vtuber #vtuber #初配信", "thumbnail_url": "https://i.ytimg.com/vi/Es7_wPhxaMA/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-25T11:00:00+00:00", "actual_start_at": "2026-10-25T10:58:08+00:00", "actual_end_at": "2026-10-25T11:41:08+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": true}, {"id": "tF9yq-_tpGU", "channel_id": "UCw4xTcMrVupyk1RdaKRt3gQ", "title": "【#シミュグラ4 】Day28｜ありがとうのきもち【#新人vtuber /#藤宮らみ】", "thumbnail_url": "https://i.ytimg.com/vi/tF9yq-_tpGU/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-25T10:00:00+00:00", "actual_start_at": "2026-10-25T10:01:35+00:00", "actual_end_at": "2026-10-25T17:07:50+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "OcJVaKly80E", "channel_id": "UCiPZ6JSUT_m_Afo9oF-O76A", "title": "【Minecraft】 地下を開拓！その２＃7| レイア・トワイニング【新人VTuber】", "thumbnail_url": "https://i.ytimg.com/vi/OcJVaKly80E/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-25T08:25:52+00:00", "actual_start_at": "2026-10-25T08:27:37+00:00", "actual_end_at": "2026-10-25T10:19:07+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "-4N_ttZ2Q8M", "channel_id": "UC_K5Jtmx9uAm3plKcZMSdgQ", "title": "【初見プレイ】Minishoot' Adventures｜冒険に出発！初めての探索＆シューティング💧#2【雫りりん】", "thumbnail_url": "https://i.ytimg.com/vi/-4N_ttZ2Q8M/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-25T07:00:00+00:00", "actual_start_at": "2026-10-25T07:09:39+00:00", "actual_end_at": "2026-10-25T08:07:28+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "WxCoLOiSwgc", "channel_id": "UC_K5Jtmx9uAm3plKcZMSdgQ", "title": "【初見プレイ】Minishoot' Adventures｜冒険に出発！初めての探索＆シューティング💧【雫りりん】", "thumbnail_url": "https://i.ytimg.com/vi/WxCoLOiSwgc/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-25T03:15:00+00:00", "actual_start_at": "2026-10-25T03:32:29+00:00", "actual_end_at": "2026-10-25T04:35:20+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "lFYrDSPQhxo", "channel_id": "UC_K5Jtmx9uAm3plKcZMSdgQ", "title": "【初配信】はじめまして、雫りりんです💧 新人VTuber（？）の自己紹介＆雑談！", "thumbnail_url": "https://i.ytimg.com/vi/lFYrDSPQhxo/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-25T02:45:00+00:00", "actual_start_at": "2026-10-25T01:52:40+00:00", "actual_end_at": "2026-10-25T02:32:46+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": true}, {"id": "CLE9cY04nK8", "channel_id": "UCiPZ6JSUT_m_Afo9oF-O76A", "title": "【同時視聴】日曜の朝はプリキュア♡(第39話) | レイア・トワイニング【新人VTuber】", "thumbnail_url": "https://i.ytimg.com/vi/CLE9cY04nK8/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-25T00:00:19+00:00", "actual_start_at": "2026-10-25T00:00:54+00:00", "actual_end_at": "2026-10-25T00:38:06+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "0tZAOpmNWyY", "channel_id": "UC-k1-ui_Il2_kFF4FsHUe9w", "title": "【ゲリラ配信！】～Valorant～かっこいいところを見せたい！【新人Vtuber/Vtuber/Valorant/ヴァロ】", "thumbnail_url": "https://i.ytimg.com/vi/0tZAOpmNWyY/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-24T23:40:00+00:00", "actual_start_at": "2026-10-24T23:45:02+00:00", "actual_end_at": "2026-10-25T01:10:54+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "2OgSEoomO7U", "channel_id": "UCShoYnFmZ7jXDr-lETn0MnA", "title": "【初配信】はじめまして、縫代衣織です🌙【新人VTuber】", "thumbnail_url": "https://i.ytimg.com/vi/2OgSEoomO7U/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-24T14:00:00+00:00", "actual_start_at": "2026-10-24T14:02:43+00:00", "actual_end_at": "2026-10-24T14:44:03+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": true}, {"id": "PyG8y_XbNmM", "channel_id": "UCxOFRcqjN3i48Jrm7m2Bqow", "title": "みいこーなカスタム　with 山田さん、ハマやん", "thumbnail_url": "https://i.ytimg.com/vi/PyG8y_XbNmM/hqdefault.jpg", "status": "ended", "scheduled_start_at": null, "actual_start_at": "2026-10-24T12:22:45+00:00", "actual_end_at": "2026-10-24T15:10:49+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "FQRuKGVh6rA", "channel_id": "UCiPZ6JSUT_m_Afo9oF-O76A", "title": "【ダレカレ】 物語の結末は…？  | レイア・トワイニング【新人VTuber】", "thumbnail_url": "https://i.ytimg.com/vi/FQRuKGVh6rA/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-24T12:00:37+00:00", "actual_start_at": "2026-10-24T12:02:05+00:00", "actual_end_at": "2026-10-24T13:54:07+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "6SE5UXZ8nss", "channel_id": "UCLJ2NANIJAoVAc7gYzbFE6A", "title": "【タンポポは耐える。】初めてのゲーム回！【藤宮まお】", "thumbnail_url": "https://i.ytimg.com/vi/6SE5UXZ8nss/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-24T12:00:00+00:00", "actual_start_at": "2026-10-24T12:00:29+00:00", "actual_end_at": "2026-10-24T13:58:24+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "_20zwWGLAJs", "channel_id": "UC-k1-ui_Il2_kFF4FsHUe9w", "title": "【助けて!】新米ハンター！【新人Vtuber/Vtuber/モンハン/モンスターハンターワイルズ/MHW】", "thumbnail_url": "https://i.ytimg.com/vi/_20zwWGLAJs/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-24T12:00:00+00:00", "actual_start_at": "2026-10-24T11:59:40+00:00", "actual_end_at": "2026-10-24T13:41:52+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "VmnggGiy-vM", "channel_id": "UCjWsTpImi4hsj0oSqv-kS2w", "title": "【初配信】とある世界の統括者見習い、加護アレアです！【#新人VTuber / えらいず！】", "thumbnail_url": "https://i.ytimg.com/vi/VmnggGiy-vM/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-24T11:30:00+00:00", "actual_start_at": "2026-10-24T11:29:56+00:00", "actual_end_at": "2026-10-24T12:01:20+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": true}, {"id": "HLkWCI5Fv-0", "channel_id": "UC618OMN0cr8PWNOE0i2oh6A", "title": "初配信感想会！【個人Vtuber/新人Vtuber】", "thumbnail_url": "https://i.ytimg.com/vi/HLkWCI5Fv-0/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-24T10:57:07+00:00", "actual_start_at": "2026-10-24T10:57:28+00:00", "actual_end_at": "2026-10-24T13:01:39+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "VMv9qUtAalY", "channel_id": "UCw4xTcMrVupyk1RdaKRt3gQ", "title": "【#シミュグラ4 】Day27｜自由に生きる人生もわるくない？【#新人vtuber /#藤宮らみ】", "thumbnail_url": "https://i.ytimg.com/vi/VMv9qUtAalY/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-24T10:30:00+00:00", "actual_start_at": "2026-10-24T10:32:04+00:00", "actual_end_at": "2026-10-24T17:09:38+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "-JJb6f-adhs", "channel_id": "UCxOFRcqjN3i48Jrm7m2Bqow", "title": "【初配信】はじめまして。諏訪園ヤマトです【 #新人vtuber 】", "thumbnail_url": "https://i.ytimg.com/vi/-JJb6f-adhs/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-24T06:00:00+00:00", "actual_start_at": "2026-10-24T06:05:29+00:00", "actual_end_at": "2026-10-24T07:18:02+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": true}, {"id": "hertI1JytuE", "channel_id": "UCToR1-NogPeiG02cKhX6C9g", "title": "【#雑談】初見さん＆ROMさん大歓迎⭐コンビニ３社の肉まん食べ比べッ!!!【#新人vtuber 】", "thumbnail_url": "https://i.ytimg.com/vi/hertI1JytuE/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-24T01:00:00+00:00", "actual_start_at": "2026-10-24T01:01:58+00:00", "actual_end_at": "2026-10-24T03:15:12+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "tdKWqbYf88U", "channel_id": "UCJJ2eocjvVUDbvNZRXZUEew", "title": "【#nikke 】完全初見でUNBREAKABLE SPHEREを読みます🌟【シエル・リラ・エトワール 】", "thumbnail_url": "https://i.ytimg.com/vi/tdKWqbYf88U/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-24T01:00:00+00:00", "actual_start_at": "2026-10-24T00:55:36+00:00", "actual_end_at": "2026-10-24T06:21:56+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "_uOeYkh3MWU", "channel_id": "UCiPZ6JSUT_m_Afo9oF-O76A", "title": "【雑談配信】 アイスのちマイクラ | レイア・トワイニング 【新人Vtuber】", "thumbnail_url": "https://i.ytimg.com/vi/_uOeYkh3MWU/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-23T12:15:07+00:00", "actual_start_at": "2026-10-23T12:16:37+00:00", "actual_end_at": "2026-10-23T15:17:56+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "E37P-NKHcNQ", "channel_id": "UCToR1-NogPeiG02cKhX6C9g", "title": "【#歌枠】初見さん＆ROMさん大歓迎⭐初めてのお歌タイム！【#新人vtuber 】", "thumbnail_url": "https://i.ytimg.com/vi/E37P-NKHcNQ/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-23T12:00:00+00:00", "actual_start_at": "2026-10-23T12:15:09+00:00", "actual_end_at": "2026-10-23T14:28:16+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "bRQulkor1rc", "channel_id": "UC_LN_GRN9jiuMCjWm5tYTdg", "title": "空気読んでみたり、「あ」だけで操作してみたり💫🪽【#新人vtuber/#癒音ゆらむ配信】", "thumbnail_url": "https://i.ytimg.com/vi/bRQulkor1rc/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-23T12:00:00+00:00", "actual_start_at": "2026-10-23T12:00:17+00:00", "actual_end_at": "2026-10-23T13:55:57+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "G_oI2D-SwFk", "channel_id": "UC618OMN0cr8PWNOE0i2oh6A", "title": "祝！『初配信＆Vtuberデビュー！』", "thumbnail_url": "https://i.ytimg.com/vi/G_oI2D-SwFk/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-23T10:55:51+00:00", "actual_start_at": "2026-10-23T10:56:12+00:00", "actual_end_at": "2026-10-23T11:30:04+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": true}, {"id": "9X3K5zb0q8g", "channel_id": "UCw4xTcMrVupyk1RdaKRt3gQ", "title": "【#シミュグラ4 】Day26｜そろそろ２億の車ほしぃなぁ#新人vtuber /#藤宮らみ】", "thumbnail_url": "https://i.ytimg.com/vi/9X3K5zb0q8g/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-23T10:15:00+00:00", "actual_start_at": "2026-10-23T10:19:39+00:00", "actual_end_at": "2026-10-23T15:22:06+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "f_q5wYdYPrc", "channel_id": "UCJJ2eocjvVUDbvNZRXZUEew", "title": "【#朝活】ゆる～くおしゃべりしよ～🌟【シエル・リラ・エトワール / 個人Vtuber】", "thumbnail_url": "https://i.ytimg.com/vi/f_q5wYdYPrc/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-22T23:10:00+00:00", "actual_start_at": "2026-10-22T23:11:04+00:00", "actual_end_at": "2026-10-23T00:12:40+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "9OnsD72FQ4c", "channel_id": "UCiPZ6JSUT_m_Afo9oF-O76A", "title": "【雑談配信】 歌ってみた裏話を少し！| レイア・トワイニング 【新人Vtuber】", "thumbnail_url": "https://i.ytimg.com/vi/9OnsD72FQ4c/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-22T13:45:00+00:00", "actual_start_at": "2026-10-22T13:45:43+00:00", "actual_end_at": "2026-10-22T14:32:57+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "Tvx4eiQJ_Jc", "channel_id": "UCiPZ6JSUT_m_Afo9oF-O76A", "title": "リスキーゲーム  / Covered by レイア・トワイニング", "thumbnail_url": "https://i.ytimg.com/vi/Tvx4eiQJ_Jc/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-22T13:30:00+00:00", "actual_start_at": "2026-10-22T13:30:08+00:00", "actual_end_at": "2026-10-22T13:35:36+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "_S32-zB0vwY", "channel_id": "UCiPZ6JSUT_m_Afo9oF-O76A", "title": "【作業配信】夜灯のアトリエへようこそ！【レイア・トワイニング】", "thumbnail_url": "https://i.ytimg.com/vi/_S32-zB0vwY/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-22T12:00:11+00:00", "actual_start_at": "2026-10-22T12:02:12+00:00", "actual_end_at": "2026-10-22T13:25:52+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "_QPiMIc6ejQ", "channel_id": "UC_LN_GRN9jiuMCjWm5tYTdg", "title": "【横型歌枠】今日は何を歌おっか💫🪽【#新人vtuber/#癒音ゆらむ配信】", "thumbnail_url": "https://i.ytimg.com/vi/_QPiMIc6ejQ/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-22T12:00:00+00:00", "actual_start_at": "2026-10-22T12:00:16+00:00", "actual_end_at": "2026-10-22T14:11:34+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "81eQA2BX024", "channel_id": "UCToR1-NogPeiG02cKhX6C9g", "title": "【#マイクラ】完全初見プレイ⭐初めての朝活建築！【#新人vtuber 】", "thumbnail_url": "https://i.ytimg.com/vi/81eQA2BX024/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-21T22:00:00+00:00", "actual_start_at": "2026-10-21T21:59:19+00:00", "actual_end_at": "2026-10-22T02:53:33+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "yetpWeObHgw", "channel_id": "UC_LN_GRN9jiuMCjWm5tYTdg", "title": "初配信から１か月！振り返ったりマシュマロ読んだり💫🪽【#新人vtuber/#癒音ゆらむ配信】", "thumbnail_url": "https://i.ytimg.com/vi/yetpWeObHgw/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-21T12:00:00+00:00", "actual_start_at": "2026-10-21T12:00:45+00:00", "actual_end_at": "2026-10-21T14:14:31+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "9TaOrAFj1GE", "channel_id": "UCJggs0wA212BB6anyamPP1A", "title": "【八尺様がいた夏休み #2】これはホラゲーかギャルゲーか？！【#vtuber /メアリア＝ミーア】#めありあらいぶ", "thumbnail_url": "https://i.ytimg.com/vi/9TaOrAFj1GE/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-21T12:00:00+00:00", "actual_start_at": "2026-10-21T11:55:25+00:00", "actual_end_at": "2026-10-21T13:40:32+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "GlVgg3joqQY", "channel_id": "UCw4xTcMrVupyk1RdaKRt3gQ", "title": "【#シミュグラ4 】Day25｜サンディとBNCのスーパーらみ先輩#新人vtuber /#藤宮らみ】", "thumbnail_url": "https://i.ytimg.com/vi/GlVgg3joqQY/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-21T10:03:00+00:00", "actual_start_at": "2026-10-21T10:02:30+00:00", "actual_end_at": "2026-10-21T17:14:23+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "36iSM5yisDA", "channel_id": "UC-k1-ui_Il2_kFF4FsHUe9w", "title": "【妹vs妹!?】妹が妹に運転を教える？？【妹に運転を教える/新人Vtuber/初見プレイ】", "thumbnail_url": "https://i.ytimg.com/vi/36iSM5yisDA/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-20T12:00:00+00:00", "actual_start_at": "2026-10-20T12:03:30+00:00", "actual_end_at": "2026-10-20T14:06:31+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "YmmX4T990XM", "channel_id": "UCiPZ6JSUT_m_Afo9oF-O76A", "title": "【雑談配信】 ちょっと告知あるかも！| レイア・トワイニング 【新人Vtuber】", "thumbnail_url": "https://i.ytimg.com/vi/YmmX4T990XM/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-20T12:00:42+00:00", "actual_start_at": "2026-10-20T12:01:32+00:00", "actual_end_at": "2026-10-20T13:51:34+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": true}, {"id": "XmnwWNyuA1U", "channel_id": "UCLJ2NANIJAoVAc7gYzbFE6A", "title": "二度あることに三度目はない【藤宮まお】", "thumbnail_url": "https://i.ytimg.com/vi/XmnwWNyuA1U/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-20T12:00:00+00:00", "actual_start_at": "2026-10-20T12:00:40+00:00", "actual_end_at": "2026-10-20T13:52:29+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "8cDiJ40nmnE", "channel_id": "UCw4xTcMrVupyk1RdaKRt3gQ", "title": "【#シミュグラ4 】Day24｜短めな一日をどうすごす？#新人vtuber /#藤宮らみ】", "thumbnail_url": "https://i.ytimg.com/vi/8cDiJ40nmnE/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-20T11:30:00+00:00", "actual_start_at": "2026-10-20T11:32:53+00:00", "actual_end_at": "2026-10-20T16:15:49+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "l6T3lYhs-uo", "channel_id": "UCToR1-NogPeiG02cKhX6C9g", "title": "【#ddlc】完全初見ドキドキ文芸部⭐接近戦に弱いチョロにゃんこです【#新人vtuber 】", "thumbnail_url": "https://i.ytimg.com/vi/l6T3lYhs-uo/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-20T11:00:00+00:00", "actual_start_at": "2026-10-20T11:00:25+00:00", "actual_end_at": "2026-10-20T14:02:44+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "8lRZm70MG1Q", "channel_id": "UC_LN_GRN9jiuMCjWm5tYTdg", "title": "ドキドキ文芸部！耐性がほしい💫🪽【#新人vtuber/#癒音ゆらむ配信】", "thumbnail_url": "https://i.ytimg.com/vi/8lRZm70MG1Q/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-19T12:00:00+00:00", "actual_start_at": "2026-10-19T12:00:33+00:00", "actual_end_at": "2026-10-19T14:11:38+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "_GCXU1EMFII", "channel_id": "UCJJ2eocjvVUDbvNZRXZUEew", "title": "【#nikke #新米指揮官】4周年が楽しみな新人V✨38章ストーリー進めます🌟【シエル・リラ・エトワール 】", "thumbnail_url": "https://i.ytimg.com/vi/_GCXU1EMFII/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-18T23:25:00+00:00", "actual_start_at": "2026-10-18T23:25:55+00:00", "actual_end_at": "2026-10-19T02:38:30+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "9_dJeUWAT0w", "channel_id": "UCToR1-NogPeiG02cKhX6C9g", "title": "【#朝活 】初見さん＆ROMさん大歓迎⭐月曜日を打ち倒せ!!!【#新人vtuber 】", "thumbnail_url": "https://i.ytimg.com/vi/9_dJeUWAT0w/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-18T22:00:00+00:00", "actual_start_at": "2026-10-18T21:58:41+00:00", "actual_end_at": "2026-10-19T01:13:45+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": true}, {"id": "P_8FCcGp0NY", "channel_id": "UC_LN_GRN9jiuMCjWm5tYTdg", "title": "【縦型歌枠】まーったり歌いたい💫🪽【#新人vtuber/#癒音ゆらむ配信】", "thumbnail_url": "https://i.ytimg.com/vi/P_8FCcGp0NY/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-18T12:00:00+00:00", "actual_start_at": "2026-10-18T12:00:17+00:00", "actual_end_at": "2026-10-18T14:04:55+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": true}, {"id": "2z26fS25Xko", "channel_id": "UC-k1-ui_Il2_kFF4FsHUe9w", "title": "【リズム音痴がやる！！】ホロドリ進めるぞ！！【ホロドリ/新人Vtuber/Vtuber】", "thumbnail_url": "https://i.ytimg.com/vi/2z26fS25Xko/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-18T12:00:00+00:00", "actual_start_at": "2026-10-18T11:59:38+00:00", "actual_end_at": "2026-10-18T14:42:49+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "jbk8OJ6a3pI", "channel_id": "UCw4xTcMrVupyk1RdaKRt3gQ", "title": "【#シミュグラ4 】Day23｜新しい出会いと平穏な暮らしを#新人vtuber /#藤宮らみ】→サンディラーメンショップ開店！", "thumbnail_url": "https://i.ytimg.com/vi/jbk8OJ6a3pI/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-18T10:03:00+00:00", "actual_start_at": "2026-10-18T10:04:23+00:00", "actual_end_at": "2026-10-18T17:41:05+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "cmcQ0zFaTQw", "channel_id": "UC-k1-ui_Il2_kFF4FsHUe9w", "title": "【ゲリラ配信！】～Valorant～かっこいいところを見せたい！【新人Vtuber/Vtuber/Valorant/ヴァロ】", "thumbnail_url": "https://i.ytimg.com/vi/cmcQ0zFaTQw/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-18T04:00:00+00:00", "actual_start_at": "2026-10-18T04:01:53+00:00", "actual_end_at": "2026-10-18T05:40:32+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "hk5ay07MpQQ", "channel_id": "UC-k1-ui_Il2_kFF4FsHUe9w", "title": "【ゲリラ配信！】～Valorant～かっこいいところを見せたい！【新人Vtuber/Vtuber/Valorant/ヴァロ】", "thumbnail_url": "https://i.ytimg.com/vi/hk5ay07MpQQ/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-17T15:10:00+00:00", "actual_start_at": "2026-10-17T15:15:29+00:00", "actual_end_at": "2026-10-17T17:53:46+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "UQLWXme1qk8", "channel_id": "UCLJ2NANIJAoVAc7gYzbFE6A", "title": "はじめての雑談【藤宮まお】", "thumbnail_url": "https://i.ytimg.com/vi/UQLWXme1qk8/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-17T12:00:00+00:00", "actual_start_at": "2026-10-17T12:00:50+00:00", "actual_end_at": "2026-10-17T13:53:47+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": true}, {"id": "HnSyjUcxT9c", "channel_id": "UCw4xTcMrVupyk1RdaKRt3gQ", "title": "【#シミュグラ4 】Day22｜BNCでカフェ＆ディーラー！#新人vtuber /#藤宮らみ】", "thumbnail_url": "https://i.ytimg.com/vi/HnSyjUcxT9c/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-17T10:05:00+00:00", "actual_start_at": "2026-10-17T10:03:04+00:00", "actual_end_at": "2026-10-17T17:31:30+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "Y6fcFKAv0lg", "channel_id": "UC-k1-ui_Il2_kFF4FsHUe9w", "title": "【助けて!】新米ハンター！【新人Vtuber/Vtuber/モンハン/モンスターハンターワイルズ/MHW】", "thumbnail_url": "https://i.ytimg.com/vi/Y6fcFKAv0lg/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-16T12:15:00+00:00", "actual_start_at": "2026-10-16T12:18:06+00:00", "actual_end_at": "2026-10-16T15:19:33+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "U6Dg62Z-97g", "channel_id": "UC-k1-ui_Il2_kFF4FsHUe9w", "title": "【助けて!】新米ハンター！【新人Vtuber/Vtuber/モンハン/モンスターハンターワイルズ/MHW】", "thumbnail_url": "https://i.ytimg.com/vi/U6Dg62Z-97g/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-16T12:00:00+00:00", "actual_start_at": "2026-10-16T12:03:21+00:00", "actual_end_at": "2026-10-16T12:15:02+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "P0WR7NXFvCM", "channel_id": "UCJggs0wA212BB6anyamPP1A", "title": "【八尺様がいた夏休み】お姉さん好きVTuberと夏の思い出を作ろう！(まだ間に合う)【#vtuber /メアリア＝ミーア】#めありあらいぶ", "thumbnail_url": "https://i.ytimg.com/vi/P0WR7NXFvCM/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-16T11:45:00+00:00", "actual_start_at": "2026-10-16T11:45:13+00:00", "actual_end_at": "2026-10-16T13:00:57+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "FXtbe2W8KLY", "channel_id": "UCw4xTcMrVupyk1RdaKRt3gQ", "title": "【#シミュグラ4 】Day21｜BNC新天地で羽ばたく！！！！【#新人vtuber /#藤宮らみ】", "thumbnail_url": "https://i.ytimg.com/vi/FXtbe2W8KLY/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-16T10:00:00+00:00", "actual_start_at": "2026-10-16T10:04:45+00:00", "actual_end_at": "2026-10-16T17:25:33+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "Yn0GGAM4p8g", "channel_id": "UCJJ2eocjvVUDbvNZRXZUEew", "title": "【初歌枠】アニソン、ボカロ歌うよー♪ あなたと一緒に、星を見つけたい🌟【シエル・リラ・エトワール / 個人Vtuber】", "thumbnail_url": "https://i.ytimg.com/vi/Yn0GGAM4p8g/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-15T11:00:00+00:00", "actual_start_at": "2026-10-15T10:59:24+00:00", "actual_end_at": "2026-10-15T13:03:40+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "r1-jR5Ucf88", "channel_id": "UCJJ2eocjvVUDbvNZRXZUEew", "title": "【#nikke #新米指揮官】4周年が楽しみな新人V✨Wordlessを読みます🌟【シエル・リラ・エトワール 】", "thumbnail_url": "https://i.ytimg.com/vi/r1-jR5Ucf88/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-15T02:25:00+00:00", "actual_start_at": "2026-10-15T02:27:25+00:00", "actual_end_at": "2026-10-15T04:20:28+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "4-O2Ki5stvY", "channel_id": "UCJggs0wA212BB6anyamPP1A", "title": "【朝活】たくさんおはよう集めちゃう！【#vtuber /メアリア＝ミーア】#めありあらいぶ", "thumbnail_url": "https://i.ytimg.com/vi/4-O2Ki5stvY/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-14T23:30:00+00:00", "actual_start_at": "2026-10-14T23:25:27+00:00", "actual_end_at": "2026-10-15T00:22:59+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": true}, {"id": "dPi_szreR9g", "channel_id": "UC-k1-ui_Il2_kFF4FsHUe9w", "title": "【ばぶ!!】赤ちゃん指揮官のメインストーリー！【新人Vtuber/個人Vtuber/Vtuber/NIKKE/ニケ/初見プレイ】", "thumbnail_url": "https://i.ytimg.com/vi/dPi_szreR9g/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-14T12:00:00+00:00", "actual_start_at": "2026-10-14T11:57:40+00:00", "actual_end_at": "2026-10-14T13:22:04+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": true}, {"id": "638wQJLwg-8", "channel_id": "UCJJ2eocjvVUDbvNZRXZUEew", "title": "【新人Vtuber】これって浮気？判定シートをやってみるよ🌟【シエル・リラ・エトワール】", "thumbnail_url": "https://i.ytimg.com/vi/638wQJLwg-8/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-14T11:45:00+00:00", "actual_start_at": "2026-10-14T11:52:00+00:00", "actual_end_at": "2026-10-14T13:13:58+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": true}, {"id": "i4_-eVQhQmE", "channel_id": "UCw4xTcMrVupyk1RdaKRt3gQ", "title": "【#シミュグラ4 】Day20｜7173番BNC　ラストの日…【#新人vtuber /#藤宮らみ】", "thumbnail_url": "https://i.ytimg.com/vi/i4_-eVQhQmE/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-14T10:00:00+00:00", "actual_start_at": "2026-10-14T10:03:54+00:00", "actual_end_at": "2026-10-14T17:11:17+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "OHclGLguNrQ", "channel_id": "UCw4xTcMrVupyk1RdaKRt3gQ", "title": "【#シミュグラ4 】Day19｜BNCアイス屋さん再スタート！【#新人vtuber /#藤宮らみ】", "thumbnail_url": "https://i.ytimg.com/vi/OHclGLguNrQ/hqdefault.jpg", "status": "ended", "scheduled_start_at": "2026-10-13T10:00:00+00:00", "actual_start_at": "2026-10-13T10:06:20+00:00", "actual_end_at": "2026-10-13T17:21:56+00:00", "peak_viewers": null, "last_viewers": null, "is_first_stream": true}, {"id": "N87BfdSnBK8", "channel_id": "UC6V3YTq7lTWeeyHLQqkL95A", "title": "イル・アステリオ のライブ配信", "thumbnail_url": "https://i.ytimg.com/vi/N87BfdSnBK8/hqdefault.jpg", "status": "upcoming", "scheduled_start_at": null, "actual_start_at": null, "actual_end_at": null, "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "QRo4Q_OXC9o", "channel_id": "UCAuEkE3lmkco1vD2km5T9XQ", "title": "七世彩雅 のライブ配信", "thumbnail_url": "https://i.ytimg.com/vi/QRo4Q_OXC9o/hqdefault.jpg", "status": "upcoming", "scheduled_start_at": null, "actual_start_at": null, "actual_end_at": null, "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "i79ZFVl1gew", "channel_id": "UCv_9XRtfRaPThs-K5Uax9gw", "title": "久龍たち@Vtuber準備中 のライブ配信", "thumbnail_url": "https://i.ytimg.com/vi/i79ZFVl1gew/hqdefault.jpg", "status": "upcoming", "scheduled_start_at": null, "actual_start_at": null, "actual_end_at": null, "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "yYHEkch0VPU", "channel_id": "UC_K5Jtmx9uAm3plKcZMSdgQ", "title": "雫 りりん(SHIZUKU RIRIN) のライブ配信", "thumbnail_url": "https://i.ytimg.com/vi/yYHEkch0VPU/hqdefault.jpg", "status": "upcoming", "scheduled_start_at": null, "actual_start_at": null, "actual_end_at": null, "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "SnnVyzFUVB8", "channel_id": "UCShoYnFmZ7jXDr-lETn0MnA", "title": "縫代 衣織 のライブ配信", "thumbnail_url": "https://i.ytimg.com/vi/SnnVyzFUVB8/hqdefault.jpg", "status": "upcoming", "scheduled_start_at": null, "actual_start_at": null, "actual_end_at": null, "peak_viewers": null, "last_viewers": null, "is_first_stream": false}, {"id": "WDWjnaT-IjY", "channel_id": "UCAqxeib2J0zQYXzOJPor3cg", "title": "環守しゅき Live Stream", "thumbnail_url": "https://i.ytimg.com/vi/WDWjnaT-IjY/hqdefault.jpg", "status": "upcoming", "scheduled_start_at": null, "actual_start_at": null, "actual_end_at": null, "peak_viewers": null, "last_viewers": null, "is_first_stream": false}], "daily": [{"channel_id": "UC618OMN0cr8PWNOE0i2oh6A", "day": "2026-10-26", "subscriber_count": 124, "view_count": 25182, "video_count": 45}, {"channel_id": "UCg-EPJAoRHgk5wXnjvJsxZQ", "day": "2026-10-26", "subscriber_count": 35, "view_count": 27012, "video_count": 25}, {"channel_id": "UCYFtY8APNhUIUuIWmasaNhA", "day": "2026-10-26", "subscriber_count": 6, "view_count": 8172, "video_count": 14}, {"channel_id": "UCJggs0wA212BB6anyamPP1A", "day": "2026-10-26", "subscriber_count": 664, "view_count": 184468, "video_count": 74}, {"channel_id": "UC-k1-ui_Il2_kFF4FsHUe9w", "day": "2026-10-26", "subscriber_count": 543, "view_count": 65857, "video_count": 120}, {"channel_id": "UCjWsTpImi4hsj0oSqv-kS2w", "day": "2026-10-26", "subscriber_count": 72, "view_count": 7734, "video_count": 8}, {"channel_id": "UCw4xTcMrVupyk1RdaKRt3gQ", "day": "2026-10-26", "subscriber_count": 310, "view_count": 54373, "video_count": 78}, {"channel_id": "UCAqxeib2J0zQYXzOJPor3cg", "day": "2026-10-26", "subscriber_count": 36, "view_count": 5302, "video_count": 8}, {"channel_id": "UCToR1-NogPeiG02cKhX6C9g", "day": "2026-10-26", "subscriber_count": 799, "view_count": 63142, "video_count": 46}, {"channel_id": "UCu8_M3cQ48FWLEeuGtmpDWA", "day": "2026-10-26", "subscriber_count": 6, "view_count": 1180, "video_count": 5}, {"channel_id": "UC6V3YTq7lTWeeyHLQqkL95A", "day": "2026-10-26", "subscriber_count": 21, "view_count": 400, "video_count": 3}, {"channel_id": "UCLJ2NANIJAoVAc7gYzbFE6A", "day": "2026-10-26", "subscriber_count": 174, "view_count": 63019, "video_count": 85}, {"channel_id": "UCNipbDMk2xncv-S9yQUWBrg", "day": "2026-10-26", "subscriber_count": 2, "view_count": 0, "video_count": 2}, {"channel_id": "UCOa-0JtNfK8l6ftY0mCPwbg", "day": "2026-10-26", "subscriber_count": 406, "view_count": 21206, "video_count": 15}, {"channel_id": "UCJJ2eocjvVUDbvNZRXZUEew", "day": "2026-10-26", "subscriber_count": 160, "view_count": 19459, "video_count": 19}, {"channel_id": "UCv_9XRtfRaPThs-K5Uax9gw", "day": "2026-10-26", "subscriber_count": 104, "view_count": 23316, "video_count": 11}, {"channel_id": "UCFSkK3OafyxX0jNcyH5IpaA", "day": "2026-10-26", "subscriber_count": 119, "view_count": 9132, "video_count": 6}, {"channel_id": "UCShoYnFmZ7jXDr-lETn0MnA", "day": "2026-10-26", "subscriber_count": 11, "view_count": 614, "video_count": 4}, {"channel_id": "UCiPZ6JSUT_m_Afo9oF-O76A", "day": "2026-10-26", "subscriber_count": 35, "view_count": 8228, "video_count": 56}, {"channel_id": "UCAuEkE3lmkco1vD2km5T9XQ", "day": "2026-10-26", "subscriber_count": 32, "view_count": 10081, "video_count": 11}, {"channel_id": "UCip0QXyt0zS6QKBx2XDQlDQ", "day": "2026-10-26", "subscriber_count": 58, "view_count": 8, "video_count": 1}, {"channel_id": "UCVmJ1pev3zUJPFQniSo_25w", "day": "2026-10-26", "subscriber_count": 738, "view_count": 2691460, "video_count": 208}, {"channel_id": "UC_LN_GRN9jiuMCjWm5tYTdg", "day": "2026-10-26", "subscriber_count": 962, "view_count": 121989, "video_count": 62}, {"channel_id": "UCxOFRcqjN3i48Jrm7m2Bqow", "day": "2026-10-26", "subscriber_count": 14, "view_count": 48, "video_count": 2}, {"channel_id": "UC_K5Jtmx9uAm3plKcZMSdgQ", "day": "2026-10-26", "subscriber_count": 2, "view_count": 1560, "video_count": 11}]}</script>
+<script>
+(() => {
+const SB_URL = "https://sgmzyhvhwbqyudayboes.supabase.co";
+const SB_KEY = "sb_publishable_igtK18JrLPQCoKbF0U03Gg_o8fKrApc";
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+let SID = store.get("sid", null);
+if (!SID) { SID = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2)); store.set("sid", SID); }
+const favs = new Set(store.get("favs", []));
+const seen = new Set(store.get("seen", []));
+
+let CH = [], ST = [], DAILY = [], byId = new Map(), live = false;
+
+async function rest(path) {
+  const r = await fetch(`${SB_URL}/rest/v1/${path}`, { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } });
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+function logEvent(kind, channel_id) {
+  if (!live) return;
+  fetch(`${SB_URL}/rest/v1/events`, {
+    method: "POST",
+    headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, "Content-Type": "application/json", Prefer: "return=minimal" },
+    body: JSON.stringify({ kind, channel_id, session_id: SID }),
+    keepalive: true,
+  }).catch(() => {});
+}
+
+async function load() {
+  try {
+    const since = new Date(Date.now() - 60 * 864e5).toISOString().slice(0, 10);
+    const [c, s, d] = await Promise.all([
+      rest("channel_list?select=*&order=listed_at.asc"),
+      rest("streams?select=id,channel_id,title,thumbnail_url,status,scheduled_start_at,actual_start_at,actual_end_at,peak_viewers,last_viewers,is_first_stream,embeddable&status=neq.none&order=updated_at.desc&limit=3000"),
+      rest(`channel_daily?select=*&day=gte.${since}`),
+    ]);
+    CH = c; ST = s; DAILY = d; live = true;
+  } catch {
+    const snap = JSON.parse($("#snap").textContent);
+    CH = snap.channels || []; ST = snap.streams || []; DAILY = snap.daily || [];
+  }
+  CH.forEach((c, i) => { c.no = i + 1; c.subscriber_count = c.subscriber_count == null ? null : Number(c.subscriber_count); c.stream_count = Number(c.stream_count || 0); c.total_stream_sec = Number(c.total_stream_sec || 0); c.viewers_month = Number(c.viewers_month || 0); byId.set(c.id, c); });
+  ST = ST.filter((s) => byId.has(s.channel_id));
+}
+
+/* ---------- helpers ---------- */
+const now = () => Date.now();
+const jst = (iso, o) => new Intl.DateTimeFormat("ja-JP", { timeZone: "Asia/Tokyo", ...o }).format(new Date(iso));
+const dayKey = (iso) => jst(iso, { year: "numeric", month: "2-digit", day: "2-digit" });
+const hm = (iso) => jst(iso, { hour: "2-digit", minute: "2-digit" });
+const md = (iso) => jst(iso, { month: "numeric", day: "numeric", weekday: "short" });
+const hours = (sec) => (sec / 3600 >= 10 ? Math.round(sec / 3600) : Math.round(sec / 360) / 10);
+const fmtSubs = (c) => (c.subscriber_hidden || c.subscriber_count == null ? "非公開" : c.subscriber_count.toLocaleString("ja-JP"));
+const debutBase = (c) => c.first_stream_at || c.channel_created_at;
+const debutDays = (c) => { const b = debutBase(c); return b ? Math.max(1, Math.floor((now() - Date.parse(b)) / 864e5) + 1) : null; };
+const noStr = (c) => "No." + String(c.no).padStart(4, "0");
+function hue(id) { let h = 0; for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) % 360; return h; }
+function initial(c) { const t = (c.title || "?").replace(/^[\s【\[「『(（]+/, ""); return [...t][0] || "?"; }
+function img(src, c, cls = "") {
+  const ph = `<span class="ph" style="background:linear-gradient(135deg,hsl(${hue(c.id)} 55% 52%),hsl(${(hue(c.id) + 50) % 360} 60% 38%))">${esc(initial(c))}</span>`;
+  return `${ph}${src ? `<img src="${esc(src)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()" class="${cls}">` : ""}`;
+}
+function rel(iso) {
+  const d = Date.parse(iso) - now(); const a = Math.abs(d);
+  const m = Math.round(a / 6e4), h = Math.round(a / 36e5), dd = Math.round(a / 864e5);
+  const s = a < 36e5 ? `${m}分` : a < 864e5 ? `${h}時間` : `${dd}日`;
+  return d >= 0 ? `あと${s}` : `${s}前`;
+}
+const isUpcomingSoon = (s) => s.status === "upcoming" && s.scheduled_start_at && Date.parse(s.scheduled_start_at) > now() - 2 * 36e5 && Date.parse(s.scheduled_start_at) < now() + 14 * 864e5;
+const liveNow = () => ST.filter((s) => s.status === "live");
+const liveOf = (id) => ST.find((s) => s.channel_id === id && s.status === "live");
+const nextOf = (id) => ST.filter((s) => s.channel_id === id && isUpcomingSoon(s)).sort((a, b) => Date.parse(a.scheduled_start_at) - Date.parse(b.scheduled_start_at))[0];
+const isFirstUpcoming = (s) => { const c = byId.get(s.channel_id); return !c.first_stream_at || s.is_first_stream; };
+const ytWatch = (id) => `https://www.youtube.com/watch?v=${id}`;
+const ytChan = (id) => `https://www.youtube.com/channel/${id}`;
+function toast(t) { const el = $("#toast"); el.textContent = t; el.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("show"), 1800); }
+
+/* ---------- HOME ---------- */
+let homeMode = null;
+function homeSets() {
+  const L = liveNow().sort((a, b) => (a.last_viewers ?? 0) - (b.last_viewers ?? 0));
+  const U = ST.filter(isUpcomingSoon).sort((a, b) => Date.parse(a.scheduled_start_at) - Date.parse(b.scheduled_start_at));
+  const F = U.filter(isFirstUpcoming);
+  const R = ST.filter((s) => s.status === "ended" && s.actual_start_at).sort((a, b) => Date.parse(b.actual_start_at) - Date.parse(a.actual_start_at)).slice(0, 40);
+  return { live: L, up: U, first: F, recent: R };
+}
+function renderHome() {
+  const S = homeSets();
+  if (!homeMode) homeMode = S.live.length ? "live" : S.up.length ? "up" : "recent";
+  const chips = [["live", "配信中", S.live.length], ["up", "配信予約", S.up.length], ["first", "初配信", S.first.length], ["recent", "最近の配信", null]];
+  $("#homeChips").innerHTML = chips.map(([k, l, n]) => `<button class="chip" data-mode="${k}" aria-pressed="${homeMode === k}">${l}${n != null ? `<b>${n}</b>` : ""}</button>`).join("");
+  const list = S[homeMode];
+  if (!list.length) {
+    const msg = { live: ["いま配信中の新人はいません", "配信が始まると、ここに一番上から並びます。予約タブで次の配信をチェックできます。"], up: ["予約中の配信はまだありません", "新人の配信予約が見つかると自動で追加されます。"], first: ["初配信の予定はまだありません", "デビュー前の新人が見つかると、ここに並びます。"], recent: ["まだ配信の記録がありません", ""] }[homeMode];
+    $("#feed").innerHTML = `<div class="empty"><strong>${msg[0]}</strong>${msg[1]}</div>`; return;
+  }
+  $("#feed").innerHTML = list.map(vidCard).join("");
+  watchHome();
+}
+function vidCard(s) {
+  const c = byId.get(s.channel_id); const d = debutDays(c);
+  let badge = "", sub = "";
+  if (s.status === "live") { badge = `<span class="bdg live">LIVE</span>`; sub = `${s.last_viewers != null ? `${s.last_viewers}人が視聴中` : "配信中"}`; }
+  else if (s.status === "upcoming") { badge = `<span class="bdg time">${md(s.scheduled_start_at)} ${hm(s.scheduled_start_at)}</span>`; sub = `${rel(s.scheduled_start_at)}に開始`; }
+  else { const dur = s.actual_end_at ? (Date.parse(s.actual_end_at) - Date.parse(s.actual_start_at)) / 1000 : 0; badge = dur ? `<span class="bdg time">${Math.floor(dur / 3600)}:${String(Math.floor(dur % 3600 / 60)).padStart(2, "0")}:${String(Math.floor(dur % 60)).padStart(2, "0")}</span>` : ""; sub = `${rel(s.actual_start_at)}${s.peak_viewers ? `・最大${s.peak_viewers}人` : ""}`; }
+  const first = s.status !== "ended" && isFirstUpcoming(s) ? `<span class="bdg first">初配信</span>` : "";
+  return `<article class="vid">
+    <div class="thumb" role="link" tabindex="0" data-url="${ytWatch(s.id)}" data-cid="${esc(c.id)}" data-vid="${esc(s.id)}"${s.status === "live" && s.embeddable !== false ? ' data-emb="1"' : ""}>${img(s.thumbnail_url, c)}${d ? `<span class="bdg debut">デビュー${d}日目</span>` : ""}${first}${badge}<span class="snd" hidden>🔇 タップで音を出す</span></div>
+    <div class="meta"><button class="av" data-open="${esc(c.id)}" aria-label="${esc(c.title)}のカードを見る">${img(c.thumbnail_url, c)}</button>
+      <div><div class="t">${esc(s.title)}</div><div class="s"><button data-open="${esc(c.id)}">${esc(c.title)}</button>・${sub}</div></div></div>
+  </article>`;
+}
+
+/* ---------- INLINE PLAYER ---------- */
+function embedHtml(vid) {
+  const o = encodeURIComponent(location.origin);
+  return `<iframe src="https://www.youtube.com/embed/${encodeURIComponent(vid)}?autoplay=1&mute=1&playsinline=1&controls=0&rel=0&modestbranding=1&enablejsapi=1&origin=${o}" allow="autoplay; encrypted-media; picture-in-picture" title="配信プレビュー"></iframe>`;
+}
+let homeIO = null, playing = null;
+function stopPlayer() { if (!playing) return; playing.querySelector("iframe")?.remove(); const sn = playing.querySelector(".snd"); if (sn) sn.hidden = true; playing.dataset.muted = ""; playing = null; }
+function startPlayer(th) {
+  if (playing === th) return; stopPlayer(); playing = th;
+  th.insertAdjacentHTML("beforeend", embedHtml(th.dataset.vid)); th.dataset.muted = "1";
+  const sn = th.querySelector(".snd"); if (sn) sn.hidden = false;
+}
+function watchHome() {
+  homeIO?.disconnect(); stopPlayer();
+  if (!live) return;
+  const ratios = new Map();
+  homeIO = new IntersectionObserver((ents) => {
+    ents.forEach((e) => ratios.set(e.target, e.intersectionRatio));
+    let best = null, br = 0.75;
+    ratios.forEach((r, el) => { if (r >= br) { best = el; br = r; } });
+    if (best) startPlayer(best); else if (playing && (ratios.get(playing) ?? 0) < 0.4) stopPlayer();
+  }, { root: $("#v-home"), threshold: [0, .4, .75, 1] });
+  document.querySelectorAll("#feed .thumb[data-emb]").forEach((t) => homeIO.observe(t));
+}
+function unmute(th) {
+  th.querySelector("iframe")?.contentWindow?.postMessage(JSON.stringify({ event: "command", func: "unMute", args: [] }), "*");
+  th.querySelector("iframe")?.contentWindow?.postMessage(JSON.stringify({ event: "command", func: "setVolume", args: [80] }), "*");
+  th.dataset.muted = ""; const sn = th.querySelector(".snd"); if (sn) sn.textContent = "🔊 もう一度タップでYouTubeへ";
+}
+
+/* ---------- MINI CARD ---------- */
+function miniCard(c) {
+  const lv = liveOf(c.id) ? `<span class="lv">LIVE</span>` : "";
+  return `<button class="mini" data-open="${esc(c.id)}"><div class="in"><div class="art">${img(c.thumbnail_url, c)}<span class="n">${noStr(c)}</span>${lv}</div>
+    <div class="tx"><div class="nm">${esc(c.title)}</div><div class="s"><span>登録 ${fmtSubs(c)}</span><span>${c.stream_count}回・${hours(c.total_stream_sec)}h</span></div></div></div></button>`;
+}
+
+/* ---------- DIRECTORY ---------- */
+let sortMode = "new";
+const SORTS = [["new", "新しい順"], ["time", "配信時間"], ["count", "配信回数"], ["small", "登録者が少ない"], ["live", "配信中"]];
+function renderDir() {
+  $("#sortChips").innerHTML = SORTS.map(([k, l]) => `<button class="chip" data-sort="${k}" aria-pressed="${sortMode === k}">${l}</button>`).join("");
+  const q = $("#q").value.trim().toLowerCase();
+  let list = CH.filter((c) => !q || (c.title || "").toLowerCase().includes(q) || (c.handle || "").toLowerCase().includes(q));
+  const by = {
+    new: (a, b) => Date.parse(debutBase(b) || 0) - Date.parse(debutBase(a) || 0),
+    time: (a, b) => b.total_stream_sec - a.total_stream_sec,
+    count: (a, b) => b.stream_count - a.stream_count,
+    small: (a, b) => (a.subscriber_count ?? 1e9) - (b.subscriber_count ?? 1e9),
+    live: (a, b) => (liveOf(b.id) ? 1 : 0) - (liveOf(a.id) ? 1 : 0),
+  }[sortMode];
+  list = [...list].sort(by);
+  $("#dirCount").textContent = `${list.length}人 / 全${CH.length}人`;
+  $("#dirGrid").innerHTML = list.length ? list.map(miniCard).join("") : `<div class="empty" style="grid-column:1/-1"><strong>見つかりませんでした</strong>名前の一部だけでも探せます。</div>`;
+}
+
+/* ---------- SCHEDULE ---------- */
+function renderSched() {
+  const U = ST.filter(isUpcomingSoon).sort((a, b) => Date.parse(a.scheduled_start_at) - Date.parse(b.scheduled_start_at));
+  if (!U.length) { $("#sched").innerHTML = `<div class="empty"><strong>予定はまだありません</strong>新人の配信予約が見つかると、日付ごとに並びます。</div>`; return; }
+  const groups = new Map();
+  U.forEach((s) => { const k = dayKey(s.scheduled_start_at); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(s); });
+  $("#sched").innerHTML = [...groups].map(([k, arr]) => `<div class="day"><h3>${md(arr[0].scheduled_start_at)}</h3>${arr.map((s) => {
+    const c = byId.get(s.channel_id);
+    return `<button class="row" style="width:100%;text-align:left" data-open="${esc(c.id)}"><div class="tm">${hm(s.scheduled_start_at)}</div><span class="av">${img(c.thumbnail_url, c)}</span>
+      <div class="bd"><div class="nm">${esc(c.title)}${isFirstUpcoming(s) ? `<span class="tag first">初配信</span>` : ""}</div><div class="ti">${esc(s.title)}</div></div><div class="cd">${rel(s.scheduled_start_at)}</div></button>`;
+  }).join("")}</div>`).join("");
+}
+
+/* ---------- MY ---------- */
+function renderMy() {
+  const total = CH.length, got = CH.filter((c) => seen.has(c.id)).length, pct = total ? Math.round(got / total * 100) : 0;
+  const fav = CH.filter((c) => favs.has(c.id));
+  $("#my").innerHTML = `
+    <div class="stat-card"><div style="flex:1"><div style="font-weight:700">発掘した新人</div><div class="bar"><i style="width:${pct}%"></i></div></div><div class="big">${got}<small>/${total}</small></div></div>
+    <div class="sec-h">推しリスト<span>${fav.length}人</span></div>
+    ${fav.length ? `<div class="grid">${fav.map(miniCard).join("")}</div>` : `<div class="empty"><strong>まだ推しがいません</strong>発掘タブで気になった子のハートを押すと、ここに集まります。</div>`}
+    <p class="note">配信開始のお知らせ、新人巡りスタンプ、コメントは準備中です。推しリストはこの端末に保存されます。</p>`;
+}
+
+/* ---------- DISCOVER ---------- */
+let discOrder = null, io = null;
+function renderDiscover() {
+  if (!discOrder) {
+    const arr = [...CH];
+    arr.sort((a, b) => a.viewers_month - b.viewers_month || Math.random() - .5);
+    const lv = arr.filter((c) => liveOf(c.id)); discOrder = [...lv, ...arr.filter((c) => !liveOf(c.id))];
+  }
+  const v = $("#v-discover");
+  if (!discOrder.length) { v.innerHTML = `<div class="empty pad">新人を集めています。少し待ってからもう一度開いてください。</div>`; return; }
+  v.innerHTML = discOrder.map((c) => {
+    const n = nextOf(c.id), L = liveOf(c.id), d = debutDays(c);
+    return `<div class="slide" data-id="${esc(c.id)}">
+      <div class="bg" style="background-image:${c.thumbnail_url ? `url('${esc(c.thumbnail_url)}'),` : ""}linear-gradient(135deg,hsl(${hue(c.id)} 55% 45%),hsl(${(hue(c.id) + 60) % 360} 60% 25%))"></div><div class="grad"></div>
+      <div class="hd">発掘<small>上にスワイプで次の新人</small></div>
+      ${L ? `<span class="live-tag">LIVE ${L.last_viewers != null ? L.last_viewers + "人" : ""}</span>` : ""}
+      ${L && L.embeddable !== false && live ? `<div class="vbox" data-vid="${esc(L.id)}">${img(L.thumbnail_url, c)}</div>` : `<div class="big">${img(c.thumbnail_url, c)}</div>`}
+      <div class="info"><span class="no">${noStr(c)}${d ? `・デビュー${d}日目` : ""}</span>
+        <div class="nm">${esc(c.title)}</div>
+        <div class="st"><span><b>${fmtSubs(c)}</b>登録者</span><span><b>${c.stream_count}</b>回配信</span><span><b>${hours(c.total_stream_sec)}</b>時間</span></div>
+        ${n ? `<div class="next">次の配信 ${md(n.scheduled_start_at)} ${hm(n.scheduled_start_at)}（${rel(n.scheduled_start_at)}）</div>` : ""}
+        <a class="go" href="${L ? ytWatch(L.id) : ytChan(c.id)}" target="_blank" rel="noopener" data-watch="${esc(c.id)}">${L ? "配信を見に行く" : "チャンネルを見る"}</a></div>
+      <div class="rail">
+        <button data-fav="${esc(c.id)}" aria-pressed="${favs.has(c.id)}"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></span>推す</button>
+        <button data-open="${esc(c.id)}"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 14h8M8 17h5"/></svg></span>カード</button>
+        <a href="${ytChan(c.id)}?sub_confirmation=1" target="_blank" rel="noopener" data-sub="${esc(c.id)}" style="display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>登録</a>
+      </div></div>`;
+  }).join("");
+  io?.disconnect();
+  const timers = new Map(), shown = new Set();
+  io = new IntersectionObserver((ents) => ents.forEach((e) => {
+    const id = e.target.dataset.id;
+    if (e.isIntersecting && e.intersectionRatio > .6) {
+      if (!shown.has(id)) { shown.add(id); logEvent("impression", id); seen.add(id); store.set("seen", [...seen]); }
+      timers.set(id, setTimeout(() => logEvent("dwell", id), 3000));
+      const vb = e.target.querySelector(".vbox"); if (vb && !vb.querySelector("iframe")) vb.insertAdjacentHTML("beforeend", embedHtml(vb.dataset.vid));
+    } else { clearTimeout(timers.get(id)); timers.delete(id); e.target.querySelector(".vbox iframe")?.remove(); }
+  }), { root: v, threshold: [0, .6, 1] });
+  v.querySelectorAll(".slide").forEach((s) => io.observe(s));
+}
+
+/* ---------- PROFILE SHEET ---------- */
+let curId = null, backTab = "prof";
+function openProfile(id, push = true) {
+  const c = byId.get(id); if (!c) return;
+  curId = id; backTab = "prof"; stopPlayer();
+  seen.add(id); store.set("seen", [...seen]);
+  logEvent("page_view", id);
+  $("#shTitle").textContent = c.title;
+  renderProfile();
+  const sh = $("#sheet"); sh.hidden = false; requestAnimationFrame(() => sh.classList.add("open"));
+  $("#shBody").scrollTop = 0;
+  if (push) try { history.pushState({ c: id }, "", `?c=${encodeURIComponent(id)}`); } catch {}
+}
+function closeProfile(fromPop) {
+  const sh = $("#sheet"); sh.classList.remove("open"); setTimeout(() => { sh.hidden = true; }, 280);
+  curId = null;
+  if (!fromPop) try { history.pushState({}, "", location.pathname); } catch {}
+  refreshCurrent();
+}
+function streamsOf(id) { return ST.filter((s) => s.channel_id === id); }
+function spark(id) {
+  const pts = DAILY.filter((d) => d.channel_id === id && d.subscriber_count != null).sort((a, b) => a.day < b.day ? -1 : 1);
+  if (pts.length < 2) return `<p style="opacity:.75">登録者数は${pts[0] ? jst(pts[0].day + "T12:00:00+09:00", { month: "numeric", day: "numeric" }) : "今日"}から毎日記録しています。2日分たまるとグラフになります。</p>`;
+  const W = 280, H = 70, P = 6, ys = pts.map((p) => Number(p.subscriber_count)), mn = Math.min(...ys), mx = Math.max(...ys), span = Math.max(1, mx - mn);
+  const xy = pts.map((p, i) => [P + i * (W - 2 * P) / (pts.length - 1), H - P - (Number(p.subscriber_count) - mn) / span * (H - 2 * P)]);
+  const line = xy.map((q, i) => (i ? "L" : "M") + q[0].toFixed(1) + " " + q[1].toFixed(1)).join(" ");
+  const last = xy[xy.length - 1];
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-label="登録者数の推移"><path d="${line} L${last[0]} ${H} L${P} ${H}Z" fill="rgba(233,184,74,.18)"/><path d="${line}" fill="none" stroke="#E9B84A" stroke-width="2"/><circle cx="${last[0]}" cy="${last[1]}" r="3.5" fill="#E9B84A"/></svg>
+    <p style="opacity:.75;margin-top:-4px">${pts.length}日で ${ys[0]}人 → <b style="color:#E9B84A">${ys[ys.length - 1]}人</b></p>`;
+}
+function backPane(c) {
+  const ss = streamsOf(c.id).filter((s) => s.actual_start_at).sort((a, b) => Date.parse(b.actual_start_at) - Date.parse(a.actual_start_at));
+  if (backTab === "prof") return `<dl class="kv"><dt>デビュー</dt><dd>${c.first_stream_at ? jst(c.first_stream_at, { year: "numeric", month: "numeric", day: "numeric" }) : "初配信前"}</dd>
+      <dt>チャンネル開設</dt><dd>${c.channel_created_at ? jst(c.channel_created_at, { year: "numeric", month: "numeric", day: "numeric" }) : "-"}</dd>
+      <dt>ハンドル</dt><dd>${esc(c.handle || "-")}</dd><dt>名鑑に登録</dt><dd>${noStr(c)}</dd></dl>
+    <div class="desc">${esc((c.description || "自己紹介はまだありません。").slice(0, 600))}</div>`;
+  if (backTab === "log") return `${spark(c.id)}
+    <div style="font-weight:700;margin:4px 0 2px">配信の記録</div>
+    ${ss.length ? ss.slice(0, 30).map((s) => { const sec = s.actual_end_at ? (Date.parse(s.actual_end_at) - Date.parse(s.actual_start_at)) / 1000 : (now() - Date.parse(s.actual_start_at)) / 1000; return `<div class="srow"><span class="t">${jst(s.actual_start_at, { month: "numeric", day: "numeric" })} ${esc(s.title)}</span><span class="v">${hours(sec)}h${s.peak_viewers ? `・${s.peak_viewers}人` : ""}</span></div>`; }).join("") : `<p style="opacity:.75">まだ配信の記録がありません。</p>`}`;
+  if (backTab === "cards") return `<p style="opacity:.8">応援が集まると、本物のトレカになって応援した人に届きます。</p>
+    <div class="grades">
+      <div class="gcard got"><span>NORMAL<small>獲得済み</small></span></div>
+      <div class="gcard lock"><span>RARE<small>30口で解放</small></span></div>
+      <div class="gcard lock"><span>SR<small>60口で解放</small></span></div>
+      <div class="gcard lock"><span>SEC<small>100口・描き下ろし</small></span></div>
+      <div class="gcard lock"><span>UR<small>150口・一枚絵</small></span></div>
+    </div><p style="opacity:.6;margin-top:10px;font-size:11.5px">応援企画は準備中です。</p>`;
+  return `<p style="opacity:.8">アクスタやトレカなどのグッズは、応援企画と一緒に受け付けを始めます。</p><p style="opacity:.6;font-size:11.5px">準備中です。</p>`;
+}
+function renderProfile() {
+  const c = byId.get(curId); if (!c) return;
+  const L = liveOf(c.id), n = nextOf(c.id), d = debutDays(c);
+  const tabs = [["prof", "プロフィール"], ["log", "配信記録"], ["cards", "歴代トレカ"], ["goods", "グッズ"]];
+  const near = CH.filter((x) => x.id !== c.id && debutBase(x) && debutBase(c) && Math.abs(Date.parse(debutBase(x)) - Date.parse(debutBase(c))) < 21 * 864e5)
+    .sort((a, b) => Math.abs(Date.parse(debutBase(a)) - Date.parse(debutBase(c))) - Math.abs(Date.parse(debutBase(b)) - Date.parse(debutBase(c)))).slice(0, 10);
+  $("#shBody").innerHTML = `
+    <div class="stage"><div class="tcard" id="tcard" role="button" tabindex="0" aria-label="カードをめくる">
+      <div class="face front"><div class="inner">
+        <div class="hd"><span class="grade">NORMAL</span><span class="no">${noStr(c)}</span>${L ? `<span class="lv">LIVE</span>` : ""}</div>
+        <div class="art">${img(c.thumbnail_url, c)}<span class="shine"></span></div>
+        <div class="nmrow"><div class="nm">${esc(c.title)}</div><div class="sub">${d ? `DEBUT DAY ${d}` : "COMING SOON"}${c.handle ? `・${esc(c.handle)}` : ""}</div></div>
+        <div class="stats"><div><b>${fmtSubs(c)}</b><span>登録者</span></div><div><b>${c.stream_count}</b><span>配信回数</span></div><div><b>${hours(c.total_stream_sec)}</b><span>合計時間</span></div></div>
+        <div class="ft"><span>今月 ${c.viewers_month}人が見た</span><span class="tap">TAP ▸</span></div>
+      </div></div>
+      <div class="face back">
+        <div class="tabs" role="tablist">${tabs.map(([k, l]) => `<button role="tab" data-btab="${k}" aria-selected="${backTab === k}">${l}</button>`).join("")}</div>
+        <div class="pane" id="pane">${backPane(c)}</div>
+      </div>
+    </div></div>
+    <div class="flipnote">カードをタップすると裏面が見られます</div>
+    <div class="cta">
+      <a class="btn red" href="${L ? ytWatch(L.id) : n ? ytWatch(n.id) : ytChan(c.id)}" target="_blank" rel="noopener" data-watch="${esc(c.id)}"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>${L ? "配信を見る" : n ? "配信予約を見る" : "チャンネルへ"}</a>
+      <a class="btn plain" href="${ytChan(c.id)}?sub_confirmation=1" target="_blank" rel="noopener" data-sub="${esc(c.id)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>チャンネル登録</a>
+      <button class="btn plain wide" data-fav="${esc(c.id)}" aria-pressed="${favs.has(c.id)}">${favs.has(c.id) ? "推しリストに入っています" : "推しリストに入れる"}</button>
+    </div>
+    ${n ? `<div class="views">次の配信 <b>${md(n.scheduled_start_at)} ${hm(n.scheduled_start_at)}</b>（${rel(n.scheduled_start_at)}）</div>` : ""}
+    ${near.length ? `<div class="sec-h">同じ時期にデビューした子<span>${near.length}人</span></div><div class="hscroll">${near.map(miniCard).join("")}</div>` : ""}
+    <div class="cta"><button class="btn gold wide" data-go="discover">次の新人を発掘する</button></div>`;
+}
+
+/* ---------- TABS ---------- */
+let tab = "home";
+function setTab(t) {
+  tab = t;
+  document.querySelectorAll(".view").forEach((v) => (v.hidden = v.id !== "v-" + t));
+  document.querySelectorAll(".nav button").forEach((b) => b.dataset.tab === t ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current"));
+  document.body.classList.toggle("dark-nav", t === "discover");
+  if (t !== "home") stopPlayer();
+  if (t !== "discover") document.querySelectorAll("#v-discover .vbox iframe").forEach((f) => f.remove());
+  store.set("tab", t);
+  refreshCurrent();
+}
+function refreshCurrent() {
+  if (tab === "home") renderHome();
+  else if (tab === "discover") { if (!$("#v-discover .slide")) renderDiscover(); else $("#v-discover").querySelectorAll("[data-fav]").forEach((b) => b.setAttribute("aria-pressed", favs.has(b.dataset.fav))); }
+  else if (tab === "dir") renderDir();
+  else if (tab === "sched") renderSched();
+  else if (tab === "my") renderMy();
+}
+
+document.addEventListener("click", (e) => {
+  const th = e.target.closest(".thumb[data-url]");
+  if (th) {
+    if (th === playing && th.dataset.muted) { unmute(th); return; }
+    logEvent("click_watch", th.dataset.cid); window.open(th.dataset.url, "_blank", "noopener"); return;
+  }
+  const t = e.target.closest("[data-tab],[data-mode],[data-sort],[data-open],[data-fav],[data-go],[data-btab],[data-watch],[data-sub],#back,#share,#tcard");
+  if (!t) return;
+  if (t.dataset.tab) return setTab(t.dataset.tab);
+  if (t.dataset.mode) { homeMode = t.dataset.mode; renderHome(); $("#v-home").scrollTop = 0; return; }
+  if (t.dataset.sort) { sortMode = t.dataset.sort; renderDir(); return; }
+  if (t.dataset.btab) { e.stopPropagation(); backTab = t.dataset.btab; const c = byId.get(curId); $("#pane").innerHTML = backPane(c); document.querySelectorAll("[data-btab]").forEach((b) => b.setAttribute("aria-selected", b.dataset.btab === backTab)); return; }
+  if (t.dataset.watch) { logEvent("click_watch", t.dataset.watch); return; }
+  if (t.dataset.sub) { logEvent("click_subscribe", t.dataset.sub); return; }
+  if (t.dataset.open) { e.preventDefault(); return openProfile(t.dataset.open); }
+  if (t.dataset.fav) {
+    const id = t.dataset.fav; favs.has(id) ? favs.delete(id) : favs.add(id); store.set("favs", [...favs]);
+    toast(favs.has(id) ? "推しリストに入れました" : "推しリストから外しました");
+    if (curId) renderProfile(); else refreshCurrent();
+    document.querySelectorAll(`[data-fav="${CSS.escape(id)}"]`).forEach((b) => b.setAttribute("aria-pressed", favs.has(id)));
+    return;
+  }
+  if (t.dataset.go) { if (curId) closeProfile(); return setTab(t.dataset.go); }
+  if (t.id === "back") return closeProfile();
+  if (t.id === "tcard") { if (e.target.closest(".pane")) return; t.classList.toggle("flip"); return; }
+  if (t.id === "share") {
+    const url = `${location.origin}${location.pathname}?c=${encodeURIComponent(curId)}`;
+    navigator.clipboard?.writeText(url).then(() => toast("リンクをコピーしました"), () => toast(url));
+  }
+});
+document.addEventListener("keydown", (e) => {
+  if ((e.key === "Enter" || e.key === " ") && e.target.id === "tcard") { e.preventDefault(); e.target.classList.toggle("flip"); }
+  if (e.key === "Escape" && curId) closeProfile();
+});
+$("#q").addEventListener("input", renderDir);
+addEventListener("popstate", () => { const id = new URLSearchParams(location.search).get("c"); if (id) openProfile(id, false); else if (curId) closeProfile(true); });
+
+load().then(() => {
+  const saved = store.get("tab", "home");
+  setTab(["home", "discover", "dir", "sched", "my"].includes(saved) ? saved : "home");
+  const id = new URLSearchParams(location.search).get("c");
+  if (id && byId.has(id)) openProfile(id, false);
+  setInterval(() => { if (tab === "home" && !curId && !playing) renderHome(); }, 60000);
+  setInterval(async () => { if (!live) return; try { const s = await rest("streams?select=id,channel_id,title,thumbnail_url,status,scheduled_start_at,actual_start_at,actual_end_at,peak_viewers,last_viewers,is_first_stream,embeddable&status=neq.none&order=updated_at.desc&limit=3000"); ST = s.filter((x) => byId.has(x.channel_id)); } catch {} }, 5 * 60000);
+});
+})();
+</script>
+
+</body>
+</html>
