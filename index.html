@@ -117,8 +117,9 @@ a{color:inherit;text-decoration:none}
 .w-cmt{flex:0 0 auto;display:block;text-align:center;text-decoration:none;font-weight:700;font-size:14px;background:var(--live);color:#fff;padding:13px 16px calc(13px + env(safe-area-inset-bottom,0px))}
 .vbox{position:absolute;left:0;right:0;top:56px;aspect-ratio:16/9;max-width:100%;background:#000;overflow:hidden}
 .slide .vbox .live-tag{top:8px;left:8px;transform:none;z-index:2}
-.dchat{position:absolute;left:max(12px,env(safe-area-inset-left,0px));right:76px;top:calc(56px + 56.25vw + 12px);bottom:232px;border-radius:12px;overflow:hidden;background:rgba(0,0,0,.35);-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 28%);mask-image:linear-gradient(180deg,transparent 0,#000 28%)}
-.dchat iframe{position:absolute;left:0;right:0;top:-60px;width:100%;height:calc(100% + 150px);border:0;pointer-events:none;opacity:.92}
+.dchat{position:absolute;left:max(12px,env(safe-area-inset-left,0px));right:76px;top:calc(56px + 56.25vw + 12px);bottom:214px;border-radius:12px;overflow:hidden;background:#0F0E15;-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 12%);mask-image:linear-gradient(180deg,transparent 0,#000 12%)}
+.dchat iframe{position:absolute;left:0;right:0;top:-56px;width:100%;height:calc(100% + 140px);border:0;pointer-events:none}
+.dsnd{position:absolute;right:8px;bottom:8px;z-index:3;background:rgba(0,0,0,.72);color:#fff}
 .dchat button{position:absolute;inset:0;background:transparent;border:0;cursor:pointer}
 .dchat .lbl{position:absolute;right:8px;bottom:8px;z-index:2;font-size:11px;font-weight:700;background:rgba(0,0,0,.6);border-radius:10px;padding:3px 8px;pointer-events:none}
 .vbox .ph{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--f-display);font-size:60px}
@@ -497,6 +498,12 @@ function watchHome() {
   document.querySelectorAll("#feed .thumb[data-emb]").forEach((t) => homeIO.observe(t));
 }
 let soundOn = store.get("sound", false);
+function setVbSound(vb, on) {
+  const fr = vb.querySelector("iframe");
+  if (on) { ytCmd(fr, "unMute"); ytCmd(fr, "setVolume", [80]); } else ytCmd(fr, "mute");
+  vb.dataset.sound = on ? "1" : "";
+  const b = vb.querySelector(".dsnd"); if (b) b.textContent = on ? "🔊 音あり（タップで消す）" : "🔇 タップで音を出す";
+}
 const ytCmd = (fr, func, args = []) => fr?.contentWindow?.postMessage(JSON.stringify({ event: "command", func, args }), "*");
 function setSound(th, on) {
   const fr = th.querySelector("iframe");
@@ -504,7 +511,7 @@ function setSound(th, on) {
   th.dataset.muted = on ? "" : "1";
   const sn = th.querySelector(".snd"); if (sn) sn.textContent = on ? "🔊 音あり（タップで消す）" : "🔇 タップで音を出す";
 }
-window.__vlabLoaded = (fr) => { const th = fr.closest(".thumb"); if (th && th === playing && soundOn) setTimeout(() => setSound(th, true), 600); };
+window.__vlabLoaded = (fr) => { const vb = fr.closest(".vbox"); if (vb) { if (soundOn) setTimeout(() => setVbSound(vb, true), 600); return; } const th = fr.closest(".thumb"); if (th && th === playing && soundOn) setTimeout(() => setSound(th, true), 600); };
 
 /* ---------- WATCH (in-site player + chat) ---------- */
 const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
@@ -658,7 +665,7 @@ function renderDiscover() {
     return `<div class="slide" data-id="${esc(c.id)}">
       <div class="bg" style="background-image:${c.thumbnail_url ? `url('${esc(c.thumbnail_url)}'),` : ""}linear-gradient(135deg,hsl(${hue(c.id)} 55% 45%),hsl(${(hue(c.id) + 60) % 360} 60% 25%))"></div><div class="grad"></div>
       <div class="hd">発掘<small>上にスワイプで次の新人</small></div>
-      ${L && L.embeddable !== false && live ? `<div class="vbox" data-vid="${esc(L.id)}">${img(L.thumbnail_url, c)}<span class="live-tag">LIVE ${L.last_viewers != null ? L.last_viewers + "人" : ""}</span></div><div class="dchat" data-chat="${esc(L.id)}"><button data-wv="${esc(L.id)}" data-cid="${esc(c.id)}" aria-label="配信に参加する"></button><span class="lbl">タップして参加</span></div>` : `${L ? `<span class="live-tag">LIVE ${L.last_viewers != null ? L.last_viewers + "人" : ""}</span>` : ""}<div class="big">${img(c.thumbnail_url, c)}</div>`}
+      ${L && L.embeddable !== false && live ? `<div class="vbox" data-vid="${esc(L.id)}">${img(L.thumbnail_url, c)}<button class="snd dsnd" aria-label="音のオンオフ">${soundOn ? "🔊 音あり（タップで消す）" : "🔇 タップで音を出す"}</button><span class="live-tag">LIVE ${L.last_viewers != null ? L.last_viewers + "人" : ""}</span></div><div class="dchat" data-chat="${esc(L.id)}"><button data-wv="${esc(L.id)}" data-cid="${esc(c.id)}" aria-label="配信に参加する"></button><span class="lbl">タップして参加</span></div>` : `${L ? `<span class="live-tag">LIVE ${L.last_viewers != null ? L.last_viewers + "人" : ""}</span>` : ""}<div class="big">${img(c.thumbnail_url, c)}</div>`}
       <div class="info"><span class="no">${noStr(c)}${d ? `・デビュー${d}日目` : ""}</span>
         <div class="nm">${esc(c.title)}</div>
         <div class="st"><span><b>${fmtSubs(c)}</b>登録者</span><span><b>${c.stream_count}</b>回配信</span><span><b>${hours(c.total_stream_sec)}</b>時間</span></div>
@@ -677,7 +684,7 @@ function renderDiscover() {
     if (e.isIntersecting && e.intersectionRatio > .6) {
       if (!shown.has(id)) { shown.add(id); logEvent("impression", id); seen.add(id); store.set("seen", [...seen]); }
       timers.set(id, setTimeout(() => logEvent("dwell", id), 3000));
-      const vb = e.target.querySelector(".vbox"); if (vb && !vb.querySelector("iframe")) vb.insertAdjacentHTML("beforeend", embedHtml(vb.dataset.vid));
+      const vb = e.target.querySelector(".vbox"); if (vb && !vb.querySelector("iframe")) { vb.dataset.sound = ""; const b = vb.querySelector(".dsnd"); if (b) b.textContent = "🔇 タップで音を出す"; vb.insertAdjacentHTML("beforeend", embedHtml(vb.dataset.vid)); }
       const dc = e.target.querySelector(".dchat"); if (dc && !dc.querySelector("iframe")) dc.insertAdjacentHTML("afterbegin", `<iframe src="https://www.youtube.com/live_chat?v=${encodeURIComponent(dc.dataset.chat)}&embed_domain=${encodeURIComponent(location.hostname)}&dark_theme=1" title="チャットのプレビュー" tabindex="-1"></iframe>`);
     } else { clearTimeout(timers.get(id)); timers.delete(id); e.target.querySelector(".vbox iframe")?.remove(); e.target.querySelector(".dchat iframe")?.remove(); }
   }), { root: v, threshold: [0, .6, 1] });
@@ -753,7 +760,7 @@ function renderProfile() {
         <div class="pane" id="pane">${backPane(c)}</div>
       </div>
     </div></div>
-    <div class="flipnote">カードをタップすると裏面が見られます</div>
+    <div class="flipnote">カードをタップすると裏返ります（裏面はスクロールもできます）</div>
     <div class="cta">
       <a class="btn red" href="${L ? ytWatch(L.id) : n ? ytWatch(n.id) : ytChan(c.id)}" target="_blank" rel="noopener" data-watch="${esc(c.id)}"${(L || n) && (L || n).embeddable !== false && live ? ` data-wv="${esc((L || n).id)}" data-cid="${esc(c.id)}"` : ""}><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>${L ? "配信を見る" : n ? "配信予約を見る" : "チャンネルへ"}</a>
       <a class="btn plain" href="${ytChan(c.id)}?sub_confirmation=1" target="_blank" rel="noopener" data-sub="${esc(c.id)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>チャンネル登録</a>
@@ -786,6 +793,8 @@ function refreshCurrent() {
 
 document.addEventListener("click", (e) => {
   if (e.target.closest("#wSnd")) { soundOn = !watchSound; store.set("sound", soundOn); setWatchSound(soundOn); return; }
+  const dsnd = e.target.closest(".dsnd");
+  if (dsnd) { const vb = dsnd.closest(".vbox"); soundOn = !vb.dataset.sound; store.set("sound", soundOn); setVbSound(vb, soundOn); return; }
   const snd = e.target.closest(".snd");
   if (snd) { const th = snd.closest(".thumb"); if (th === playing) { soundOn = !!th.dataset.muted; store.set("sound", soundOn); setSound(th, soundOn); } return; }
   if (e.target.closest("#wClose")) return closeWatch();
@@ -818,7 +827,7 @@ document.addEventListener("click", (e) => {
   }
   if (t.dataset.go) { if (curId) closeProfile(); return setTab(t.dataset.go); }
   if (t.id === "back") return closeProfile();
-  if (t.id === "tcard") { if (e.target.closest(".pane")) return; t.classList.toggle("flip"); return; }
+  if (t.id === "tcard") { if (e.target.closest("a,button,[data-btab],input")) return; t.classList.toggle("flip"); return; }
   if (t.id === "share") {
     const url = `${location.origin}${location.pathname}?c=${encodeURIComponent(curId)}`;
     navigator.clipboard?.writeText(url).then(() => toast("リンクをコピーしました"), () => toast(url));
