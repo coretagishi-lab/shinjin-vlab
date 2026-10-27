@@ -7,7 +7,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <meta name="apple-mobile-web-app-title" content="Vぶい">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232B2340'/%3E%3Cpath d='M32 10l6 14 15 1-11 10 4 15-14-8-14 8 4-15-11-10 15-1z' fill='%23FFAE1A'/%3E%3C/svg%3E">
+<link rel="icon" href="icon-192.png">
 <style>html{-webkit-text-size-adjust:100%}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
 <title>Vぶい｜新人VTuberを見つける場所</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -51,6 +51,7 @@ a{color:inherit;text-decoration:none}
 .top{position:sticky;top:0;z-index:5;background:var(--bg);display:flex;align-items:center;gap:10px;padding-block:10px}
 .logo{font-family:var(--f-display);font-size:19px;letter-spacing:.02em;display:flex;align-items:center;gap:6px}
 .logo .mk{width:26px;height:26px;border-radius:7px;background:var(--card-navy);display:grid;place-items:center;color:var(--card-gold);font-size:14px}
+.logo .lg{height:36px;width:auto;display:block}
 .logo small{font-family:var(--f-num);font-size:10px;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 4px}
 .top .sp{flex:1}
 .iconbtn{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:var(--ink)}
@@ -370,7 +371,7 @@ body.dark-nav .nav button[aria-current="page"]{color:#fff}
   <!-- HOME -->
   <section class="view pad" id="v-home" aria-label="ホーム">
     <div class="top">
-      <div class="logo"><span class="mk">V</span>Vぶい<small>β</small></div>
+      <div class="logo"><img class="lg" src="logo.png" alt="Vぶい" width="83" height="36"><small>β</small></div>
       <div class="sp"></div>
       <button class="iconbtn" aria-label="名鑑で探す" data-go="dir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
     </div>
@@ -736,7 +737,7 @@ function renderDir() {
 }
 
 /* ---------- DIRECTORY: 同期ランキング / コラボ相手 ---------- */
-const OFFICIAL_X = ""; // 公式Xができたらハンドルを入れる（例: "tsubomioshi"）
+const OFFICIAL_X = "vv__buibui"; // 公式Xができたらハンドルを入れる（例: "tsubomioshi"）
 let dirSeg = "list", rkCohort = null, rkMetric = "sec";
 const cohortOf = (c) => (c.first_stream_at ? jst(c.first_stream_at, { year: "numeric", month: "2-digit" }).replace(/\D+/g, "-").replace(/-$/, "") : null);
 const cohortLabel = (k) => { const [y, m] = k.split("-"); return `${y}年${Number(m)}月デビュー`; };
