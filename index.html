@@ -6,14 +6,14 @@
 <meta name="theme-color" content="#0F0E15">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
-<meta name="apple-mobile-web-app-title" content="新人Vラボ">
+<meta name="apple-mobile-web-app-title" content="Vぶい">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232B2340'/%3E%3Cpath d='M32 10l6 14 15 1-11 10 4 15-14-8-14 8 4-15-11-10 15-1z' fill='%23FFAE1A'/%3E%3C/svg%3E">
 <style>html{-webkit-text-size-adjust:100%}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
-<title>新人Vラボ</title>
+<title>Vぶい｜新人VTuberを見つける場所</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="description" content="見つけてもらえない個人勢の新人VTuberを、毎日自動で集めて紹介する名鑑。配信中・初配信予定・配信回数と合計時間がひと目でわかります。">
+<meta name="description" content="新人だって、ブイブイ言わせたい。見つけてもらえない個人勢の新人VTuberを、毎日自動で集めて紹介する名鑑。配信中・初配信予定・配信回数と合計時間がひと目でわかります。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Chakra+Petch:wght@500;700&display=swap">
@@ -370,7 +370,7 @@ body.dark-nav .nav button[aria-current="page"]{color:#fff}
   <!-- HOME -->
   <section class="view pad" id="v-home" aria-label="ホーム">
     <div class="top">
-      <div class="logo"><span class="mk">V</span>新人Vラボ<small>β</small></div>
+      <div class="logo"><span class="mk">V</span>Vぶい<small>β</small></div>
       <div class="sp"></div>
       <button class="iconbtn" aria-label="名鑑で探す" data-go="dir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
     </div>
@@ -948,10 +948,10 @@ function renderProfile() {
         <div class="ft"><span>今月 ${c.viewers_month}人が見た</span><span class="tap">TAP ▸</span></div>
       </div></div>
       <div class="face back"><div class="inner">
-        <div class="bhd"><span class="mk">V</span><span class="bt">新人Vラボ</span><span class="bno">${noStr(c)}</span></div>
+        <div class="bhd"><span class="mk">V</span><span class="bt">Vぶい</span><span class="bno">${noStr(c)}</span></div>
         <div class="tabs" role="tablist">${tabs.map(([k, l]) => `<button role="tab" data-btab="${k}" aria-selected="${backTab === k}">${l}</button>`).join("")}</div>
         <div class="pane" id="pane">${backPane(c)}</div>
-        <div class="bft"><span>SHINJIN V LAB</span><span>NORMAL・${noStr(c)}</span></div>
+        <div class="bft"><span>VV BUIBUI</span><span>NORMAL・${noStr(c)}</span></div>
       </div></div>
     </div></div>
     <div class="flipnote">タップか横スワイプでめくれます</div>
