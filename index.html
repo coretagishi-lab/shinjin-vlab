@@ -123,6 +123,21 @@ a{color:inherit;text-decoration:none}
 .pl .pl-pp{pointer-events:auto;width:64px;height:64px;border-radius:50%;border:0;background:rgba(0,0,0,.55);color:#fff;display:grid;place-items:center;cursor:pointer}
 .pl .pl-pp svg{width:30px;height:30px}
 .pl .pl-snd{position:absolute;right:8px;bottom:8px;z-index:3;pointer-events:auto;background:rgba(0,0,0,.72);color:#fff}
+.pl-watch .pl-snd{display:none}
+.pl-watch .pl-ctl{background:linear-gradient(rgba(0,0,0,.45),rgba(0,0,0,.18) 30%,rgba(0,0,0,.18) 70%,rgba(0,0,0,.55))}
+.pl .pl-ib{position:absolute;pointer-events:auto;width:44px;height:44px;border:0;background:none;color:#fff;display:grid;place-items:center;cursor:pointer;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
+.pl .pl-ib svg{width:24px;height:24px}
+.pl .pl-mute{right:52px;bottom:4px}
+.pl .pl-fs{right:6px;bottom:4px}
+.pl .pl-x{left:6px;top:4px;display:none}
+.pl.fs .pl-x{display:grid}
+.pl.fs{position:fixed!important;left:0!important;top:0!important;width:100vw!important;height:100vh!important;height:100dvh!important;z-index:60;border-radius:0}
+.pl.fs .pl-ib{width:52px;height:52px}
+.pl.fs .pl-mute{right:64px;bottom:max(8px,env(safe-area-inset-bottom,0px))}
+.pl.fs .pl-fs{right:max(10px,env(safe-area-inset-right,0px));bottom:max(8px,env(safe-area-inset-bottom,0px))}
+@media (orientation:portrait){
+  .pl.fs.fs-rot:not(.fs-locked){width:100vh!important;width:100dvh!important;height:100vw!important;left:100vw!important;transform-origin:0 0;transform:rotate(90deg)}
+}
 .w-off{flex:1;display:grid;place-items:center;text-align:center;color:#B8B4CC;font-size:13px;line-height:1.7;padding:24px}
 .wtouch{position:absolute;inset:0;z-index:3;touch-action:none}
 .wpause{position:absolute;inset:0;z-index:2;display:grid;place-items:center;pointer-events:none;font-size:46px;color:#fff;background:rgba(0,0,0,.35)}
@@ -562,6 +577,22 @@ function vidCard(s) {
 let soundOn = store.get("sound", false);
 const ytCmd = (fr, func, args = []) => fr?.contentWindow?.postMessage(JSON.stringify({ event: "command", func, args }), "*");
 const PLAYERS = [];
+const IC = {
+  vol: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9v6h4l5 4V5L8 9zM15.5 8.5a5 5 0 0 1 0 7l-1.1-1.1a3.5 3.5 0 0 0 0-4.8zM18 6a8.5 8.5 0 0 1 0 12l-1.1-1.1a7 7 0 0 0 0-9.8z"/></svg>`,
+  muted: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="m16 9 5 6m0-6-5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
+  fsIn: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>`,
+  fsOut: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>`,
+  down: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>`,
+};
+document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement && WP?.fs && !WP.fsByRotate) WP.exitFs(); });
+// 横向きにしたら自動で全画面（横配信のみ）、縦に戻したら元に戻す
+matchMedia("(orientation: landscape)").addEventListener?.("change", (e) => {
+  if (!WP || !watchVid) return;
+  if (e.matches && !WP.fs && !WP.vert) { WP.enterFs(true); WP.ctl(); }
+  else if (!e.matches && WP.fs && WP.fsByRotate) WP.exitFs();
+});
+// プレイヤーの外をタップしたら操作ボタンを消す
+document.addEventListener("click", (e) => { if (WP?.ctlOn && !e.target.closest(".pl-watch")) WP.hideCtl(); });
 addEventListener("message", (e) => {
   const pl = PLAYERS.find((x) => x.fr && e.source === x.fr.contentWindow); if (!pl) return;
   let d; try { d = typeof e.data === "string" ? JSON.parse(e.data) : e.data; } catch { return; }
@@ -574,17 +605,48 @@ class Player {
   constructor(kind) {
     this.kind = kind; this.fr = null; this.vid = null; this.target = null; this.muted = true; this.state = -1; this.loadT = 0; this.ctlT = 0;
     const el = document.createElement("div"); el.className = "pl pl-" + kind + " hush"; el.hidden = true;
-    el.innerHTML = `<div class="pl-tap"></div><span class="pl-live">LIVE</span><div class="pl-ctl" hidden><button class="pl-pp" aria-label="再生・一時停止"></button></div><button class="snd pl-snd" aria-label="音のオンオフ"></button>`;
+    const extra = kind === "watch" ? `<button class="pl-ib pl-x" aria-label="全画面をやめる">${IC.down}</button><button class="pl-ib pl-mute" aria-label="音のオンオフ"></button><button class="pl-ib pl-fs" aria-label="全画面"></button>` : "";
+    el.innerHTML = `<div class="pl-tap"></div><span class="pl-live">LIVE</span><div class="pl-ctl" hidden><button class="pl-pp" aria-label="再生・一時停止"></button>${extra}</div><button class="snd pl-snd" aria-label="音のオンオフ"></button>`;
+    this.fs = false; this.vert = false;
     el.querySelector(".pl-snd").addEventListener("click", (ev) => { ev.stopPropagation(); soundOn = this.muted; store.set("sound", soundOn); this.sound(soundOn); });
     el.querySelector(".pl-pp").addEventListener("click", (ev) => { ev.stopPropagation(); const on = this.state === 1 || this.state === 3; ytCmd(this.fr, on ? "pauseVideo" : "playVideo"); this.state = on ? 2 : 1; this.paint(); this.ctl(); });
-    el.querySelector(".pl-tap").addEventListener("click", (ev) => { ev.stopPropagation(); this.ctl(); });
+    el.querySelector(".pl-tap").addEventListener("click", (ev) => { ev.stopPropagation(); if (this.ctlOn) this.hideCtl(); else this.ctl(); });
+    if (kind === "watch") {
+      el.querySelector(".pl-mute").addEventListener("click", (ev) => { ev.stopPropagation(); soundOn = this.muted; store.set("sound", soundOn); this.sound(soundOn); this.ctl(); });
+      el.querySelector(".pl-fs").addEventListener("click", (ev) => { ev.stopPropagation(); this.fs ? this.exitFs() : this.enterFs(); this.ctl(); });
+      el.querySelector(".pl-x").addEventListener("click", (ev) => { ev.stopPropagation(); this.exitFs(); });
+    }
     this.el = el; PLAYERS.push(this); this.paint();
   }
   paint() {
     this.el.querySelector(".pl-snd").textContent = this.muted ? "🔇 タップで音を出す" : "🔊 音あり（タップで消す）";
+    const m = this.el.querySelector(".pl-mute"); if (m) m.innerHTML = this.muted ? IC.muted : IC.vol;
+    const f = this.el.querySelector(".pl-fs"); if (f) f.innerHTML = this.fs ? IC.fsOut : IC.fsIn;
     this.el.querySelector(".pl-pp").innerHTML = this.state === 1 || this.state === 3 ? `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>` : `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
   }
-  ctl() { const c = this.el.querySelector(".pl-ctl"); c.hidden = false; clearTimeout(this.ctlT); this.ctlT = setTimeout(() => { c.hidden = true; }, 2800); }
+  // YouTubeと同じ：タップで出す／もう一度タップで消す。再生中は3秒で自動で消える、一時停止中は出たまま
+  ctl() {
+    const c = this.el.querySelector(".pl-ctl"); c.hidden = false; this.ctlOn = true; clearTimeout(this.ctlT);
+    if (this.state === 1 || this.state === 3 || this.state === -1) this.ctlT = setTimeout(() => this.hideCtl(), 3000);
+  }
+  hideCtl() { clearTimeout(this.ctlT); this.el.querySelector(".pl-ctl").hidden = true; this.ctlOn = false; }
+  enterFs(byRotate = false) {
+    if (this.fs) return; this.fs = true; this.fsByRotate = byRotate;
+    const el = this.el; el.classList.add("fs"); el.classList.toggle("fs-rot", !this.vert); el.classList.remove("fs-locked");
+    if (!isIOS && !byRotate && el.requestFullscreen) {
+      el.requestFullscreen({ navigationUI: "hide" }).then(() => {
+        if (!this.vert && screen.orientation?.lock) screen.orientation.lock("landscape").then(() => el.classList.add("fs-locked")).catch(() => {});
+      }).catch(() => {});
+    }
+    this.paint();
+  }
+  exitFs() {
+    if (!this.fs) return; this.fs = false; this.fsByRotate = false;
+    this.el.classList.remove("fs", "fs-rot", "fs-locked");
+    try { screen.orientation?.unlock?.(); } catch {}
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    this.place(); this.paint();
+  }
   loading() { this.el.classList.add("hush"); clearTimeout(this.loadT); this.loadT = setTimeout(() => this.el.classList.remove("hush"), 3500); }
   loaded() { clearTimeout(this.loadT); setTimeout(() => this.el.classList.remove("hush"), 150); }
   host(parent) { if (this.el.parentNode !== parent) parent.appendChild(this.el); }
@@ -605,7 +667,7 @@ class Player {
     this.vid = vid; this.target = target; this.el.dataset.live = live ? "1" : ""; this.el.hidden = false; this.place(); this.paint();
   }
   place() {
-    const t = this.target, p = this.el.parentNode; if (!t || !p) return;
+    const t = this.target, p = this.el.parentNode; if (!t || !p || this.fs) return;
     if (p === t) { Object.assign(this.el.style, { left: "0", top: "0", width: "100%", height: "100%" }); return; }
     const tr = t.getBoundingClientRect(), pr = p.getBoundingClientRect();
     Object.assign(this.el.style, { left: tr.left - pr.left + p.scrollLeft + "px", top: tr.top - pr.top + p.scrollTop + "px", width: tr.width + "px", height: tr.height + "px" });
@@ -654,26 +716,32 @@ function openExt(url) {
 }
 let watchVid = null;
 (() => {
-  let y0 = null, x0 = 0, dy = 0, t0 = 0;
+  let y0 = null, x0 = 0, dy = 0, t0 = 0, fsMode = false, rot = false;
   const w = () => $("#watch");
   document.addEventListener("touchstart", (e) => {
     if (!e.target.closest(".w-top, .w-grab, #wBar .who") && !e.target.closest("#wPlayer .pl-tap")) return;
     if (!watchVid) return;
-    y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; dy = 0; t0 = Date.now(); w().classList.add("drag");
+    y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; dy = 0; t0 = Date.now();
+    fsMode = !!WP?.fs; rot = fsMode && WP.el.classList.contains("fs-rot") && !WP.el.classList.contains("fs-locked") && matchMedia("(orientation: portrait)").matches;
+    if (!fsMode) w().classList.add("drag");
   }, { passive: true });
   document.addEventListener("touchmove", (e) => {
     if (y0 == null) return;
-    const dx = Math.abs(e.touches[0].clientX - x0);
-    dy = Math.max(0, e.touches[0].clientY - y0);
-    if (dx > dy && dy < 20) { dy = 0; return; }
-    w().style.transform = dy ? `translateY(${dy}px)` : "";
+    const sx = e.touches[0].clientX - x0, sy = e.touches[0].clientY - y0;
+    // 全画面で90度回している時は、画面の「下」が端末の左方向になる
+    const down = rot ? -sx : sy, side = Math.abs(rot ? sy : sx);
+    dy = Math.max(0, down);
+    if (side > dy && dy < 20) { dy = 0; return; }
+    if (fsMode) WP.el.style.opacity = String(Math.max(.4, 1 - dy / 400));
+    else w().style.transform = dy ? `translateY(${dy}px)` : "";
   }, { passive: true });
-  document.addEventListener("touchend", (e) => {
+  document.addEventListener("touchend", () => {
     if (y0 == null) return;
     const moved = dy, dt = Date.now() - t0; y0 = null;
+    const swiped = moved > 90 || (moved > 40 && dt < 250);
+    if (fsMode) { WP.el.style.opacity = ""; if (swiped) WP.exitFs(); return; }
     const el = w(); el.classList.remove("drag"); el.style.transform = "";
-    if (moved > 90 || (moved > 40 && dt < 250)) return closeWatch();
-
+    if (swiped) return closeWatch();
   });
 })();
 function openWatch(vid, push = true) {
@@ -697,7 +765,7 @@ function openWatch(vid, push = true) {
     : chatOff ? `<div class="w-off">この配信はチャットがオフになっています。<br>映像と音声だけ楽しめます。</div>` : `<div class="w-note"><b>アーカイブを再生中</b><br>配信中の枠では、ここにチャットが出て、そのままコメントできます。</div>`;
   const w = $("#watch"); w.hidden = false; requestAnimationFrame(() => w.classList.add("open"));
   HP?.stop(); DP?.stop();
-  if (!WP) WP = new Player("watch"); WP.host($("#wPlayer")); WP.play($("#wPlayer"), vid, s.status === "live");
+  if (!WP) WP = new Player("watch"); WP.exitFs(); WP.vert = !!s.is_vertical; WP.host($("#wPlayer")); WP.play($("#wPlayer"), vid, s.status === "live"); WP.ctl();
   if (push) try { history.pushState({ w: vid }, "", `?w=${encodeURIComponent(vid)}`); } catch {}
 }
 function closeWatch(fromPop) {
@@ -705,7 +773,7 @@ function closeWatch(fromPop) {
   const w = $("#watch"); w.classList.remove("open"); watchVid = null;
   setTimeout(() => { if (!watchVid) { w.hidden = true; $("#wLower").innerHTML = ""; } }, 260);
   if (!fromPop) try { history.pushState({}, "", curId ? `?c=${encodeURIComponent(curId)}` : location.pathname); } catch {}
-  WP?.stop();
+  WP?.exitFs(); WP?.hideCtl(); WP?.stop();
   setTimeout(() => { if (watchVid) return; if (tab === "home") watchHome(); else if (tab === "discover") discAttach(); }, 270);
 }
 document.addEventListener("click", (e) => { const b = e.target.closest("[data-wopen]"); if (!b) return; e.stopPropagation(); openProfile(b.dataset.wopen); }, true);
