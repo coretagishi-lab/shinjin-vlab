@@ -415,6 +415,10 @@ body.dark-nav .nav button[aria-current="page"]{color:#fff}
 .btn.plain{background:var(--surface);border:1px solid var(--line)}
 .btn.gold{background:var(--accent);color:var(--accent-ink)}
 .btn.wide{grid-column:1/-1}
+.btn.topbtn[aria-pressed="true"]{background:var(--card-gold);color:#2a1b00;border-color:var(--card-gold)}
+.sos-c .top{font-size:10.5px;font-weight:700;background:var(--card-gold);color:#2a1b00;border-radius:4px;padding:0 5px;margin-right:4px}
+.sos-more{align-self:center;font-size:12.5px;font-weight:700;color:var(--live);background:none;border:0;padding:4px 8px}
+.mini .tp{position:absolute;right:6px;top:6px;background:var(--card-gold);color:#2a1b00;font-size:11px;font-weight:700;border-radius:4px;padding:0 5px}
 .views{margin-top:12px;text-align:center;font-size:12.5px;color:var(--muted)}
 .views b{font-family:var(--f-num);color:var(--ink);font-size:15px}
 .hscroll{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
@@ -517,6 +521,7 @@ const store = {
 let SID = store.get("sid", null);
 if (!SID) { SID = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2)); store.set("sid", SID); }
 const favs = new Set(store.get("favs", []));
+const tops = new Set(store.get("tops", []).filter((x) => favs.has(x)).slice(0, 3));
 const seen = new Set(store.get("seen", []));
 
 let CH = [], ST = [], DAILY = [], byId = new Map(), live = false;
@@ -563,14 +568,29 @@ async function loadRescue() {
 const rescueOf = (cid) => RESCUE.find((r) => r.channel_id === cid && Date.parse(r.expires_at) > Date.now());
 function renderRescue() {
   const el = $("#rescueBar"); if (!el) return;
-  const list = RESCUE.filter((r) => Date.parse(r.expires_at) > Date.now() && byId.has(r.channel_id) && liveOf(r.channel_id));
-  if (!list.length) { el.innerHTML = ""; return; }
+  // 並び順：最推し → 推し → 早く呼んだ順。表示は3件まで（残りは「ほかに○件」で開く）
+  const rank = (r) => (tops.has(r.channel_id) ? 0 : favs.has(r.channel_id) ? 1 : 2);
+  const all = RESCUE.filter((r) => Date.parse(r.expires_at) > Date.now() && byId.has(r.channel_id) && liveOf(r.channel_id))
+    .sort((a, b) => rank(a) - rank(b) || Date.parse(a.created_at) - Date.parse(b.created_at));
+  if (!all.length) { el.innerHTML = ""; return; }
+  const list = rescueOpen ? all : all.slice(0, 3), more = all.length - list.length;
   el.innerHTML = `<div class="sos"><div class="sos-h"><i></i>救援要請中！ いま来てくれる人を待っています</div>${list.map((r) => {
     const c = byId.get(r.channel_id), L = liveOf(r.channel_id), left = Math.max(1, Math.round((Date.parse(r.expires_at) - Date.now()) / 6e4));
-    return `<button class="sos-c" data-wv="${esc(L.id)}" data-cid="${esc(c.id)}"><span class="av">${img(c.thumbnail_url, c)}</span><span class="bd"><b>${esc(c.title)}</b><span>${r.message ? esc(r.message) + "・" : ""}${L.last_viewers != null ? `いま${L.last_viewers}人・` : ""}あと${left}分</span></span><span class="go">駆けつける</span></button>`;
-  }).join("")}</div>`;
+    return `<button class="sos-c" data-wv="${esc(L.id)}" data-cid="${esc(c.id)}"><span class="av">${img(c.thumbnail_url, c)}</span><span class="bd"><b>${tops.has(c.id) ? `<span class="top">★最推し</span>` : favs.has(c.id) ? `<span class="top" style="background:var(--chip);color:var(--ink)">推し</span>` : ""}${esc(c.title)}</b><span>${r.message ? esc(r.message) + "・" : ""}${L.last_viewers != null ? `いま${L.last_viewers}人・` : ""}あと${left}分</span></span><span class="go">駆けつける</span></button>`;
+  }).join("")}${more > 0 ? `<button class="sos-more" data-sosmore="1">ほかに${more}件の救援要請 ▾</button>` : ""}</div>`;
 }
+let rescueOpen = false;
+document.addEventListener("click", (e) => { if (e.target.closest("[data-sosmore]")) { rescueOpen = true; renderRescue(); } });
 setInterval(() => { if (live) loadRescue(); }, 60000);
+
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-top]"); if (!b) return; e.stopPropagation();
+  const id = b.dataset.top;
+  if (tops.has(id)) { tops.delete(id); toast("最推しから外しました"); }
+  else if (tops.size >= 3) { toast("最推しは3人までです。だれかを外してから選んでください"); return; }
+  else { tops.add(id); toast("★ 最推しにしました！ 救援を優先してお知らせします"); }
+  store.set("tops", [...tops]); if (curId) renderProfile(); if (tab === "home") renderRescue();
+}, true);
 
 /* ---------- 古参の証（この端末に記録。早く・少ない時に来た人ほど価値が高い） ---------- */
 const KOSAN = store.get("kosan", {});
@@ -880,7 +900,7 @@ document.addEventListener("click", (e) => { const b = e.target.closest("[data-wo
 /* ---------- MINI CARD ---------- */
 function miniCard(c, noLive) {
   const lv = !noLive && liveOf(c.id) ? `<span class="lv">LIVE</span>` : "";
-  return `<button class="mini" data-open="${esc(c.id)}"><div class="in"><div class="art">${img(c.thumbnail_url, c)}<span class="n">${noStr(c)}</span>${lv}</div>
+  return `<button class="mini" data-open="${esc(c.id)}"><div class="in"><div class="art">${img(c.thumbnail_url, c)}<span class="n">${noStr(c)}</span>${lv}${tops.has(c.id) ? `<span class="tp">★最推し</span>` : ""}</div>
     <div class="tx"><div class="nm">${esc(c.title)}</div><div class="s"><span>登録 ${fmtSubs(c)}</span><span>${c.stream_count}回・${hours(c.total_stream_sec)}h</span></div></div></div></button>`;
 }
 
@@ -1100,11 +1120,11 @@ function kosanList() {
 }
 function renderMy() {
   const total = CH.length, got = CH.filter((c) => seen.has(c.id)).length, pct = total ? Math.round(got / total * 100) : 0;
-  const fav = CH.filter((c) => favs.has(c.id));
+  const fav = CH.filter((c) => favs.has(c.id)).sort((a, b) => (tops.has(b.id) ? 1 : 0) - (tops.has(a.id) ? 1 : 0));
   $("#my").innerHTML = ownerBox() + `
     <div class="stat-card"><div style="flex:1"><div style="font-weight:700">発掘した新人</div><div class="bar"><i style="width:${pct}%"></i></div></div><div class="big">${got}<small>/${total}</small></div></div>
     ${kosanList()}
-    <div class="sec-h">推しリスト<span>${fav.length}人</span></div>
+    <div class="sec-h">推しリスト<span>${fav.length}人・★最推し${tops.size}/3</span></div>
     ${fav.length ? `<div class="grid">${fav.map(miniCard).join("")}</div>` : `<div class="empty"><strong>まだ推しがいません</strong>発掘タブで気になった子のハートを押すと、ここに集まります。</div>`}
     <p class="note">配信開始のお知らせ、新人巡りスタンプ、コメントは準備中です。推しリストはこの端末に保存されます。</p>
     <p class="note"><a href="for-listener.html">Vぶいの楽しみ方</a>　<a href="for-vtuber.html">VTuberのかたへ</a>　<a href="guide-vtuber.html">使い方ガイド</a><br><a href="privacy.html">プライバシーポリシー</a>　<a href="terms.html">利用規約</a>　<a href="https://x.com/vv__buibui" target="_blank" rel="noopener">お問い合わせ（公式X）</a></p>`;
@@ -1238,6 +1258,7 @@ function renderProfile() {
       <a class="btn red" href="${L ? ytWatch(L.id) : n ? ytWatch(n.id) : ytChan(c.id)}" target="_blank" rel="noopener" data-watch="${esc(c.id)}"${(L || n) && (L || n).embeddable !== false && live ? ` data-wv="${esc((L || n).id)}" data-cid="${esc(c.id)}"` : ""}><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>${L ? "配信を見る" : n ? "配信予約を見る" : "チャンネルへ"}</a>
       <a class="btn plain" href="${ytChan(c.id)}?sub_confirmation=1" target="_blank" rel="noopener" data-sub="${esc(c.id)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>チャンネル登録</a>
       <button class="btn plain wide" data-fav="${esc(c.id)}" aria-pressed="${favs.has(c.id)}">${favs.has(c.id) ? "推しリストに入っています" : "推しリストに入れる"}</button>
+      ${favs.has(c.id) ? `<button class="btn plain wide topbtn" data-top="${esc(c.id)}" aria-pressed="${tops.has(c.id)}">${tops.has(c.id) ? "★ 最推しです（救援を優先してお知らせ）" : `☆ 最推しにする（あと${3 - tops.size}人）`}</button>` : ""}
     </div>
     ${kosanBox(c)}
     ${n ? `<div class="views">次の配信 <b>${md(n.scheduled_start_at)} ${hm(n.scheduled_start_at)}</b>（${rel(n.scheduled_start_at)}）</div>` : ""}
@@ -1329,7 +1350,7 @@ document.addEventListener("click", (e) => {
   if (t.dataset.fav) {
     const id = t.dataset.fav; favs.has(id) ? favs.delete(id) : favs.add(id); store.set("favs", [...favs]);
     toast(favs.has(id) ? "推しリストに入れました" : "推しリストから外しました");
-    if (favs.has(id)) kosanMark(id);
+    if (favs.has(id)) kosanMark(id); else if (tops.delete(id)) store.set("tops", [...tops]);
     if (curId) renderProfile(); else refreshCurrent();
     document.querySelectorAll(`[data-fav="${CSS.escape(id)}"]`).forEach((b) => b.setAttribute("aria-pressed", favs.has(id)));
     return;
