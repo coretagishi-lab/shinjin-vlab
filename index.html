@@ -170,6 +170,32 @@ a{color:inherit;text-decoration:none}
 .meta .t{font-weight:700;font-size:14.5px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .meta .s{color:var(--muted);font-size:12.5px;margin-top:3px}
 .meta>div{min-width:0}
+.sos{display:flex;flex-direction:column;gap:8px;margin:4px 0 12px}
+.sos-h{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;color:var(--live)}
+.sos-h i{width:8px;height:8px;border-radius:50%;background:var(--live);animation:sosb 1s infinite}
+@keyframes sosb{50%{opacity:.25}}
+.sos-c{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:color-mix(in srgb,var(--live) 10%,var(--surface));border:1.5px solid color-mix(in srgb,var(--live) 45%,transparent);border-radius:14px;padding:10px 12px}
+.sos-c .av{width:44px;height:44px;border-radius:50%;overflow:hidden;position:relative;flex:none}
+.sos-c .av .ph,.sos-c .av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:grid;place-items:center;color:#fff;font-weight:700}
+.sos-c .bd{flex:1;min-width:0}
+.sos-c b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sos-c span{font-size:12px;color:var(--muted)}
+.sos-c .go{flex:none;background:var(--live);color:#fff;font-weight:700;font-size:12.5px;border-radius:999px;padding:7px 12px}
+.ks{margin-top:12px;border-radius:14px;padding:12px 14px;background:linear-gradient(135deg,color-mix(in srgb,var(--card-gold) 30%,var(--surface)),var(--surface));border:1.5px solid color-mix(in srgb,var(--card-gold) 60%,transparent);display:flex;flex-direction:column;gap:6px}
+.ks b{font-size:14.5px}
+.ks span{font-size:12.5px;color:var(--muted)}
+.ks .bd2{display:flex;gap:6px;flex-wrap:wrap}
+.ks .bd2 em{font-style:normal;font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 9px;background:var(--surface);border:1px solid var(--line)}
+.ks .shr{align-self:flex-start;background:#000;color:#fff;font-weight:700;font-size:12.5px;border-radius:999px;padding:7px 14px;text-decoration:none}
+.ksl{display:flex;flex-direction:column;gap:10px}
+.ksl .ks{margin-top:0}
+.ksl .krow{display:flex;gap:10px;align-items:center}
+.ksl .krow .av{width:40px;height:40px;border-radius:50%;overflow:hidden;position:relative;flex:none}
+.ksl .krow .av .ph,.ksl .krow .av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:grid;place-items:center;color:#fff;font-weight:700}
+.w-sos{margin:0 12px 8px;background:color-mix(in srgb,var(--live) 22%,#1A1824);border:1px solid var(--live);color:#fff;border-radius:12px;padding:8px 12px;font-size:12.5px;line-height:1.6}
+.w-sos b{color:#FFB3B7}
+.own .sosbtn{background:var(--live);color:#fff}
+.own .sosbtn[disabled]{background:#4A4560;color:#B8B4CC}
 .empty{padding:40px 8px;text-align:center;color:var(--muted);line-height:1.8}
 .empty strong{display:block;color:var(--ink);font-size:15px;margin-bottom:4px}
 .sec-h{font-weight:700;font-size:16px;margin:22px 0 10px;display:flex;align-items:baseline;gap:8px}
@@ -411,6 +437,7 @@ body.dark-nav .nav button[aria-current="page"]{color:#fff}
       <div class="sp"></div>
       <button class="iconbtn" aria-label="名鑑で探す" data-go="dir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
     </div>
+    <div id="rescueBar"></div>
     <div class="chips" id="homeChips" role="toolbar" aria-label="表示の切り替え"></div>
     <div class="feed" id="feed"></div>
   </section>
@@ -518,12 +545,59 @@ async function load() {
       rest(`channel_daily?select=*&day=gte.${since}`),
     ]);
     CH = c; ST = s; DAILY = d; live = true;
+    loadRescue();
   } catch {
     const snap = JSON.parse($("#snap").textContent);
     CH = snap.channels || []; ST = snap.streams || []; DAILY = snap.daily || [];
   }
   CH.forEach((c, i) => { c.no = i + 1; c.subscriber_count = c.subscriber_count == null ? null : Number(c.subscriber_count); c.stream_count = Number(c.stream_count || 0); c.total_stream_sec = Number(c.total_stream_sec || 0); c.viewers_month = Number(c.viewers_month || 0); byId.set(c.id, c); });
   ST = ST.filter((s) => byId.has(s.channel_id) && s.embeddable !== false);
+}
+
+/* ---------- 救援通知（新人が1日1回だけ呼べるSOS） ---------- */
+let RESCUE = [];
+async function loadRescue() {
+  try { RESCUE = await rest(`rescue_calls?select=*&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&order=created_at.desc`); } catch { RESCUE = []; }
+  try { if (tab === "home" && !curId) renderRescue(); } catch {}
+}
+const rescueOf = (cid) => RESCUE.find((r) => r.channel_id === cid && Date.parse(r.expires_at) > Date.now());
+function renderRescue() {
+  const el = $("#rescueBar"); if (!el) return;
+  const list = RESCUE.filter((r) => Date.parse(r.expires_at) > Date.now() && byId.has(r.channel_id) && liveOf(r.channel_id));
+  if (!list.length) { el.innerHTML = ""; return; }
+  el.innerHTML = `<div class="sos"><div class="sos-h"><i></i>救援要請中！ いま来てくれる人を待っています</div>${list.map((r) => {
+    const c = byId.get(r.channel_id), L = liveOf(r.channel_id), left = Math.max(1, Math.round((Date.parse(r.expires_at) - Date.now()) / 6e4));
+    return `<button class="sos-c" data-wv="${esc(L.id)}" data-cid="${esc(c.id)}"><span class="av">${img(c.thumbnail_url, c)}</span><span class="bd"><b>${esc(c.title)}</b><span>${r.message ? esc(r.message) + "・" : ""}${L.last_viewers != null ? `いま${L.last_viewers}人・` : ""}あと${left}分</span></span><span class="go">駆けつける</span></button>`;
+  }).join("")}</div>`;
+}
+setInterval(() => { if (live) loadRescue(); }, 60000);
+
+/* ---------- 古参の証（この端末に記録。早く・少ない時に来た人ほど価値が高い） ---------- */
+const KOSAN = store.get("kosan", {});
+function kosanMark(cid, { streamId = null, rescueId = null } = {}) {
+  const c = byId.get(cid); if (!c) return;
+  let k = KOSAN[cid], isNew = false;
+  if (!k) { k = KOSAN[cid] = { since: new Date().toISOString(), subs: c.subscriber_hidden ? null : c.subscriber_count, day: debutDays(c), visits: [], rescues: [] }; isNew = true; }
+  if (streamId && !k.visits.includes(streamId)) k.visits.push(streamId);
+  if (rescueId && !k.rescues.includes(rescueId)) { k.rescues.push(rescueId); toast("🆘 救援に駆けつけました！ 救援バッジをゲット"); logEvent("rescue_join", cid); }
+  k.visits = k.visits.slice(-200);
+  store.set("kosan", KOSAN);
+  if (isNew && !rescueId) toast(`🏅 古参の証をゲット！${k.subs != null ? `（登録者${k.subs.toLocaleString("ja-JP")}人の頃から）` : ""}`);
+}
+function kosanTitle(k) { return k.subs != null ? `登録者${k.subs.toLocaleString("ja-JP")}人の頃から` : k.day ? `デビュー${k.day}日目から` : `${jst(k.since, { year: "numeric", month: "numeric", day: "numeric" })}から`; }
+function kosanShareUrl(c, k) {
+  const text = `「${c.title}」を${kosanTitle(k)}応援してます！${k.rescues.length ? `🆘救援${k.rescues.length}回` : ""}\n#Vぶい #新人VTuber`;
+  const url = `https://vvbuibui.com/?c=${encodeURIComponent(c.id)}`;
+  return `https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+}
+function kosanBox(c) {
+  const k = KOSAN[c.id]; if (!k) return "";
+  const now = c.subscriber_hidden ? null : c.subscriber_count;
+  const grow = k.subs != null && now != null && now > k.subs ? `いまは${now.toLocaleString("ja-JP")}人。${(now - k.subs).toLocaleString("ja-JP")}人ふえました！` : "";
+  return `<div class="ks"><b>🏅 あなたは「${kosanTitle(k)}」の古参です</b>
+    <span>${jst(k.since, { year: "numeric", month: "numeric", day: "numeric" })}に出会いました${grow ? "・" + grow : ""}</span>
+    <div class="bd2"><em>👀 配信に${k.visits.length}回</em>${k.rescues.length ? `<em>🆘 救援${k.rescues.length}回</em>` : ""}</div>
+    <a class="shr" href="${kosanShareUrl(c, k)}" target="_blank" rel="noopener">𝕏 古参の証をシェア</a></div>`;
 }
 
 /* ---------- helpers ---------- */
@@ -569,6 +643,7 @@ function homeSets() {
   return { live: L, up: U, first: F, recent: R };
 }
 function renderHome() {
+  renderRescue();
   const S = homeSets();
   if (!homeMode) homeMode = S.live.length ? "live" : S.up.length ? "up" : "recent";
   const chips = [["live", "配信中", S.live.length], ["up", "配信予約", S.up.length], ["first", "初配信", S.first.length], ["recent", "最近の配信", null]];
@@ -780,11 +855,13 @@ function openWatch(vid, push = true) {
     <button class="wb" data-fav="${esc(c.id)}" aria-pressed="${favs.has(c.id)}">♡ 推す</button>
     <button class="wb" data-wopen="${esc(c.id)}">カード</button>
     <a class="wb" href="${ytWatch(vid)}" target="_blank" rel="noopener">YouTubeで開く</a></div>`;
+  if (s.status === "live") { const R = rescueOf(c.id); kosanMark(c.id, { streamId: s.id, rescueId: R ? R.id : null }); }
+  const R0 = s.status === "live" && rescueOf(c.id);
   const canChat = (s.status === "live" || s.status === "upcoming") && s.chat_enabled !== false;
   const chatOff = (s.status === "live" || s.status === "upcoming") && s.chat_enabled === false;
-  $("#wLower").innerHTML = canChat
+  $("#wLower").innerHTML = (R0 ? `<div class="w-sos">🆘 <b>救援要請中</b>${R0.message ? `「${esc(R0.message)}」` : ""}　来てくれてありがとう！ コメントで「救援きたよ」って伝えてあげてね</div>` : "") + (canChat
     ? `<div class="w-chat${isIOS ? " crop" : ""}"><iframe src="https://www.youtube.com/live_chat?v=${encodeURIComponent(vid)}&embed_domain=${encodeURIComponent(location.hostname)}" title="チャット"></iframe></div>${isIOS ? `<a class="w-cmt" href="${ytWatch(vid)}" target="_blank" rel="noopener" data-watch="${esc(c.id)}">💬 コメントする（YouTubeアプリで開く）</a>` : ""}`
-    : chatOff ? `<div class="w-off">この配信はチャットがオフになっています。<br>映像と音声だけ楽しめます。</div>` : `<div class="w-note"><b>アーカイブを再生中</b><br>配信中の枠では、ここにチャットが出て、そのままコメントできます。</div>`;
+    : chatOff ? `<div class="w-off">この配信はチャットがオフになっています。<br>映像と音声だけ楽しめます。</div>` : `<div class="w-note"><b>アーカイブを再生中</b><br>配信中の枠では、ここにチャットが出て、そのままコメントできます。</div>`);
   const w = $("#watch"); w.hidden = false; requestAnimationFrame(() => w.classList.add("open"));
   HP?.stop(); DP?.stop();
   if (!WP) WP = new Player("watch"); WP.exitFs(); WP.vert = !!s.is_vertical; WP.host($("#wPlayer")); WP.play($("#wPlayer"), vid, s.status === "live"); WP.ctl();
@@ -915,11 +992,12 @@ function renderSched() {
 /* ---------- 本人登録（YouTubeのアカウントでログイン） ---------- */
 const AUTH = window.supabase?.createClient ? window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, detectSessionInUrl: true, flowType: "pkce" } }) : null;
 const GENRES = ["雑談", "ゲーム", "歌", "ASMR", "お絵描き", "企画", "ホラー", "FPS", "マイクラ", "その他"];
-let SESSION = null, MINE = null, ownBusy = false, ownMsg = "";
+let SESSION = null, MINE = null, SOS_TODAY = [], ownBusy = false, ownMsg = "";
 async function ownerApi(body) {
   const r = await fetch(`${SB_URL}/functions/v1/owner`, { method: "POST", headers: { apikey: SB_KEY, Authorization: `Bearer ${SESSION.access_token}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
   return r.json();
 }
+function applyMineR(r) { SOS_TODAY = r.sos_today || []; applyMine(r.mine); }
 function applyMine(mine) {
   MINE = mine || [];
   MINE.forEach((m) => { const c = byId.get(m.id); if (c) Object.assign(c, { registered: m.registered, collab_open: m.collab_open, collab_genres: m.collab_genres, x_handle: m.x_handle }); });
@@ -950,10 +1028,16 @@ async function ownerInit() {
         ownMsg = taken.length ? "このチャンネルは、すでに別のアカウントで登録されています。お心当たりがない場合は公式Xまでご連絡ください。" : "本人登録が完了しました🎉";
         (r.results || []).filter((x) => x.result === "added").forEach(() => { ownMsg = "本人登録が完了しました🎉 名鑑への反映は、少し時間がかかることがあります。"; });
       }
-      applyMine(r.mine);
-    } else applyMine((await ownerApi({ action: "mine" })).mine);
+      applyMineR(await ownerApi({ action: "mine" }));
+    } else applyMineR(await ownerApi({ action: "mine" }));
   } catch { ownMsg = "通信に失敗しました。"; }
   ownBusy = false; if (tab === "my") renderMy();
+}
+function sosBlock(m) {
+  const L = liveOf(m.id), used = SOS_TODAY.find((s) => s.channel_id === m.id), act = used && Date.parse(used.expires_at) > Date.now();
+  const note = act ? "救援を呼んでいます（30分間、ホームのいちばん上に出ます）" : used ? "今日の救援は使いました。また明日使えます" : L ? "人が少なくてつらい時に。ホームのいちばん上に30分間出ます（1日1回）" : "配信中だけ使えます（1日1回）";
+  return `<div style="display:flex;flex-direction:column;gap:6px"><button class="gbtn sosbtn" data-own="sos" ${L && !used ? "" : "disabled"}>🆘 救援を呼ぶ</button>
+    ${L && !used ? `<input type="text" data-own="sosmsg" maxlength="40" placeholder="ひとこと（任意）例：初見さん歓迎！ゲーム実況中" autocomplete="off">` : ""}<small>${note}</small></div>`;
 }
 function ownerBox() {
   const G = `<svg viewBox="0 0 24 24"><path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.3-1.6 3.8-5.5 3.8-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.2 14.6 2.2 12 2.2 6.6 2.2 2.2 6.6 2.2 12s4.4 9.8 9.8 9.8c5.7 0 9.4-4 9.4-9.6 0-.6-.1-1.1-.2-1.6H12z"/></svg>`;
@@ -972,6 +1056,7 @@ function ownerBox() {
     const c = byId.get(m.id) || m; const gs = m.collab_genres || [];
     return `<div class="own" data-mine="${esc(m.id)}">${msg}
       <div class="mc"><span class="av">${img(m.thumbnail_url, c)}</span><div><b>${esc(m.title)}</b><span class="ok">✅ 本人登録済み</span></div></div>
+      ${sosBlock(m)}
       <label class="row2">コラボ相手を募集する<input type="checkbox" class="sw" data-own="collab" ${m.collab_open ? "checked" : ""}></label>
       <div><p style="margin-bottom:6px">得意なジャンル（5つまで）</p><div class="gen">${GENRES.map((g) => `<button data-own="genre" data-g="${g}" aria-pressed="${gs.includes(g)}">${g}</button>`).join("")}</div></div>
       <div><p style="margin-bottom:6px">XのID（コラボ申請の連絡先になります）</p><input type="text" data-own="x" value="${esc(m.x_handle ? "@" + m.x_handle : "")}" placeholder="@your_id" autocomplete="off"></div>
@@ -984,11 +1069,18 @@ document.addEventListener("click", async (e) => {
   const k = b.dataset.own;
   if (k === "login") return ownerLogin();
   if (k === "logout") { await AUTH?.auth.signOut(); SESSION = null; MINE = null; ownMsg = ""; return renderMy(); }
+  if (k === "sos") {
+    const w = b.closest("[data-mine]"); if (!b.dataset.sure) { b.dataset.sure = "1"; b.textContent = "🆘 本当に呼ぶ？（もう一度押す）"; return; }
+    b.disabled = true; b.textContent = "呼んでいます…";
+    const r = await ownerApi({ action: "sos", channel_id: w.dataset.mine, message: w.querySelector('[data-own="sosmsg"]')?.value || "" });
+    ownMsg = r.ok ? "🆘 救援を呼びました！ ホームのいちばん上に30分間表示されます" : r.error === "used_today" ? "今日の救援はもう使いました" : r.error === "not_live" ? "配信中だけ使えます。配信が始まってから数分待ってお試しください" : "うまくいきませんでした";
+    await loadRescue(); return applyMineR(await ownerApi({ action: "mine" }));
+  }
   if (k === "unreg") {
     if (!b.dataset.sure) { b.dataset.sure = "1"; b.textContent = "本当に解除する？（もう一度押す）"; return; }
     const w = b.closest("[data-mine]"); await ownerApi({ action: "unregister", channel_id: w.dataset.mine });
     const c = byId.get(w.dataset.mine); if (c) Object.assign(c, { registered: false, collab_open: false });
-    ownMsg = "本人登録を解除しました。"; return applyMine((await ownerApi({ action: "mine" })).mine);
+    ownMsg = "本人登録を解除しました。"; return applyMineR(await ownerApi({ action: "mine" }));
   }
   if (k === "genre") { const box = b.closest(".gen"); const on = b.getAttribute("aria-pressed") === "true"; if (!on && box.querySelectorAll('[aria-pressed="true"]').length >= 5) return toast("5つまで選べます"); b.setAttribute("aria-pressed", String(!on)); return; }
   if (k === "save") {
@@ -998,11 +1090,19 @@ document.addEventListener("click", async (e) => {
     ownMsg = r.error ? "保存できませんでした。" : "保存しました✨"; applyMine(r.mine || MINE);
   }
 });
+function kosanList() {
+  const ids = Object.keys(KOSAN).filter((id) => byId.has(id)).sort((a, b) => Date.parse(KOSAN[a].since) - Date.parse(KOSAN[b].since));
+  const res = ids.reduce((n, id) => n + KOSAN[id].rescues.length, 0);
+  return `<div class="sec-h">古参の証<span>${ids.length}人${res ? `・🆘救援${res}回` : ""}</span></div>` + (ids.length
+    ? `<div class="ksl">${ids.map((id) => { const c = byId.get(id), k = KOSAN[id]; return `<div class="ks"><div class="krow"><button class="av" data-open="${esc(id)}">${img(c.thumbnail_url, c)}</button><div style="min-width:0"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.title)}</b><span>${kosanTitle(k)}の古参・配信に${k.visits.length}回${k.rescues.length ? `・🆘${k.rescues.length}回` : ""}</span></div></div><a class="shr" href="${kosanShareUrl(c, k)}" target="_blank" rel="noopener">𝕏 シェア</a></div>`; }).join("")}</div>`
+    : `<div class="empty" style="padding:20px 8px"><strong>まだ古参の証はありません</strong>推しリストに入れるか、配信を見に行くと「登録者○人の頃から」の証が残ります。早く・人が少ない時ほど価値が上がります。</div>`);
+}
 function renderMy() {
   const total = CH.length, got = CH.filter((c) => seen.has(c.id)).length, pct = total ? Math.round(got / total * 100) : 0;
   const fav = CH.filter((c) => favs.has(c.id));
   $("#my").innerHTML = ownerBox() + `
     <div class="stat-card"><div style="flex:1"><div style="font-weight:700">発掘した新人</div><div class="bar"><i style="width:${pct}%"></i></div></div><div class="big">${got}<small>/${total}</small></div></div>
+    ${kosanList()}
     <div class="sec-h">推しリスト<span>${fav.length}人</span></div>
     ${fav.length ? `<div class="grid">${fav.map(miniCard).join("")}</div>` : `<div class="empty"><strong>まだ推しがいません</strong>発掘タブで気になった子のハートを押すと、ここに集まります。</div>`}
     <p class="note">配信開始のお知らせ、新人巡りスタンプ、コメントは準備中です。推しリストはこの端末に保存されます。</p>
@@ -1138,6 +1238,7 @@ function renderProfile() {
       <a class="btn plain" href="${ytChan(c.id)}?sub_confirmation=1" target="_blank" rel="noopener" data-sub="${esc(c.id)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>チャンネル登録</a>
       <button class="btn plain wide" data-fav="${esc(c.id)}" aria-pressed="${favs.has(c.id)}">${favs.has(c.id) ? "推しリストに入っています" : "推しリストに入れる"}</button>
     </div>
+    ${kosanBox(c)}
     ${n ? `<div class="views">次の配信 <b>${md(n.scheduled_start_at)} ${hm(n.scheduled_start_at)}</b>（${rel(n.scheduled_start_at)}）</div>` : ""}
     ${near.length ? `<div class="sec-h">いま配信中・同じ時期にデビューした子<span>${near.length}人</span></div><div class="hscroll">${near.map((x) => miniCard(x, true)).join("")}</div>` : ""}
     <div class="cta"><button class="btn gold wide" data-go="discover">次の新人を発掘する</button></div>`;
@@ -1227,6 +1328,7 @@ document.addEventListener("click", (e) => {
   if (t.dataset.fav) {
     const id = t.dataset.fav; favs.has(id) ? favs.delete(id) : favs.add(id); store.set("favs", [...favs]);
     toast(favs.has(id) ? "推しリストに入れました" : "推しリストから外しました");
+    if (favs.has(id)) kosanMark(id);
     if (curId) renderProfile(); else refreshCurrent();
     document.querySelectorAll(`[data-fav="${CSS.escape(id)}"]`).forEach((b) => b.setAttribute("aria-pressed", favs.has(id)));
     return;
