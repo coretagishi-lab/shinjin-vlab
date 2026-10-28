@@ -316,9 +316,9 @@ a{color:inherit;text-decoration:none}
 .lpgrab .lpx{position:absolute;right:10px;top:2px;width:28px;height:26px;font-size:20px;color:var(--muted)}
 .lpsh iframe{flex:1;width:100%;border:0;background:var(--bg)}
 @media (min-width:700px){.lpsh{left:50%;right:auto;width:620px;margin-left:-310px}}
-.ov{position:fixed;inset:0;z-index:70;background:rgba(10,8,18,.62);display:flex;align-items:flex-end;justify-content:center;opacity:0;transition:opacity .2s}
+.ov{padding-top:calc(env(safe-area-inset-top,0px) + 12px);box-sizing:border-box;position:fixed;inset:0;z-index:70;background:rgba(10,8,18,.62);display:flex;align-items:flex-end;justify-content:center;opacity:0;transition:opacity .2s}
 .ov.on{opacity:1}
-.ov .ovp{width:100%;max-width:520px;max-height:92vh;max-height:92dvh;overflow-y:auto;background:var(--surface);color:var(--ink);border-radius:22px 22px 0 0;padding:20px max(18px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));transform:translateY(24px);transition:transform .22s}
+.ov .ovp{width:100%;max-width:520px;max-height:100%;overflow-y:auto;background:var(--surface);color:var(--ink);border-radius:22px 22px 0 0;padding:20px max(18px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));transform:translateY(24px);transition:transform .22s}
 .ov.on .ovp{transform:none}
 @media (min-width:600px){.ov{align-items:center}.ov .ovp{border-radius:22px}}
 .jn{display:flex;flex-direction:column;gap:12px;position:relative}
@@ -1360,7 +1360,7 @@ function ownerBox() {
   return MINE.map((m) => {
     const c = byId.get(m.id) || m; const gs = m.collab_genres || [];
     return `<div class="own" data-mine="${esc(m.id)}">${msg}
-      <div class="mc"><span class="av">${img(m.custom_icon_url || m.thumbnail_url, c)}</span><div style="flex:1;min-width:0"><b>${esc(m.title)}</b><span class="ok">✅ 本人登録済み</span></div><button class="pedit" data-set="open" data-ch="${esc(m.id)}">⚙ 編集</button></div>
+      <div class="mc"><span class="av">${img(m.custom_icon_url || m.thumbnail_url, c)}</span><div style="flex:1;min-width:0"><b>${esc(m.title)}</b><span class="ok">✅ 本人登録済み</span></div></div>
       <div class="osum"><span>${m.collab_open ? "🤝 コラボ募集中" : "コラボ募集はオフ"}</span>${gs.length ? `<span class="gnr">${gs.map((g, i) => `<em><i>${i + 1}</i>${esc(g)}</em>`).join("")}</span>` : `<span style="opacity:.7">得意ジャンル未設定</span>`}</div>
       <a href="guide-vtuber.html" style="color:var(--accent);font-size:12.5px;font-weight:700">📖 使い方ガイド（コラボ・救援のやり方）</a>
       ${sosBlock(m)}</div>`;
@@ -1387,6 +1387,7 @@ function channelSettings(m) {
     <div class="srow2"><span class="sav">${img(icon || m.thumbnail_url, c)}</span><div class="sact">
       <label class="sbtn">画像を変える<input type="file" accept="image/*" data-set="chicon" data-ch="${esc(m.id)}" hidden></label>
       ${icon ? `<button class="sbtn gray" data-set="chiconreset" data-ch="${esc(m.id)}">YouTubeの画像に戻す</button>` : `<small>いまはYouTubeのアイコンを使っています</small>`}</div></div>
+    <small class="note2">このアイコンがアカウントのアイコンにもなります</small>
     <label class="sl">プロフィール（トレカの裏に表示・300文字まで）</label>
     <textarea data-f="bio" maxlength="300" rows="4" placeholder="空のままだとYouTubeの概要欄を表示します">${esc(m.custom_bio || "")}</textarea>
     <label class="sl">得意なジャンル（5つまで・押した順に順位）</label>
@@ -1398,13 +1399,15 @@ function channelSettings(m) {
     <button class="lnk2" data-set="unreg" data-ch="${esc(m.id)}">このチャンネルの本人登録を解除する</button>
   </section>`;
 }
+// アイコンは1アカウント1枚：VTuberはチャンネルのアイコンをそのまま使う
+function myAvatar() { const m = MINE[0]; return m ? (m.custom_icon_url || m.thumbnail_url) : PROFILE?.avatar_url; }
 function accountSettings() {
   const nick = PROFILE?.nickname || "", av = PROFILE?.avatar_url;
   return `<section class="sbox">
     <h4>👤 アカウント</h4>
-    <div class="srow2"><span class="sav">${av ? `<img src="${esc(av)}" alt="">` : `<span class="ph" style="background:var(--card-navy);color:var(--card-gold)">${esc([...nick][0] || "V")}</span>`}</span><div class="sact">
+    ${MINE.length ? "" : `<div class="srow2"><span class="sav">${av ? `<img src="${esc(av)}" alt="">` : `<span class="ph" style="background:var(--card-navy);color:var(--card-gold)">${esc([...nick][0] || "V")}</span>`}</span><div class="sact">
       <label class="sbtn">画像を変える<input type="file" accept="image/*" data-set="myicon" hidden></label>
-      ${av ? `<button class="sbtn gray" data-set="myiconreset">画像を消す</button>` : ""}</div></div>
+      ${av ? `<button class="sbtn gray" data-set="myiconreset">画像を消す</button>` : ""}</div></div>`}
     <label class="sl">ニックネーム（20文字まで）</label>
     <div class="srow3"><input type="text" id="setNick" maxlength="20" value="${esc(nick)}" autocomplete="off"><button class="sbtn" data-set="nicksave">変更</button></div>
     <small class="note2">${esc(SESSION?.user?.email || "")} でログイン中</small>
@@ -1458,7 +1461,7 @@ document.addEventListener("change", async (e) => {
     if (f.dataset.set === "myicon") {
       const url = await uploadIcon(file, "me");
       const { error } = await AUTH.from("profiles").update({ avatar_url: url, updated_at: new Date().toISOString() }).eq("user_id", SESSION.user.id);
-      if (error) throw error; PROFILE.avatar_url = url; toast("アイコンを変えました"); renderMy();
+      if (error) throw error; PROFILE.avatar_url = url; toast("アイコンを変えました"); renderMy(); closeOv("settings"); return;
     } else if (f.dataset.set === "chicon") {
       ICON_PEND[f.dataset.ch] = await uploadIcon(file, "ch-" + f.dataset.ch); toast("「保存する」を押すと反映されます");
     }
@@ -1498,7 +1501,8 @@ document.addEventListener("click", async (e) => {
     const m = MINE.find((x) => x.id === ch), c = byId.get(ch);
     if (m && c) Object.assign(c, { thumbnail_url: m.custom_icon_url || m.thumbnail_url, description: m.custom_bio || m.description, collab_genres: m.collab_genres });
     delete ICON_PEND[ch]; GED[ch] = [...(m?.collab_genres || [])];
-    toast("保存しました✨"); rerenderSettings(); renderMy();
+    if (MINE[0]?.id === ch) { const url = m?.custom_icon_url || m?.thumbnail_url || null; AUTH.from("profiles").update({ avatar_url: url }).eq("user_id", SESSION.user.id).then(() => {}); if (PROFILE) PROFILE.avatar_url = url; }
+    toast("保存しました✨"); closeOv("settings"); renderMy();
     return;
   }
   if (d.set === "unreg") {
@@ -1511,7 +1515,7 @@ document.addEventListener("click", async (e) => {
     const v = ($("#setNick")?.value || "").trim(); if (!v) return toast("ニックネームを入れてください");
     const { error } = await AUTH.from("profiles").update({ nickname: v, updated_at: new Date().toISOString() }).eq("user_id", SESSION.user.id);
     if (error) return toast("保存できませんでした");
-    PROFILE.nickname = v; toast("ニックネームを変えました"); renderMy(); return rerenderSettings();
+    PROFILE.nickname = v; toast("ニックネームを変えました"); renderMy(); return closeOv("settings");
   }
   if (d.set === "myiconreset") {
     await AUTH.from("profiles").update({ avatar_url: null }).eq("user_id", SESSION.user.id); PROFILE.avatar_url = null; renderMy(); return rerenderSettings();
@@ -1663,8 +1667,8 @@ function renderMy() {
   const gear = $("#gear"); if (gear) gear.hidden = !(loggedIn() && v !== "guest");
   if (v === "guest") { el.innerHTML = adm + `<div class="jwrap">${joinPick(null, true)}</div>` + stat + footLinks; navBadge(); return; }
   const nick = PROFILE?.nickname || (isAdmin() ? "（プレビュー）" : "");
-  const av = PROFILE?.avatar_url;
-  const head = `<button class="me" data-set="open"><span class="mav">${av ? `<img src="${esc(av)}" alt="">` : esc([...nick][0] || "V")}</span><span class="mt"><b>${esc(nick)}</b><span>${v === "vtuber" ? "VTuber・リスナー" : "リスナー"}</span></span><span class="mgear" aria-hidden="true">⚙</span></button>`;
+  const av = myAvatar();
+  const head = `<div class="me"><span class="mav">${av ? `<img src="${esc(av)}" alt="">` : esc([...nick][0] || "V")}</span><span class="mt"><b>${esc(nick)}</b><span>${v === "vtuber" ? "VTuber・リスナー" : "リスナー"}</span></span></div>`;
   const role = v === "vtuber" ? myRole : "listener";
   const seg = v === "vtuber" ? `<div class="seg" style="margin-top:12px"><button data-myrole="listener" aria-selected="${role === "listener"}">🎧 リスナー</button><button data-myrole="vtuber" aria-selected="${role === "vtuber"}">🎙 VTuber${collabPending ? `<i class="segn">${collabPending}</i>` : ""}</button></div>` : "";
   const fav = CH.filter((c) => favs.has(c.id)).sort((a, b) => (tops.has(b.id) ? 1 : 0) - (tops.has(a.id) ? 1 : 0));
