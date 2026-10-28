@@ -2447,6 +2447,23 @@ load().then(() => {
   authInit();
   setInterval(() => { if (tab === "home" && !curId && !HP?.target) renderHome(); }, 60000);
   setInterval(async () => { if (!live) return; try { const s = await rest("streams?select=id,channel_id,title,thumbnail_url,status,scheduled_start_at,actual_start_at,actual_end_at,peak_viewers,last_viewers,is_first_stream,embeddable,is_vertical,chat_enabled&status=neq.none&order=updated_at.desc&limit=3000"); ST = s.filter((x) => byId.has(x.channel_id) && x.embeddable !== false); if (tab !== "discover") discOrder = null; } catch {} }, 5 * 60000);
+  // 1分ごとに「最近変わった配信」だけ取りに行く（配信が始まったら1〜2分でホームに出す。全部取り直すのは5分ごと）
+  setInterval(async () => {
+    if (!live || document.hidden) return;
+    try {
+      const since = new Date(Date.now() - 150000).toISOString();
+      const s = await rest(`streams?select=id,channel_id,title,thumbnail_url,status,scheduled_start_at,actual_start_at,actual_end_at,peak_viewers,last_viewers,is_first_stream,embeddable,is_vertical,chat_enabled&updated_at=gt.${encodeURIComponent(since)}&order=updated_at.desc&limit=500`);
+      if (!s.length) return;
+      const m = new Map(ST.map((x) => [x.id, x])); let liveChanged = false;
+      for (const x of s) {
+        const was = m.get(x.id)?.status === "live", now = x.status === "live";
+        if (was !== now) liveChanged = true;
+        if (x.status === "none" || x.embeddable === false || !byId.has(x.channel_id)) m.delete(x.id); else m.set(x.id, x);
+      }
+      ST = [...m.values()];
+      if (liveChanged) { await loadOverlayStatus(); if (tab === "home" && !curId && !watchVid) renderHome(); }
+    } catch {}
+  }, 60000);
 });
 })();
 </script>
