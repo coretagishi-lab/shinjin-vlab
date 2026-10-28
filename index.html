@@ -1360,7 +1360,7 @@ function ownerBox() {
   return MINE.map((m) => {
     const c = byId.get(m.id) || m; const gs = m.collab_genres || [];
     return `<div class="own" data-mine="${esc(m.id)}">${msg}
-      <div class="mc"><span class="av">${img(m.custom_icon_url || m.thumbnail_url, c)}</span><div style="flex:1;min-width:0"><b>${esc(m.title)}</b><span class="ok">✅ 本人登録済み</span></div></div>
+      <div class="mc"><span class="av">${img(m.custom_icon_url || m.thumbnail_url, c)}</span><div style="flex:1;min-width:0"><b>${esc(m.custom_title || m.title)}</b><span class="ok">✅ 本人登録済み</span></div></div>
       <div class="osum"><span>${m.collab_open ? "🤝 コラボ募集中" : "コラボ募集はオフ"}</span>${gs.length ? `<span class="gnr">${gs.map((g, i) => `<em><i>${i + 1}</i>${esc(g)}</em>`).join("")}</span>` : `<span style="opacity:.7">得意ジャンル未設定</span>`}</div>
       <a href="guide-vtuber.html" style="color:var(--accent);font-size:12.5px;font-weight:700">📖 使い方ガイド（コラボ・救援のやり方）</a>
       ${sosBlock(m)}</div>`;
@@ -1383,11 +1383,14 @@ function genreEditor(chId) {
 function channelSettings(m) {
   const c = byId.get(m.id) || m, icon = ICON_PEND[m.id] !== undefined ? ICON_PEND[m.id] : m.custom_icon_url;
   return `<section class="sbox" data-chset="${esc(m.id)}">
-    <h4>🎙 ${esc(m.title)}</h4>
+    <h4>🎙 チャンネルのプロフィール</h4>
     <div class="srow2"><span class="sav">${img(icon || m.thumbnail_url, c)}</span><div class="sact">
       <label class="sbtn">画像を変える<input type="file" accept="image/*" data-set="chicon" data-ch="${esc(m.id)}" hidden></label>
       ${icon ? `<button class="sbtn gray" data-set="chiconreset" data-ch="${esc(m.id)}">YouTubeの画像に戻す</button>` : `<small>いまはYouTubeのアイコンを使っています</small>`}</div></div>
-    <small class="note2">このアイコンがアカウントのアイコンにもなります</small>
+    <small class="note2">このアイコンと名前が、アカウントのアイコンと名前にもなります</small>
+    <label class="sl">表示名（20文字まで・名鑑やトレカに表示）</label>
+    <input type="text" data-f="title" maxlength="20" value="${esc(m.custom_title || m.title || "")}" autocomplete="off">
+    ${m.custom_title ? `<small class="note2">YouTubeの名前：${esc(m.title)}</small>` : ""}
     <label class="sl">プロフィール（トレカの裏に表示・300文字まで）</label>
     <textarea data-f="bio" maxlength="300" rows="4" placeholder="空のままだとYouTubeの概要欄を表示します">${esc(m.custom_bio || "")}</textarea>
     <label class="sl">得意なジャンル（5つまで・押した順に順位）</label>
@@ -1408,8 +1411,8 @@ function accountSettings() {
     ${setAsVtuber() ? "" : `<div class="srow2"><span class="sav">${av ? `<img src="${esc(av)}" alt="">` : `<span class="ph" style="background:var(--card-navy);color:var(--card-gold)">${esc([...nick][0] || "V")}</span>`}</span><div class="sact">
       <label class="sbtn">画像を変える<input type="file" accept="image/*" data-set="myicon" hidden></label>
       ${av ? `<button class="sbtn gray" data-set="myiconreset">画像を消す</button>` : ""}</div></div>`}
-    <label class="sl">ニックネーム（20文字まで）</label>
-    <div class="srow3"><input type="text" id="setNick" maxlength="20" value="${esc(nick)}" autocomplete="off"><button class="sbtn" data-set="nicksave">変更</button></div>
+    ${setAsVtuber() ? "" : `<label class="sl">ニックネーム（20文字まで）</label>
+    <div class="srow3"><input type="text" id="setNick" maxlength="20" value="${esc(nick)}" autocomplete="off"><button class="sbtn" data-set="nicksave">変更</button></div>`}
     <small class="note2">${esc(SESSION?.user?.email || "")} でログイン中</small>
   </section>`;
 }
@@ -1436,10 +1439,10 @@ function openSettings(focusCh) {
 function rerenderSettings() {
   const el = $("#settings .ovp"); if (!el) return;
   const st = el.scrollTop, vals = {};
-  el.querySelectorAll("[data-chset]").forEach((s) => { vals[s.dataset.chset] = { bio: s.querySelector('[data-f="bio"]').value, x: s.querySelector('[data-f="x"]').value, collab: s.querySelector('[data-f="collab"]').checked }; });
+  el.querySelectorAll("[data-chset]").forEach((s) => { vals[s.dataset.chset] = { title: s.querySelector('[data-f="title"]').value, bio: s.querySelector('[data-f="bio"]').value, x: s.querySelector('[data-f="x"]').value, collab: s.querySelector('[data-f="collab"]').checked }; });
   const nk = $("#setNick")?.value;
   el.innerHTML = settingsHTML();
-  el.querySelectorAll("[data-chset]").forEach((s) => { const v = vals[s.dataset.chset]; if (!v) return; s.querySelector('[data-f="bio"]').value = v.bio; s.querySelector('[data-f="x"]').value = v.x; s.querySelector('[data-f="collab"]').checked = v.collab; });
+  el.querySelectorAll("[data-chset]").forEach((s) => { const v = vals[s.dataset.chset]; if (!v) return; s.querySelector('[data-f="bio"]').value = v.bio; s.querySelector('[data-f="title"]').value = v.title; s.querySelector('[data-f="x"]').value = v.x; s.querySelector('[data-f="collab"]').checked = v.collab; });
   if (nk != null && $("#setNick")) $("#setNick").value = nk;
   el.scrollTop = st;
 }
@@ -1496,12 +1499,16 @@ document.addEventListener("click", async (e) => {
   if (d.set === "chsave") {
     const s = document.querySelector(`[data-chset="${CSS.escape(ch)}"]`); t.disabled = true; t.textContent = "保存中…";
     const body = { action: "update", channel_id: ch, collab_open: s.querySelector('[data-f="collab"]').checked, collab_genres: GED[ch] || [], x_handle: s.querySelector('[data-f="x"]').value, custom_bio: s.querySelector('[data-f="bio"]').value };
+    const nt = s.querySelector('[data-f="title"]').value.trim(), mm = MINE.find((x) => x.id === ch);
+    if (!nt) { t.disabled = false; t.textContent = "保存する"; return toast("表示名を入れてください"); }
+    body.custom_title = nt === mm?.title ? "" : nt;
     if (ICON_PEND[ch] !== undefined) body.custom_icon_url = ICON_PEND[ch];
     const r = await ownerApi(body);
     if (r.error) { t.disabled = false; t.textContent = "保存する"; return toast("保存できませんでした"); }
     await refreshMine();
     const m = MINE.find((x) => x.id === ch), c = byId.get(ch);
-    if (m && c) Object.assign(c, { thumbnail_url: m.custom_icon_url || m.thumbnail_url, description: m.custom_bio || m.description, collab_genres: m.collab_genres });
+    if (m && c) Object.assign(c, { title: m.custom_title || m.title, thumbnail_url: m.custom_icon_url || m.thumbnail_url, description: m.custom_bio || m.description, collab_genres: m.collab_genres });
+    if (m && MINE[0]?.id === ch) { const nn = (m.custom_title || m.title || "").slice(0, 20); if (nn && PROFILE && PROFILE.nickname !== nn) { PROFILE.nickname = nn; AUTH.from("profiles").update({ nickname: nn }).eq("user_id", SESSION.user.id).then(() => {}); } }
     delete ICON_PEND[ch]; GED[ch] = [...(m?.collab_genres || [])];
     if (MINE[0]?.id === ch) { const url = m?.custom_icon_url || m?.thumbnail_url || null; AUTH.from("profiles").update({ avatar_url: url }).eq("user_id", SESSION.user.id).then(() => {}); if (PROFILE) PROFILE.avatar_url = url; }
     toast("保存しました✨"); closeOv("settings"); renderMy();
@@ -1670,7 +1677,8 @@ function renderMy() {
   if (v === "guest") { el.innerHTML = adm + `<div class="jwrap">${joinPick(null, true)}</div>` + stat + footLinks; navBadge(); return; }
   const nick = PROFILE?.nickname || (isAdmin() ? "（プレビュー）" : "");
   const av = myAvatar();
-  const head = `<div class="me"><span class="mav">${av ? `<img src="${esc(av)}" alt="">` : esc([...nick][0] || "V")}</span><span class="mt"><b>${esc(nick)}</b><span>${v === "vtuber" ? "VTuber・リスナー" : "リスナー"}</span></span></div>`;
+  const vtName = v === "vtuber" && MINE[0] ? (MINE[0].custom_title || MINE[0].title) : null;
+  const head = `<div class="me"><span class="mav">${av ? `<img src="${esc(av)}" alt="">` : esc([...nick][0] || "V")}</span><span class="mt"><b>${esc(vtName || nick)}</b><span>${v === "vtuber" ? "VTuber・リスナー" : "リスナー"}</span></span></div>`;
   const role = v === "vtuber" ? myRole : "listener";
   const seg = v === "vtuber" ? `<div class="seg" style="margin-top:12px"><button data-myrole="listener" aria-selected="${role === "listener"}">🎧 リスナー</button><button data-myrole="vtuber" aria-selected="${role === "vtuber"}">🎙 VTuber${collabPending ? `<i class="segn">${collabPending}</i>` : ""}</button></div>` : "";
   const fav = CH.filter((c) => favs.has(c.id)).sort((a, b) => (tops.has(b.id) ? 1 : 0) - (tops.has(a.id) ? 1 : 0));
