@@ -1056,6 +1056,7 @@ function ownerBox() {
     const c = byId.get(m.id) || m; const gs = m.collab_genres || [];
     return `<div class="own" data-mine="${esc(m.id)}">${msg}
       <div class="mc"><span class="av">${img(m.thumbnail_url, c)}</span><div><b>${esc(m.title)}</b><span class="ok">✅ 本人登録済み</span></div></div>
+      <a href="guide-vtuber.html" style="color:var(--accent);font-size:12.5px;font-weight:700">📖 使い方ガイド（コラボ・救援のやり方）</a>
       ${sosBlock(m)}
       <label class="row2">コラボ相手を募集する<input type="checkbox" class="sw" data-own="collab" ${m.collab_open ? "checked" : ""}></label>
       <div><p style="margin-bottom:6px">得意なジャンル（5つまで）</p><div class="gen">${GENRES.map((g) => `<button data-own="genre" data-g="${g}" aria-pressed="${gs.includes(g)}">${g}</button>`).join("")}</div></div>
@@ -1106,7 +1107,7 @@ function renderMy() {
     <div class="sec-h">推しリスト<span>${fav.length}人</span></div>
     ${fav.length ? `<div class="grid">${fav.map(miniCard).join("")}</div>` : `<div class="empty"><strong>まだ推しがいません</strong>発掘タブで気になった子のハートを押すと、ここに集まります。</div>`}
     <p class="note">配信開始のお知らせ、新人巡りスタンプ、コメントは準備中です。推しリストはこの端末に保存されます。</p>
-    <p class="note"><a href="privacy.html">プライバシーポリシー</a>　<a href="terms.html">利用規約</a>　<a href="https://x.com/vv__buibui" target="_blank" rel="noopener">お問い合わせ（公式X）</a></p>`;
+    <p class="note"><a href="for-listener.html">Vぶいの楽しみ方</a>　<a href="for-vtuber.html">VTuberのかたへ</a>　<a href="guide-vtuber.html">使い方ガイド</a><br><a href="privacy.html">プライバシーポリシー</a>　<a href="terms.html">利用規約</a>　<a href="https://x.com/vv__buibui" target="_blank" rel="noopener">お問い合わせ（公式X）</a></p>`;
 }
 
 /* ---------- DISCOVER ---------- */
