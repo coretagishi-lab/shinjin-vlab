@@ -57,6 +57,7 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
 <body>
 <div id="root"><div id="stack" class="bl"></div><div id="fx"></div></div>
 <div id="err"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
 (() => {
   const SB = "https://sgmzyhvhwbqyudayboes.supabase.co";
@@ -67,7 +68,7 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
   const OC_URL = q.get("ocurl") || "http://localhost:11180";
   const SHOW_URL = q.get("show");                 // URLで指定があればそれを優先（"1"/"0"）
   const W = 1920, H = 1080;
-  let after = 0, ack = null, onecomme = null, ocService = q.get("ocsvc") || null, failCount = 0;
+  let started = false, after = 0, ack = null, onecomme = null, ocService = q.get("ocsvc") || null, failCount = 0;
   let S = { pos: "bl", size: "m", show: "auto", side: "r", hero: true, oc: "" }, settingsAt = undefined;
   const $ = (s) => document.querySelector(s);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -184,36 +185,69 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
   }
   window.VBUI_HERO = hero; // 確認用
 
+  // ---- 届いたものを、届いた順に1つずつ処理する（同じものが2回届いても1回だけ） ----
+  const seen = new Set(); let chain = Promise.resolve();
+  function handleItems(items) {
+    for (const c of items || []) {
+      if (!c || seen.has(c.id)) continue; seen.add(c.id);
+      if (c.id > after) after = c.id;
+      chain = chain.then(() => handleOne(c)).catch(() => {});
+    }
+  }
+  async function handleOne(c) {
+    if (c.kind === "test") {
+      ack = c.id; kick(); // 「設定確認」はすぐ返事する
+      banner("✅ Vぶいと接続できました", onecomme ? "わんコメにもテストのコメントを送りました" : "わんコメは見つかりませんでした（Vぶいの画面にコメントを表示します）");
+      const sent = await ocSend(c); if (!sent) showComment(c);
+      return;
+    }
+    if (c.kind === "rescue") { if (S.hero) hero(c); else await deliver(c, { cls: "hr", text: "🦸 救援に駆けつけました！" }); return; }
+    await deliver(c); // ふつうのコメント・レイアウト確認の見本（sample）
+  }
+  function handleSettings(st, at) {
+    if (!st) return;
+    const changed = settingsAt !== undefined && at !== settingsAt;
+    const ocBefore = S.oc;
+    S = { ...S, ...st }; applySettings();
+    if (S.oc === "no") onecomme = false; else if (ocBefore === "no" && OC) ocInit();
+    if (changed) preview();
+    settingsAt = at;
+  }
+
+  // ---- つなぎっぱなしの通知（新しいコメントは、届いた瞬間に出る） ----
+  //  つながっている間は、Vぶいへの「生きてるよ」の連絡は30秒に1回だけ。つながらない時は、前と同じく2秒ごとに聞きに行く
+  let rtOK = false;
+  function realtime() {
+    try {
+      if (!window.supabase?.createClient) return;
+      const cl = window.supabase.createClient(SB, PK, { auth: { persistSession: false, autoRefreshToken: false } });
+      cl.channel("ovl:" + KEY, { config: { broadcast: { self: false } } })
+        .on("broadcast", { event: "items" }, (m) => handleItems(m.payload?.items))
+        .on("broadcast", { event: "settings" }, (m) => handleSettings(m.payload?.settings, m.payload?.settings_at))
+        .subscribe((status) => { const was = rtOK; rtOK = status === "SUBSCRIBED"; if (was && !rtOK) kick(); });
+    } catch { rtOK = false; }
+  }
+
+  let timer = null;
+  function kick() { clearTimeout(timer); timer = setTimeout(poll, 300); }
   async function poll() {
+    clearTimeout(timer);
     try {
       const r = await fetch(SB + "/functions/v1/overlay", { method: "POST", headers: { apikey: PK, Authorization: "Bearer " + PK, "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "poll", key: KEY, after, onecomme: onecomme === true, ack }) });
+        // after: 最初の1回は0（今あるコメントは出さない）。2回目からは、それより新しいものを受け取る（-1 = 最初はコメントが1つもなかった）
+        body: JSON.stringify({ action: "poll", key: KEY, after: started ? (after || -1) : 0, onecomme: onecomme === true, ack }) });
       const d = await r.json();
-      if (d.error === "bad_key") { err("Vぶい：このURLは使えなくなりました。Vぶいの設定画面から新しいURLをコピーしてください"); return setTimeout(poll, 30000); }
+      if (d.error === "bad_key") { err("Vぶい：このURLは使えなくなりました。Vぶいの設定画面から新しいURLをコピーしてください"); timer = setTimeout(poll, 30000); return; }
       if (!r.ok) throw new Error(d.error);
-      err(""); failCount = 0; after = d.last || after;
-      if (d.settings) {
-        const changed = settingsAt !== undefined && d.settings_at !== settingsAt;
-        const ocBefore = S.oc;
-        S = { ...S, ...d.settings }; applySettings();
-        if (S.oc === "no") onecomme = false; else if (ocBefore === "no" && OC) ocInit();
-        if (changed) preview();
-        settingsAt = d.settings_at;
-      }
-      for (const c of d.items || []) {
-        if (c.kind === "test") {
-          ack = c.id;
-          banner("✅ Vぶいと接続できました", onecomme ? "わんコメにもテストのコメントを送りました" : "わんコメは見つかりませんでした（Vぶいの画面にコメントを表示します）");
-          const sent = await ocSend(c); if (!sent) showComment(c);
-          continue;
-        }
-        if (c.kind === "rescue") { if (S.hero) hero(c); else deliver(c, { cls: "hr", text: "🦸 救援に駆けつけました！" }); continue; }
-        await deliver(c); // ふつうのコメント・レイアウト確認の見本（sample）
-      }
+      err(""); failCount = 0;
+      if (!started) { started = true; after = Math.max(after, d.last || 0); } // 最初の1回：これより前のコメントは出さない
+      handleSettings(d.settings, d.settings_at);
+      handleItems(d.items); // 通知を取りこぼした時の、念のための受け取り
     } catch { if (++failCount > 5) err("Vぶい：通信できません。インターネットの接続を確認してください"); }
-    setTimeout(poll, 2000);
+    timer = setTimeout(poll, rtOK ? 30000 : 2000);
   }
   applySettings();
+  realtime();
   ocInit().then(poll);
   // わんコメが起動しているかを10秒ごとに確かめる
   //  ・閉じた → Vぶいのコメントは、この画面のすみっこに自動で出す
