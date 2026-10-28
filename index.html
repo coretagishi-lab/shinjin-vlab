@@ -316,6 +316,8 @@ a{color:inherit;text-decoration:none}
 .obsman p{font-size:12.5px;line-height:1.7;margin:6px 0}
 .bdg.vbc{left:58px;bottom:8px;top:auto;background:#ff5fa8;color:#fff;display:flex;align-items:center;gap:4px}
 .bdg.vbc b{background:#fff;color:#ff5fa8;border-radius:4px;padding:0 4px;font-weight:900;letter-spacing:-.02em}
+.obsreset{background:#fff4f4;border-radius:10px;padding:10px;margin:6px 0;display:flex;flex-direction:column;gap:6px}
+.obsreset p{margin:0;font-size:12.5px;line-height:1.7}
 .ocq{display:flex;flex-direction:column;gap:8px}
 .ocqt{margin:0;font-weight:700;font-size:15px}.ocqt small{display:block;font-weight:400;font-size:12px;color:var(--muted);margin-top:2px}
 .ocpicks{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -1763,7 +1765,10 @@ function obsBlock(m) {
   else if (done) body = `${ocLine}<div class="obsdone">✅ <b>設定ずみです！</b><br>次からは<b>いつも通りOBSを起動するだけ</b>で、自動でVぶいとつながります。このページを開く必要もありません。</div>
     <div class="cbtn2"><button class="sbtn" data-set="obstest" data-ch="${esc(m.id)}">設定確認</button><button class="sbtn" data-set="herotest" data-ch="${esc(m.id)}">🦸 登場をテスト</button></div>
     <p class="obsres" data-obsres="${esc(m.id)}"></p>
-    <details class="obsman"><summary>はじめから設定し直す（パソコンを変えた時など）</summary>${steps}</details>`;
+    <details class="obsman"><summary>はじめから設定し直す（パソコンを変えた時など）</summary>
+      <div class="obsreset"><p><b>OBS連携を、いちばん最初の状態にもどします。</b><br>① 先にOBSの「ソース」の「Vぶい（コメント・演出）」をクリック → 下のゴミ箱マークで消す<br>② 下のボタンを押す<br>（①をしないと、OBSがすぐつながって「設定ずみ」にもどってしまいます）</p>
+      <button class="sbtn" data-set="obsreset" data-ch="${esc(m.id)}">OBS連携をリセットする</button></div>
+      ${steps}</details>`;
   else body = `${ocLine}${steps}<p class="obsres" data-obsres="${esc(m.id)}"></p>`;
   return `<section class="sbox" data-obs="${esc(m.id)}">
     <h4>📺 OBS連携（Vぶいのコメント・演出を配信画面に出す）</h4>
@@ -1869,6 +1874,16 @@ document.addEventListener("click", async (e) => {
   if (d.set === "ocopy") { const v = t.parentElement.querySelector("input").value; try { await navigator.clipboard.writeText(v); toast("コピーしました"); } catch { t.parentElement.querySelector("input").select(); toast("長押しでコピーしてください"); } return; }
   if (d.set === "okeyreset") { if (!t.dataset.sure) { t.dataset.sure = "1"; t.textContent = "本当に作り直す？（もう一度押す）"; return; } const r = await overlayApi({ action: "key", channel_id: ch, reset: true }); if (r.key) { OKEYS[ch] = r.key; toast("新しいURLを作りました。OBSのURLも入れ直してください"); rerenderSettings(); } return; }
   if (d.set === "obstest") return obsTest(ch, document.querySelector(`[data-obsres="${CSS.escape(ch)}"]`));
+  if (d.set === "obsreset") {
+    if (!t.dataset.sure) { t.dataset.sure = "1"; t.textContent = "本当にリセットする？（もう一度押す）"; return; }
+    t.disabled = true;
+    try {
+      const r = await overlayApi({ action: "reset", channel_id: ch });
+      if (r.ok) { store.set("obsAdded:" + ch, false); OVL.delete(ch); OSET[ch] = r.settings; OC_ASK.delete(ch); OC_STEP.delete(ch); toast("リセットしました。最初の質問から始められます"); return rerenderSettings(); }
+      toast("リセットできませんでした");
+    } catch { toast("リセットできませんでした"); }
+    t.disabled = false; return;
+  }
   if (d.set === "ocask") { OC_ASK.add(ch); OC_STEP.set(ch, "q1"); return rerenderSettings(); }
   if (d.set === "ocask2") { OC_ASK.add(ch); OC_STEP.set(ch, "q2"); return rerenderSettings(); }
   if (d.set === "ocstep") { OC_ASK.add(ch); OC_STEP.set(ch, d.v); return rerenderSettings(); }
