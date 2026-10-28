@@ -205,14 +205,14 @@ a{color:inherit;text-decoration:none}
 /* discover (shorts) */
 #v-discover{padding:0;overflow:hidden;padding-bottom:0}
 #v-discover .dtrack{position:absolute;left:0;right:0;top:0;height:var(--ph,100%);will-change:transform;touch-action:none}
-#v-discover .dslot{position:absolute;left:0;right:0;height:var(--ph,100%)}
+#v-discover .dslot{position:absolute;left:0;right:0;top:0;height:var(--ph,100%);will-change:transform;backface-visibility:hidden;contain:layout paint}
 #v-discover .dslot .slide{height:100%!important}
 #v-discover .dcount{position:absolute;top:14px;right:max(14px,env(safe-area-inset-right,0px));z-index:4;font-family:var(--f-num);font-size:11px;font-weight:700;color:#fff;background:rgba(0,0,0,.35);border-radius:999px;padding:2px 9px;pointer-events:none}
 #v-discover.noslides{overflow-y:auto;background:#0F0E15}
 #v-discover.noslides #discList{height:auto}
 .slide{height:calc(100% - var(--nav-h));scroll-snap-align:start;scroll-snap-stop:always;position:relative;overflow:hidden;background:#14111f;color:#fff}
 #v-discover .slide{height:calc(100% - var(--nav-h) - env(safe-area-inset-bottom,0px))}
-.slide .bg{position:absolute;inset:-20%;background-size:cover;background-position:center;filter:blur(38px) saturate(1.2) brightness(.55)}
+.slide .bg{position:absolute;inset:-20%;transform:translateZ(0);background-size:cover;background-position:center;filter:blur(38px) saturate(1.2) brightness(.55)}
 .slide .grad{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,8,20,.2) 0%,rgba(10,8,20,.1) 40%,rgba(10,8,20,.85) 100%)}
 .slide .hd{position:absolute;top:0;left:0;right:0;height:56px;box-sizing:border-box;text-align:center;padding-top:10px;font-weight:700;font-size:15px}
 .slide .hd small{display:block;font-weight:500;font-size:11px;opacity:.75;margin-top:2px}
@@ -307,6 +307,15 @@ a{color:inherit;text-decoration:none}
 
 /* my */
 .nbadge{position:absolute;top:0;left:calc(50% + 6px);min-width:17px;height:17px;border-radius:9px;background:var(--live);color:#fff;font-size:10.5px;font-weight:700;line-height:17px;padding:0 4px;text-align:center}
+.lpov{position:fixed;inset:0;z-index:75;background:rgba(10,8,18,.55);opacity:0;transition:opacity .25s}
+.lpov.on{opacity:1}
+.lpsh{position:absolute;left:0;right:0;bottom:0;top:calc(env(safe-area-inset-top,0px) + 38px);background:var(--bg);border-radius:20px 20px 0 0;overflow:hidden;display:flex;flex-direction:column;transform:translate3d(0,100%,0);transition:transform .32s cubic-bezier(.22,.9,.3,1);box-shadow:0 -10px 40px rgba(0,0,0,.25)}
+.lpov.on .lpsh{transform:translate3d(0,0,0)}
+.lpgrab{flex:none;height:30px;position:relative;touch-action:none;display:grid;place-items:center;background:var(--surface)}
+.lpgrab i{width:42px;height:5px;border-radius:3px;background:var(--line)}
+.lpgrab .lpx{position:absolute;right:10px;top:2px;width:28px;height:26px;font-size:20px;color:var(--muted)}
+.lpsh iframe{flex:1;width:100%;border:0;background:var(--bg)}
+@media (min-width:700px){.lpsh{left:50%;right:auto;width:620px;margin-left:-310px}}
 .ov{position:fixed;inset:0;z-index:70;background:rgba(10,8,18,.62);display:flex;align-items:flex-end;justify-content:center;opacity:0;transition:opacity .2s}
 .ov.on{opacity:1}
 .ov .ovp{width:100%;max-width:520px;max-height:92vh;max-height:92dvh;overflow-y:auto;background:var(--surface);color:var(--ink);border-radius:22px 22px 0 0;padding:20px max(18px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));transform:translateY(24px);transition:transform .22s}
@@ -953,7 +962,7 @@ function watchHome() {
   ts.forEach((el) => homeIO.observe(el));
   homeScrollFn = () => { clearTimeout(homeScrollFn.t); homeScrollFn.t = setTimeout(later, 120); };
   root.addEventListener("scroll", homeScrollFn, { passive: true });
-  later();
+  pick(); // タップの流れの中で再生を始める（iPhoneで音ありのまま再生するため）
 }
 
 /* ---------- WATCH (in-site player + chat) ---------- */
@@ -1419,6 +1428,36 @@ document.addEventListener("click", async (e) => {
   } catch (err) { pushBusy = false; renderMy(); toast("通知の設定に失敗しました"); }
 });
 
+/* ---------- LP・ガイドを下から出るシートで開く ---------- */
+function openLP(url) {
+  let el = $("#lp");
+  if (!el) {
+    el = document.createElement("div"); el.id = "lp"; el.className = "lpov";
+    el.innerHTML = `<div class="lpsh"><div class="lpgrab" aria-label="下にスワイプで閉じる"><i></i><button class="lpx" aria-label="閉じる">×</button></div><iframe title="Vぶいの説明"></iframe></div>`;
+    document.body.appendChild(el);
+    el.addEventListener("click", (e) => { if (e.target === el || e.target.closest(".lpx")) closeLP(); });
+    const sh = el.querySelector(".lpsh"), gr = el.querySelector(".lpgrab");
+    let y0 = null, dy = 0, t0 = 0;
+    gr.addEventListener("touchstart", (e) => { y0 = e.touches[0].clientY; dy = 0; t0 = Date.now(); sh.style.transition = "none"; }, { passive: true });
+    gr.addEventListener("touchmove", (e) => { if (y0 == null) return; dy = Math.max(0, e.touches[0].clientY - y0); e.preventDefault(); sh.style.transform = `translate3d(0,${dy}px,0)`; }, { passive: false });
+    gr.addEventListener("touchend", () => { if (y0 == null) return; y0 = null; sh.style.transition = ""; const fast = Date.now() - t0 < 250 && dy > 30; if (dy > 110 || fast) closeLP(); else sh.style.transform = ""; });
+  }
+  const fr = el.querySelector("iframe"), sh = el.querySelector(".lpsh");
+  if (fr.getAttribute("src") !== url) fr.setAttribute("src", url);
+  sh.style.transform = ""; el.hidden = false; requestAnimationFrame(() => el.classList.add("on"));
+}
+function closeLP() { const el = $("#lp"); if (!el) return; el.classList.remove("on"); el.querySelector(".lpsh").style.transform = ""; setTimeout(() => { el.hidden = true; }, 260); }
+addEventListener("message", (e) => {
+  if (e.origin !== location.origin || !e.data || !e.data.vbui) return;
+  if (e.data.vbui === "close") return closeLP();
+  if (e.data.vbui === "join") { closeLP(); return e.data.role === "vtuber" ? vtuberLogin() : listenerLogin(); }
+});
+// サイト内のLP・ガイドへのリンクはシートで開く
+document.addEventListener("click", (e) => {
+  const a = e.target.closest('a[href^="for-"],a[href^="guide-"]'); if (!a || e.metaKey || e.ctrlKey) return;
+  e.preventDefault(); openLP(a.getAttribute("href"));
+}, true);
+
 /* ---------- マイページの描画 ---------- */
 function kosanList() {
   const ids = Object.keys(KOSAN).filter((id) => byId.has(id)).sort((a, b) => Date.parse(KOSAN[a].since) - Date.parse(KOSAN[b].since));
@@ -1457,7 +1496,7 @@ document.addEventListener("click", async (e) => {
     if (d.join === "close") return closeOv("join");
     if (d.join === "closeCollab") return closeOv("collabNew");
     if (d.join === "back") return overlay("join", joinPick(joinFeature));
-    if (d.join === "listener" || d.join === "vtuber") { t.style.borderColor = "var(--accent)"; location.href = (d.join === "listener" ? "for-listener.html" : "for-vtuber.html") + "?join=1"; return; }
+    if (d.join === "listener" || d.join === "vtuber") { t.style.borderColor = "var(--accent)"; closeOv("join"); setTimeout(() => { t.style.borderColor = ""; }, 400); return openLP(d.join === "listener" ? "for-listener.html" : "for-vtuber.html"); }
     if (d.join === "go-listener") return listenerLogin();
     if (d.join === "go-vtuber") return vtuberLogin();
   }
@@ -1557,73 +1596,92 @@ function slideHTML(c) {
 let discIdx = 0, discBusy = false;
 const discN = () => discOrder?.length || 0;
 const discAt = (k) => discOrder[((discIdx + k) % discN() + discN()) % discN()];
+let PH = 0;
 function discPH() { const v = $("#v-discover"), nav = $(".nav"); const h = Math.round((nav ? nav.getBoundingClientRect().top : innerHeight) - v.getBoundingClientRect().top); return h > 200 ? h : v.clientHeight; }
 const discShown = new Set(); let discDwell = 0;
+const slotAt = (k) => $(`#discList .dslot[data-k="${k}"]`);
+function slotPos(el, k) { el.dataset.k = k; el.style.transform = `translate3d(0,${k * PH}px,0)`; }
 function discBuild(list) {
   if (discIdx >= discN()) discIdx = 0;
-  const ph = discPH(); $("#v-discover").style.setProperty("--ph", ph + "px");
-  const many = discN() > 1;
-  list.innerHTML = `<div class="dtrack">${(many ? [-1, 0, 1] : [0]).map((k) => `<div class="dslot" style="top:${k * ph}px">${slideHTML(discAt(k))}</div>`).join("")}</div>${many ? `<div class="dcount">${discIdx + 1} / ${discN()}</div>` : ""}`;
+  PH = discPH(); $("#v-discover").style.setProperty("--ph", PH + "px");
+  const ks = discN() > 1 ? [-1, 0, 1] : [0];
+  list.innerHTML = `<div class="dtrack">${ks.map((k) => `<div class="dslot" data-k="${k}" style="transform:translate3d(0,${k * PH}px,0)">${slideHTML(discAt(k))}</div>`).join("")}</div>${discN() > 1 ? `<div class="dcount"></div>` : ""}`;
   discSettle();
 }
 function discSettle() {
-  const cur = $("#discList .dslot[style*='top:0px'] .slide"); if (!cur) return;
+  const s = slotAt(0), cur = s?.querySelector(".slide"); if (!cur) return;
+  const cnt = $("#discList .dcount"); if (cnt) cnt.textContent = `${discIdx + 1} / ${discN()}`;
   const id = cur.dataset.id;
   if (!discShown.has(id)) { discShown.add(id); logEvent("impression", id); seen.add(id); store.set("seen", [...seen]); }
   clearTimeout(discDwell); discDwell = setTimeout(() => logEvent("dwell", id), 3000);
   const vb = cur.querySelector(".vbox"); discCur = vb || null;
   if (vb && !watchVid && tab === "discover") discAttach(); else if (!vb) DP?.stop();
-  const dc = cur.querySelector(".dchat"); if (dc && !dc.querySelector("iframe")) dc.insertAdjacentHTML("afterbegin", `<iframe src="https://www.youtube.com/live_chat?v=${encodeURIComponent(dc.dataset.chat)}&embed_domain=${encodeURIComponent(location.hostname)}&dark_theme=1" title="チャットのプレビュー" tabindex="-1"></iframe>`);
+  clearTimeout(discSettle.t);
+  discSettle.t = setTimeout(() => { // チャットは止まってから読み込む（めくっている最中は重くなるため）
+    const dc = slotAt(0)?.querySelector(".dchat"); if (dc && !dc.querySelector("iframe")) dc.insertAdjacentHTML("afterbegin", `<iframe src="https://www.youtube.com/live_chat?v=${encodeURIComponent(dc.dataset.chat)}&embed_domain=${encodeURIComponent(location.hostname)}&dark_theme=1" title="チャットのプレビュー" tabindex="-1"></iframe>`);
+  }, 450);
 }
-function discMove(dir) {
+function discSetY(y, dur = 0) {
+  const tr = $("#discList .dtrack"); if (!tr) return;
+  const tx = dur ? `transform ${dur}ms cubic-bezier(.22,.9,.3,1)` : "none";
+  tr.style.transition = tx; tr.style.transform = `translate3d(0,${y}px,0)`;
+  if (DP?.el && DP.target) { DP.el.style.transition = tx; DP.el.style.transform = `translate3d(0,${y}px,0)`; }
+}
+function discMove(dir, fromY = 0, vel = 0) {
   if (discBusy || discN() < 2) return;
   discBusy = true;
-  const tr = $("#discList .dtrack"), ph = discPH();
-  $("#discList .dslot[style*='top:0px'] .dchat iframe")?.remove();
-  tr.style.transition = "transform .28s cubic-bezier(.2,.8,.2,1)"; tr.style.transform = `translateY(${-dir * ph}px)`;
-  if (DP?.el) { DP.el.style.transition = "transform .28s cubic-bezier(.2,.8,.2,1)"; DP.el.style.transform = `translateY(${-dir * ph}px)`; }
-  setTimeout(() => {
+  const target = -dir * PH, remain = Math.abs(target - fromY);
+  const dur = Math.max(160, Math.min(340, vel > 0.3 ? remain / vel : remain / PH * 340));
+  discSetY(target, dur);
+  const done = () => {
     discIdx = ((discIdx + dir) % discN() + discN()) % discN();
+    // 3枚を回して使い回す：画面の外に出た1枚だけ中身を入れ替える
+    const a = slotAt(-1), b = slotAt(0), c = slotAt(1);
+    b.querySelector(".dchat iframe")?.remove();
+    if (dir > 0) { slotPos(b, -1); slotPos(c, 0); slotPos(a, 1); a.innerHTML = slideHTML(discAt(1)); }
+    else { slotPos(b, 1); slotPos(a, 0); slotPos(c, -1); c.innerHTML = slideHTML(discAt(-1)); }
+    discSetY(0, 0);
     if (DP?.el) { DP.el.style.transition = "none"; DP.el.style.transform = ""; }
-    discBuild($("#discList")); discBusy = false;
-  }, 290);
-}
-function discSnapBack() {
-  const tr = $("#discList .dtrack"); if (!tr) return;
-  tr.style.transition = "transform .2s ease"; tr.style.transform = "";
-  if (DP?.el) { DP.el.style.transition = "transform .2s ease"; DP.el.style.transform = ""; }
+    discBusy = false; discSettle();
+  };
+  setTimeout(done, dur + 20);
 }
 (() => {
-  let y0 = null, x0 = 0, dy = 0, t0 = 0, lock = null, swiped = false;
-  const V = () => $("#v-discover");
+  let y0 = null, x0 = 0, dy = 0, lock = null, swiped = false, raf = 0, hist = [];
   document.addEventListener("touchstart", (e) => {
     if (tab !== "discover" || discBusy || !e.target.closest("#v-discover .dtrack") || discN() < 2) return;
-    y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; dy = 0; t0 = Date.now(); lock = null; swiped = false;
-    const tr = $("#discList .dtrack"); tr.style.transition = "none"; if (DP?.el) DP.el.style.transition = "none";
+    y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; dy = 0; lock = null; swiped = false; hist = [[Date.now(), y0]];
+    PH = discPH();
   }, { passive: true });
   document.addEventListener("touchmove", (e) => {
     if (y0 == null) return;
-    const ddx = e.touches[0].clientX - x0; dy = e.touches[0].clientY - y0;
-    if (!lock) { if (Math.abs(dy) > 8 || Math.abs(ddx) > 8) lock = Math.abs(dy) > Math.abs(ddx) ? "y" : "x"; else return; }
+    const y = e.touches[0].clientY, ddx = e.touches[0].clientX - x0; dy = y - y0;
+    if (!lock) { if (Math.abs(dy) > 6 || Math.abs(ddx) > 6) lock = Math.abs(dy) > Math.abs(ddx) ? "y" : "x"; else return; }
     if (lock !== "y") return;
     e.preventDefault(); swiped = true;
-    $("#discList .dtrack").style.transform = `translateY(${dy}px)`; if (DP?.el) DP.el.style.transform = `translateY(${dy}px)`;
+    hist.push([Date.now(), y]); if (hist.length > 6) hist.shift();
+    if (!raf) raf = requestAnimationFrame(() => { raf = 0; discSetY(dy, 0); });
   }, { passive: false });
   document.addEventListener("touchend", () => {
     if (y0 == null) return; y0 = null;
+    cancelAnimationFrame(raf); raf = 0;
     if (lock !== "y") return;
-    const fast = Date.now() - t0 < 260 && Math.abs(dy) > 30, ph = discPH();
-    if (Math.abs(dy) > ph * 0.18 || fast) discMove(dy < 0 ? 1 : -1); else discSnapBack();
+    const [t1, p1] = hist[0], [t2, p2] = hist[hist.length - 1];
+    const v = (p2 - p1) / Math.max(1, t2 - t1); // px/ms（上向きがマイナス）
+    const flick = Math.abs(v) > 0.35 && Math.abs(dy) > 20;
+    if (Math.abs(dy) > PH * 0.22 || flick) discMove((flick ? v : dy) < 0 ? 1 : -1, dy, Math.abs(v));
+    else discSetY(0, 220);
     if (swiped) { const kill = (ev) => { ev.stopPropagation(); ev.preventDefault(); }; document.addEventListener("click", kill, { capture: true, once: true }); setTimeout(() => document.removeEventListener("click", kill, { capture: true }), 400); }
   });
   let wheelT = 0;
   document.addEventListener("wheel", (e) => {
     if (tab !== "discover" || !e.target.closest("#v-discover") || discN() < 2 || Math.abs(e.deltaY) < 20) return;
-    e.preventDefault(); if (Date.now() - wheelT < 600) return; wheelT = Date.now(); discMove(e.deltaY > 0 ? 1 : -1);
+    e.preventDefault(); if (Date.now() - wheelT < 600) return; wheelT = Date.now(); PH = discPH(); discMove(e.deltaY > 0 ? 1 : -1);
   }, { passive: false });
-  document.addEventListener("keydown", (e) => { if (tab !== "discover" || curId || watchVid) return; if (e.key === "ArrowDown") discMove(1); if (e.key === "ArrowUp") discMove(-1); });
+  document.addEventListener("keydown", (e) => { if (tab !== "discover" || curId || watchVid) return; if (e.key === "ArrowDown") { PH = discPH(); discMove(1); } if (e.key === "ArrowUp") { PH = discPH(); discMove(-1); } });
   addEventListener("resize", () => { if (tab === "discover" && $("#discList .dtrack")) discBuild($("#discList")); });
 })();
+
 
 /* ---------- PROFILE SHEET ---------- */
 let curId = null, backTab = "prof";
@@ -1763,7 +1821,7 @@ function setTab(t) {
 }
 function refreshCurrent() {
   if (tab === "home") renderHome();
-  else if (tab === "discover") { if (!$("#v-discover .slide")) renderDiscover(); else $("#v-discover").querySelectorAll("[data-fav]").forEach((b) => b.setAttribute("aria-pressed", favs.has(b.dataset.fav))); }
+  else if (tab === "discover") { if (!$("#v-discover .slide")) renderDiscover(); else { $("#v-discover").querySelectorAll("[data-fav]").forEach((b) => b.setAttribute("aria-pressed", favs.has(b.dataset.fav))); discSettle(); } }
   else if (tab === "dir") setDirSeg(dirSeg);
   else if (tab === "sched") renderSched();
   else if (tab === "my") { renderMy(); if (authReady && viewAs() === "guest" && !isAdmin()) openJoin(null); }

@@ -110,3 +110,9 @@ footer a{color:var(--muted)}
 .joinbar a.j{flex:1;max-width:420px;text-align:center;background:var(--navy);color:#fff;text-decoration:none;font-weight:700;font-size:15px;border-radius:14px;padding:13px 10px;box-shadow:0 4px 0 var(--pink)}
 .joinbar a.b{flex:none;color:var(--muted);font-size:13px;text-decoration:none;padding:8px}
 body{padding-bottom:84px}
+
+header.top{padding-top:max(14px,calc(env(safe-area-inset-top,0px) + 6px))}
+html.emb header.top{display:none}
+html.emb .hero{padding-top:18px}
+html.emb .joinbar a.b{display:none}
+html.emb body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}

@@ -122,5 +122,13 @@
   <a href="terms.html">利用規約</a>
 </footer>
 </div>
+<script>
+(function(){var emb=window.parent!==window;if(emb)document.documentElement.classList.add("emb");
+document.addEventListener("click",function(e){var a=e.target.closest("a[href]");if(!a||!emb)return;var h=a.getAttribute("href");var m=h.match(/^\.\/\?go=(listener|vtuber)/);
+if(m){e.preventDefault();parent.postMessage({vbui:"join",role:m[1]},location.origin);return}
+if(h==="./"||h.indexOf("./?")===0){e.preventDefault();parent.postMessage({vbui:"close"},location.origin);return}
+if(/^(for-|guide-|privacy|terms)/.test(h)){return}
+},true);})();
+</script>
 </body>
 </html>
