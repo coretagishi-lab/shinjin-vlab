@@ -308,6 +308,17 @@ a{color:inherit;text-decoration:none}
 
 /* my */
 .nbadge{position:absolute;top:0;left:calc(50% + 6px);min-width:17px;height:17px;border-radius:9px;background:var(--live);color:#fff;font-size:10.5px;font-weight:700;line-height:17px;padding:0 4px;text-align:center}
+.okc{color:var(--ok);font-weight:700;font-size:13px}.ngc{color:var(--muted);font-weight:700;font-size:13px}
+.obsteps{margin:0;padding-left:1.3em;font-size:13px;line-height:1.7}
+.cbtn2{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.cbtn2 .gbtn{flex:1;min-width:180px}
+.obsres{margin:0;font-size:13px;line-height:1.7}
+.obsman summary{font-size:13px;font-weight:700;cursor:pointer}
+.obsman p{font-size:12.5px;line-height:1.7;margin:6px 0}
+.bdg.vbc{left:58px;bottom:8px;top:auto;background:#ff5fa8;color:#fff}
+.vbc{display:flex;gap:8px;align-items:center;margin:0 12px 8px;background:#1d1830;border:1.5px solid #ff7ab8;border-radius:14px;padding:6px 6px 6px 10px}
+.vbc .vbt{flex:none;font-size:11px;font-weight:700;background:#ff5fa8;color:#fff;border-radius:6px;padding:2px 6px}
+.vbc input{flex:1;min-width:0;border:0;background:none;color:#fff;font:inherit;font-size:16px;outline:none}
+.vbc button{flex:none;background:#ff5fa8;color:#fff;font-weight:700;border-radius:10px;padding:8px 12px;border:0}
 .lpov{position:fixed;inset:0;z-index:75;background:rgba(10,8,18,.55);opacity:0;transition:opacity .25s}
 .lpov.on{opacity:1}
 .lpsh{position:absolute;left:0;right:0;bottom:0;top:calc(env(safe-area-inset-top,0px) + 38px);background:var(--bg);border-radius:20px 20px 0 0;overflow:hidden;display:flex;flex-direction:column;transform:translate3d(0,100%,0);transition:transform .32s cubic-bezier(.22,.9,.3,1);box-shadow:0 -10px 40px rgba(0,0,0,.25)}
@@ -661,7 +672,7 @@ async function load() {
       rest(`channel_daily?select=*&day=gte.${since}`),
     ]);
     CH = c; ST = s; DAILY = d; live = true;
-    loadRescue();
+    loadRescue(); loadOverlayStatus().then(() => { if (typeof tab !== "undefined" && tab === "home") renderHome(); });
   } catch {
     const snap = JSON.parse($("#snap").textContent);
     CH = snap.channels || []; ST = snap.streams || []; DAILY = snap.daily || [];
@@ -849,7 +860,7 @@ function vidCard(s) {
   else { const dur = s.actual_end_at ? (Date.parse(s.actual_end_at) - Date.parse(s.actual_start_at)) / 1000 : 0; badge = dur ? `<span class="bdg time">${Math.floor(dur / 3600)}:${String(Math.floor(dur % 3600 / 60)).padStart(2, "0")}:${String(Math.floor(dur % 60)).padStart(2, "0")}</span>` : ""; sub = `${rel(s.actual_start_at)}${s.peak_viewers ? `・最大${s.peak_viewers}人` : ""}`; }
   const first = s.status !== "ended" && isFirstUpcoming(s) ? `<span class="bdg first">初配信</span>` : "";
   return `<article class="vid">
-    <div class="thumb" role="link" tabindex="0" data-url="${ytWatch(s.id)}" data-cid="${esc(c.id)}" data-vid="${esc(s.id)}"${s.embeddable !== false ? ' data-canembed="1"' : ""}${s.status === "live" && s.embeddable !== false ? ' data-emb="1"' : ""}>${img(s.thumbnail_url, c)}${d ? `<span class="bdg debut">デビュー${d}日目</span>` : ""}${first}${badge}<button class="snd" hidden aria-label="音のオンオフ">🔇 タップで音を出す</button></div>
+    <div class="thumb" role="link" tabindex="0" data-url="${ytWatch(s.id)}" data-cid="${esc(c.id)}" data-vid="${esc(s.id)}"${s.embeddable !== false ? ' data-canembed="1"' : ""}${s.status === "live" && s.embeddable !== false ? ' data-emb="1"' : ""}>${img(s.thumbnail_url, c)}${d ? `<span class="bdg debut">デビュー${d}日目</span>` : ""}${first}${badge}${s.status === "live" && vbuiOK(c.id) ? `<span class="bdg vbc">💬 Vぶいでコメント可</span>` : ""}<button class="snd" hidden aria-label="音のオンオフ">🔇 タップで音を出す</button></div>
     <div class="meta"><button class="av" data-open="${esc(c.id)}" aria-label="${esc(c.title)}のカードを見る">${img(c.thumbnail_url, c)}</button>
       <div><div class="t">${esc(s.title)}</div><div class="s"><button data-open="${esc(c.id)}">${esc(c.title)}</button>・${sub}</div></div></div>
   </article>`;
@@ -1071,7 +1082,8 @@ function openWatch(vid, push = true) {
   const R0 = s.status === "live" && rescueOf(c.id);
   const canChat = (s.status === "live" || s.status === "upcoming") && s.chat_enabled !== false;
   const chatOff = (s.status === "live" || s.status === "upcoming") && s.chat_enabled === false;
-  $("#wLower").innerHTML = (R0 ? `<div class="w-sos">🆘 <b>救援要請中</b>${R0.message ? `「${esc(R0.message)}」` : ""}　来てくれてありがとう！ コメントで「救援きたよ」って伝えてあげてね</div>` : "") + (canChat
+  const vbOK = s.status === "live" && vbuiOK(c.id);
+  $("#wLower").innerHTML = (vbOK ? vbuiCommentBar(c.id) : "") + (R0 ? `<div class="w-sos">🆘 <b>救援要請中</b>${R0.message ? `「${esc(R0.message)}」` : ""}　来てくれてありがとう！ コメントで「救援きたよ」って伝えてあげてね</div>` : "") + (canChat
     ? `<div class="w-chat${isIOS ? " crop" : ""}"><iframe src="https://www.youtube.com/live_chat?v=${encodeURIComponent(vid)}&embed_domain=${encodeURIComponent(location.hostname)}" title="チャット"></iframe></div>${isIOS ? `<a class="w-cmt" href="${ytWatch(vid)}" target="_blank" rel="noopener" data-watch="${esc(c.id)}">💬 コメントする（YouTubeアプリで開く）</a>` : ""}`
     : chatOff ? `<div class="w-off">この配信はチャットがオフになっています。<br>映像と音声だけ楽しめます。</div>` : `<div class="w-note"><b>アーカイブを再生中</b><br>配信中の枠では、ここにチャットが出て、そのままコメントできます。</div>`);
   const w = $("#watch"); w.hidden = false; requestAnimationFrame(() => w.classList.add("open"));
@@ -1363,6 +1375,7 @@ function ownerBox() {
     return `<div class="own" data-mine="${esc(m.id)}">${msg}
       <div class="mc"><span class="av">${img(m.custom_icon_url || m.thumbnail_url, c)}</span><div style="flex:1;min-width:0"><b>${esc(m.custom_title || m.title)}</b><span class="ok">✅ 本人登録済み</span></div></div>
       <div class="osum"><span>${m.collab_open ? "🤝 コラボ募集中" : "コラボ募集はオフ"}</span>${gs.length ? `<span class="gnr">${gs.map((g, i) => `<em><i>${i + 1}</i>${esc(g)}</em>`).join("")}</span>` : `<span style="opacity:.7">得意ジャンル未設定</span>`}</div>
+      <span class="osum">${vbuiOK(m.id) ? "📺 OBSとつながっています" : "📺 OBS連携はまだです（右上の⚙から設定できます）"}</span>
       <a href="guide-vtuber.html" style="color:var(--accent);font-size:12.5px;font-weight:700">📖 使い方ガイド（コラボ・救援のやり方）</a>
       ${sosBlock(m)}</div>`;
   }).join("");
@@ -1421,7 +1434,7 @@ function accountSettings() {
 const setAsVtuber = () => viewAs() === "vtuber" && MINE.length > 0;
 function settingsHTML() {
   const vt = setAsVtuber();
-  const chs = MINE.map(channelSettings).join("");
+  const chs = MINE.map((m) => channelSettings(m) + obsBlock(m)).join("");
   const addCh = `<button class="sbox addch" data-own="login">＋ 別のチャンネルも本人登録する<small>Googleの画面で、登録したいチャンネルを選んでください</small></button>`;
   const beVt = `<button class="sbox addch" data-own="login">🎙 VTuberとして本人登録する<small>YouTubeで本人確認すると、救援やコラボ申請が使えます</small></button>`;
   return `<div class="jn"><button class="jx" data-set="close" aria-label="閉じる">×</button>
@@ -1435,6 +1448,7 @@ function openSettings(focusCh) {
   if (!needLogin("設定")) return;
   GED = {}; ICON_PEND = {}; MINE.forEach((m) => { GED[m.id] = [...(m.collab_genres || [])]; });
   overlay("settings", settingsHTML());
+  if (MINE.length) Promise.all([loadKeys(), loadOverlayStatus()]).then(() => rerenderSettings());
   if (focusCh) setTimeout(() => document.querySelector(`#settings [data-chset="${CSS.escape(focusCh)}"]`)?.scrollIntoView({ block: "start" }), 60);
 }
 function rerenderSettings() {
@@ -1626,6 +1640,132 @@ document.addEventListener("click", async (e) => {
       await pushSub.unsubscribe().catch(() => {}); pushSub = null; renderMy(); toast("通知をオフにしました");
     }
   } catch (err) { pushBusy = false; renderMy(); toast("通知の設定に失敗しました"); }
+});
+
+/* ---------- OBS連携（演出画面・Vぶいコメント） ---------- */
+const OVL = new Map(); // channel_id -> { connected, onecomme }
+async function overlayApi(body, auth = true) {
+  const r = await fetch(`${SB_URL}/functions/v1/overlay`, { method: "POST", headers: { apikey: SB_KEY, Authorization: `Bearer ${auth && SESSION ? SESSION.access_token : SB_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  return r.json();
+}
+async function loadOverlayStatus() {
+  const ids = [...new Set(liveNow().map((s) => s.channel_id).concat(MINE.map((m) => m.id)))];
+  if (!ids.length) return;
+  try { const r = await overlayApi({ action: "status", channel_ids: ids }, false); OVL.clear(); (r.status || []).forEach((s) => OVL.set(s.channel_id, s)); } catch {}
+}
+const vbuiOK = (cid) => !!OVL.get(cid)?.connected;
+setInterval(() => { if (live) loadOverlayStatus(); }, 60000);
+const OKEYS = {};
+const overlayUrl = (k) => `${location.origin}/overlay.html?k=${encodeURIComponent(k)}`;
+function obsBlock(m) {
+  const k = OKEYS[m.id], st = OVL.get(m.id);
+  const stat = st?.connected ? `<span class="okc">● OBSとつながっています${st.onecomme ? "（わんコメ連携中）" : ""}</span>` : `<span class="ngc">● まだつながっていません</span>`;
+  return `<section class="sbox" data-obs="${esc(m.id)}">
+    <h4>📺 OBS連携（Vぶいのコメント・演出を配信画面に出す）</h4>
+    ${stat}
+    <ol class="obsteps">
+      <li><b>OBSの「ツール」→「WebSocketサーバー設定」</b>で「WebSocketサーバーを有効にする」にチェック（最初の1回だけ）</li>
+      <li>下の<b>「OBSに自動で追加」</b>を押す（OBSを起動したまま、このパソコンで押してください）</li>
+      <li><b>「設定確認」</b>を押して、配信画面に「✅ Vぶいと接続できました」と出ればOK</li>
+    </ol>
+    <label class="sl">OBSのWebSocketのパスワード（設定している場合だけ）</label>
+    <input type="password" data-f="obspw" placeholder="OBSの「サーバーパスワード」" autocomplete="off">
+    <div class="cbtn2"><button class="gbtn" data-set="obsadd" data-ch="${esc(m.id)}">⚡ OBSに自動で追加</button><button class="sbtn" data-set="obstest" data-ch="${esc(m.id)}">設定確認</button></div>
+    <p class="obsres" data-obsres="${esc(m.id)}"></p>
+    <details class="obsman"><summary>自分で追加する場合（手動）</summary>
+      <p>OBSの「ソース」の＋ →「ブラウザ」を追加して、URLに下を貼り付け、幅1920・高さ1080にしてください。</p>
+      <div class="srow3"><input type="text" readonly value="${k ? esc(overlayUrl(k)) : "読み込み中…"}" data-f="ourl"><button class="sbtn" data-set="ocopy" data-ch="${esc(m.id)}">コピー</button></div>
+      <p class="note2">わんコメを使っている人は、わんコメの「設定」→「API」で <b>${esc(location.host)}</b> を許可すると、Vぶいのコメントがわんコメのコメントにも混ざります。<br>このURLは人に教えないでください。漏れたときは <button class="lnk2" data-set="okeyreset" data-ch="${esc(m.id)}">URLを作り直す</button></p>
+    </details>
+  </section>`;
+}
+async function loadKeys() {
+  for (const m of MINE) if (!OKEYS[m.id]) { try { const r = await overlayApi({ action: "key", channel_id: m.id }); if (r.key) OKEYS[m.id] = r.key; } catch {} }
+}
+// OBS WebSocket（v5）で、いま映しているシーンにブラウザソースを追加する
+function obsAdd(url, password) {
+  return new Promise((resolve, reject) => {
+    let ws; try { ws = new WebSocket("ws://127.0.0.1:4455"); } catch (e) { return reject(new Error("connect")); }
+    const timer = setTimeout(() => { try { ws.close(); } catch {} reject(new Error("timeout")); }, 8000);
+    const pend = new Map(); let rid = 0;
+    const req = (requestType, requestData = {}) => new Promise((res) => { const id = "v" + (++rid); pend.set(id, res); ws.send(JSON.stringify({ op: 6, d: { requestType, requestId: id, requestData } })); });
+    const sha = async (s) => btoa(String.fromCharCode(...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)))));
+    ws.onerror = () => { clearTimeout(timer); reject(new Error("connect")); };
+    ws.onclose = (e) => { if (e.code === 4009) { clearTimeout(timer); reject(new Error("auth")); } };
+    ws.onmessage = async (ev) => {
+      const m = JSON.parse(ev.data);
+      if (m.op === 0) {
+        const d = { rpcVersion: 1 };
+        if (m.d.authentication) { if (!password) { clearTimeout(timer); ws.close(); return reject(new Error("need_pw")); } d.authentication = await sha((await sha(password + m.d.authentication.salt)) + m.d.authentication.challenge); }
+        ws.send(JSON.stringify({ op: 1, d }));
+      } else if (m.op === 2) {
+        try {
+          const sc = await req("GetCurrentProgramScene");
+          const sceneName = sc.responseData?.currentProgramSceneName || sc.responseData?.sceneName;
+          const name = "Vぶい（コメント・演出）";
+          const settings = { url, width: 1920, height: 1080, reroute_audio: false, shutdown: false, restart_when_active: false };
+          let r = await req("CreateInput", { sceneName, inputName: name, inputKind: "browser_source", inputSettings: settings, sceneItemEnabled: true });
+          let updated = false;
+          if (!r.requestStatus?.result) { const r2 = await req("SetInputSettings", { inputName: name, inputSettings: settings, overlay: true }); if (!r2.requestStatus?.result) throw new Error(r.requestStatus?.comment || "create"); updated = true; }
+          clearTimeout(timer); ws.close(); resolve({ sceneName, updated });
+        } catch (e) { clearTimeout(timer); ws.close(); reject(e); }
+      } else if (m.op === 7) { const f = pend.get(m.d.requestId); if (f) { pend.delete(m.d.requestId); f(m.d); } }
+    };
+  });
+}
+async function obsTest(ch, out) {
+  out.textContent = "テストのコメントを送っています…";
+  const r = await overlayApi({ action: "test", channel_id: ch });
+  if (!r.test_id) { out.textContent = "送れませんでした。もう一度お試しください"; return; }
+  for (let i = 0; i < 12; i++) {
+    await new Promise((res) => setTimeout(res, 1500));
+    const s = await overlayApi({ action: "status", channel_id: ch }, false); const st = s.status?.[0];
+    if (st) OVL.set(ch, st);
+    if (st && Number(st.last_test_ack) >= r.test_id) {
+      out.innerHTML = `✅ <b>接続できました！</b> 配信画面に「Vぶいと接続できました」と出ていれば完了です。${st.onecomme ? "<br>✅ わんコメにもつながっています" : "<br>ℹ️ わんコメは見つかりませんでした。Vぶいのコメントは、Vぶいの画面に直接表示します"}`;
+      return;
+    }
+  }
+  out.innerHTML = "❌ 演出画面から返事がありませんでした。<br>・OBSが起動しているか<br>・「Vぶい（コメント・演出）」のソースが今のシーンにあって、目のマークがオンか<br>を確認して、もう一度「設定確認」を押してください。";
+}
+document.addEventListener("click", async (e) => {
+  const t = e.target.closest("[data-set]"); if (!t) return;
+  const d = t.dataset, ch = d.ch;
+  if (d.set === "ocopy") { const v = t.parentElement.querySelector("input").value; try { await navigator.clipboard.writeText(v); toast("コピーしました"); } catch { t.parentElement.querySelector("input").select(); toast("長押しでコピーしてください"); } return; }
+  if (d.set === "okeyreset") { if (!t.dataset.sure) { t.dataset.sure = "1"; t.textContent = "本当に作り直す？（もう一度押す）"; return; } const r = await overlayApi({ action: "key", channel_id: ch, reset: true }); if (r.key) { OKEYS[ch] = r.key; toast("新しいURLを作りました。OBSのURLも入れ直してください"); rerenderSettings(); } return; }
+  if (d.set === "obstest") return obsTest(ch, document.querySelector(`[data-obsres="${CSS.escape(ch)}"]`));
+  if (d.set === "obsadd") {
+    const out = document.querySelector(`[data-obsres="${CSS.escape(ch)}"]`), pw = document.querySelector(`[data-obs="${CSS.escape(ch)}"] [data-f="obspw"]`).value;
+    if (!OKEYS[ch]) await loadKeys();
+    out.textContent = "OBSにつないでいます…";
+    try {
+      const r = await obsAdd(overlayUrl(OKEYS[ch]), pw);
+      out.innerHTML = `✅ OBSのシーン「${esc(r.sceneName)}」に${r.updated ? "Vぶいの画面を入れ直しました" : "Vぶいの画面を追加しました"}。続けて「設定確認」を押してください。`;
+    } catch (err) {
+      const m = err.message;
+      out.innerHTML = m === "need_pw" ? "🔑 OBSにパスワードが設定されています。上の欄に、OBSの「WebSocketサーバー設定」の「サーバーパスワード」を入れて、もう一度押してください。"
+        : m === "auth" ? "🔑 パスワードが違うようです。OBSの「WebSocketサーバー設定」→「接続情報を表示」で確認してください。"
+        : m === "connect" || m === "timeout" ? "❌ OBSにつながりませんでした。<br>・OBSを起動しているか<br>・「ツール」→「WebSocketサーバー設定」で「有効にする」にチェックが入っているか<br>・このパソコン（OBSと同じパソコン）で開いているか<br>を確認してください。うまくいかない時は、下の「自分で追加する場合」の方法でも設定できます。"
+        : "❌ 追加できませんでした（" + esc(m) + "）。下の「自分で追加する場合」の方法でも設定できます。";
+    }
+  }
+});
+
+/* ---------- 視聴画面：Vぶいでコメント（演出画面がつながっている配信だけ） ---------- */
+function vbuiCommentBar(cid) {
+  return `<form class="vbc" data-vbc="${esc(cid)}"><span class="vbt">Vぶい</span><input type="text" maxlength="100" placeholder="Vぶいでコメント（配信画面に映ります）" autocomplete="off" enterkeyhint="send"><button type="submit">送信</button></form>`;
+}
+document.addEventListener("submit", async (e) => {
+  const f = e.target.closest("form[data-vbc]"); if (!f) return; e.preventDefault();
+  if (!needLogin("Vぶいでコメント")) return;
+  const inp = f.querySelector("input"), v = inp.value.trim(); if (!v) return;
+  const b = f.querySelector("button"); b.disabled = true;
+  try {
+    const r = await overlayApi({ action: "comment", channel_id: f.dataset.vbc, body: v });
+    if (r.ok) { inp.value = ""; toast("送信しました！ 配信画面に映ります"); }
+    else toast({ too_fast: "少し待ってから送ってください", not_connected: "いまは配信画面とつながっていません", not_live: "配信が終わっています", no_profile: "先にニックネームを決めてください" }[r.error] || "送れませんでした");
+  } catch { toast("送れませんでした"); }
+  b.disabled = false;
 });
 
 /* ---------- LP・ガイドを下から出るシートで開く ---------- */

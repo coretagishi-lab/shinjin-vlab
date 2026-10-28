@@ -93,16 +93,17 @@
 </section>
 
 <section class="guide" id="obs">
-  <h2>OBS連携（準備中）</h2>
-  <div class="soon-box">
-    <p style="margin:0 0 8px"><b>近日公開予定です。</b>使えるようになったら、このページに設定方法を載せます。</p>
-    <ul style="margin:0;padding-left:1.3em">
-      <li>Vぶいから送られたコメントやギフトを、OBSの配信画面に演出つきで表示</li>
-      <li>わんコメを使っている人は、わんコメ連携でもOK</li>
-      <li>「設定確認」ボタンで、ちゃんとつながっているかチェック</li>
-      <li>コメント数・盛り上がりグラフ・話題一覧（何分ごろに何を話したか）が見られるように</li>
-    </ul>
-  </div>
+  <h2>OBS連携</h2>
+  <p class="lead">Vぶいで書かれたコメントが、あなたの配信画面に映るようになります。リスナーさんはYouTubeアプリに飛ばずに、Vぶいの中からコメントできます。</p>
+  <ol class="steps">
+    <li><p style="margin:0"><b>OBSでWebSocketをオンにする（最初の1回だけ）</b><span>OBSの「ツール」→「WebSocketサーバー設定」→「WebSocketサーバーを有効にする」にチェック。</span></p></li>
+    <li><p style="margin:0"><b>OBSと同じパソコンでVぶいを開く</b><span>マイページ右上の⚙ →「OBS連携」へ。パソコンのChromeがおすすめです。</span></p></li>
+    <li><p style="margin:0"><b>「⚡ OBSに自動で追加」を押す</b><span>いま映しているシーンに「Vぶい（コメント・演出）」が追加されます。OBSにパスワードを付けている人は、先に入力欄に入れてください。</span></p></li>
+    <li><p style="margin:0"><b>「設定確認」を押す</b><span>配信画面に「✅ Vぶいと接続できました」と出れば完了です。</span></p></li>
+  </ol>
+  <div class="note-box">💬 <b>わんコメを使っている人</b>：わんコメの「設定」→「API」で <b>vvbuibui.com</b> を許可すると、VぶいのコメントがYouTubeのコメントと同じ流れに混ざって表示されます。わんコメを使っていない人は、Vぶいの画面の左下にコメントが出ます。<br>
+  自動で追加できないときは、⚙の「自分で追加する場合」に出ているURLを、OBSの「ソース」→「ブラウザ」に貼り付けてください（幅1920・高さ1080）。</div>
+  <div class="soon-box" style="margin-top:12px"><b>準備中</b>：ギフトの演出、コメント数・盛り上がりグラフ・話題一覧</div>
 </section>
 
 <section class="guide" id="contact">
