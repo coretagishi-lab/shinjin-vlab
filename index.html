@@ -302,6 +302,61 @@ a{color:inherit;text-decoration:none}
 .cd{flex:none;font-family:var(--f-num);font-size:12px;color:var(--muted);text-align:right}
 
 /* my */
+.nbadge{position:absolute;top:0;left:calc(50% + 6px);min-width:17px;height:17px;border-radius:9px;background:var(--live);color:#fff;font-size:10.5px;font-weight:700;line-height:17px;padding:0 4px;text-align:center}
+.ov{position:fixed;inset:0;z-index:70;background:rgba(10,8,18,.62);display:flex;align-items:flex-end;justify-content:center;opacity:0;transition:opacity .2s}
+.ov.on{opacity:1}
+.ov .ovp{width:100%;max-width:520px;max-height:92vh;max-height:92dvh;overflow-y:auto;background:var(--surface);color:var(--ink);border-radius:22px 22px 0 0;padding:20px max(18px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));transform:translateY(24px);transition:transform .22s}
+.ov.on .ovp{transform:none}
+@media (min-width:600px){.ov{align-items:center}.ov .ovp{border-radius:22px}}
+.jn{display:flex;flex-direction:column;gap:12px;position:relative}
+.jx{position:absolute;right:-4px;top:-6px;width:36px;height:36px;border-radius:50%;font-size:22px;color:var(--muted);background:var(--chip)}
+.jh{display:flex;flex-direction:column;gap:4px;padding-right:34px}
+.jh .jk{font-size:12.5px;font-weight:700;color:var(--accent)}
+.jh b{font-size:19px;line-height:1.4}
+.jh .jf{font-size:12.5px;color:var(--muted);line-height:1.6}
+.jh .jf b{font-size:12.5px;color:var(--ok)}
+.jc{display:flex;gap:12px;align-items:center;text-align:left;width:100%;border:2px solid var(--line);border-radius:16px;padding:14px;background:var(--bg)}
+.jc.v{border-color:color-mix(in srgb,var(--accent) 50%,var(--line))}
+.jc .ji{font-size:30px;flex:none}
+.jc .jt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.jc .jt b{font-size:16px;margin-bottom:2px}
+.jc .jt span{font-size:12.5px;color:var(--muted);line-height:1.55}
+.jc .ja{font-size:26px;color:var(--muted)}
+.jb{align-self:flex-start;font-size:13px;color:var(--muted);padding:2px 0}
+.jl{background:var(--bg);border-radius:14px;padding:12px 14px;font-size:13.5px;line-height:1.7}
+.jl p{margin:0 0 6px}.jl ul{margin:0;padding-left:1.1em}
+.jn .gbtn{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--card-navy);color:#fff;border:0;border-radius:14px;padding:14px;font:inherit;font-weight:700;font-size:15px;cursor:pointer}
+.jn .gbtn svg{width:18px;height:18px;background:#fff;border-radius:50%;padding:2px}
+.jn .js{font-size:11.5px;color:var(--muted);line-height:1.6}
+.jn input[type=text],.jn textarea,.jn select{width:100%;box-sizing:border-box;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:12px;padding:12px;font:inherit;font-size:16px}
+.jn .tm{display:flex;flex-direction:column;gap:6px}
+.jn .tm button{text-align:left;font-size:12.5px;line-height:1.55;border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;color:var(--muted)}
+.jn .tm button[aria-pressed="true"]{border-color:var(--accent);color:var(--ink)}
+.jwrap{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;margin-top:6px}
+.me{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-top:6px}
+.me .mav{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--card-navy);color:var(--card-gold);font-weight:700;font-size:17px;flex:none}
+.me .mt{flex:1;min-width:0;display:flex;flex-direction:column}
+.me .mt b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.me .mt span{font-size:12px;color:var(--muted)}
+.lnk.dk{color:var(--muted);font-size:12px;text-decoration:underline;background:none;border:0;padding:0}
+.adm{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;background:color-mix(in srgb,var(--accent) 14%,var(--surface));border:1px dashed var(--accent);border-radius:12px;padding:8px 10px;margin-top:6px}
+.adm span{font-weight:700;margin-right:4px}
+.adm button{font-size:12px;border-radius:8px;padding:4px 9px;background:var(--surface);border:1px solid var(--line)}
+.adm button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.segn{font-style:normal;margin-left:6px;background:var(--live);color:#fff;font-size:11px;border-radius:9px;padding:0 6px}
+.redn{background:var(--live);color:#fff!important;font-weight:700;border-radius:9px;padding:0 8px}
+.cl{display:flex;gap:10px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:8px}
+.cl .av{width:44px;height:44px;border-radius:50%;overflow:hidden;position:relative;flex:none}
+.cl .av .ph,.cl .av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:grid;place-items:center;color:#fff;font-weight:700}
+.cl .cb{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.cl .cb b{font-size:14.5px}
+.cl .cb span{font-size:12.5px;color:var(--muted)}
+.cl .cm{margin:2px 0;font-size:13px;line-height:1.65;background:var(--bg);border-radius:10px;padding:8px 10px}
+.cl .cbtn{display:flex;gap:8px;flex-wrap:wrap}
+.shr{display:inline-block;background:#000;color:#fff;font-weight:700;font-size:12.5px;border-radius:999px;padding:7px 14px;text-decoration:none;border:0;cursor:pointer;font-family:inherit}
+.shr.gray{background:var(--chip);color:var(--ink)}
+.vtin{display:flex;flex-direction:column;gap:6px;align-items:flex-start;background:var(--surface);border:1px dashed var(--line);border-radius:14px;padding:12px 14px;margin-top:14px;font-size:13px}
+.vtin span{color:var(--muted)}
 .own{background:var(--card-navy);color:#fff;border-radius:16px;padding:16px;margin-top:6px;display:flex;flex-direction:column;gap:10px}
 .own h3{margin:0;font-size:16px}
 .own p{margin:0;font-size:13px;line-height:1.7;color:#D9D5EA}
@@ -333,7 +388,7 @@ a{color:inherit;text-decoration:none}
 /* bottom nav */
 .nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:space-around;
   padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
-.nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;color:var(--muted);padding:4px 0}
+.nav button{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;color:var(--muted);padding:4px 0}
 .nav svg{width:24px;height:24px}
 .nav button[aria-current="page"]{color:var(--ink);font-weight:700}
 .nav button[aria-current="page"] .dot{background:var(--accent)}
@@ -458,7 +513,6 @@ body.dark-nav .nav button[aria-current="page"]{color:#fff}
     <div class="seg" id="dirSeg" role="tablist" aria-label="名鑑の表示">
       <button role="tab" data-dseg="list" aria-selected="true">一覧</button>
       <button role="tab" data-dseg="rank" aria-selected="false">同期ランキング</button>
-      <button role="tab" data-dseg="collab" aria-selected="false">コラボ相手</button>
     </div>
     <div id="dirRank" hidden></div>
     <div id="dirCollab" hidden></div>
@@ -489,7 +543,7 @@ body.dark-nav .nav button[aria-current="page"]{color:#fff}
   <button data-tab="discover"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="m10.5 9 4 3-4 3z" fill="currentColor"/></svg>発掘<i class="dot"></i></button>
   <button data-tab="dir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="4" width="7.5" height="10" rx="1.5"/><rect x="13.5" y="4" width="7.5" height="10" rx="1.5"/><path d="M3 18h18M3 21h12"/></svg>名鑑<i class="dot"></i></button>
   <button data-tab="sched"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>予定<i class="dot"></i></button>
-  <button data-tab="my"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>マイ<i class="dot"></i></button>
+  <button data-tab="my"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>マイ<i class="dot"></i><span class="nbadge" id="navMyBadge" hidden></span></button>
 </nav>
 
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="VTuberの詳細" hidden>
@@ -523,8 +577,7 @@ const store = {
 };
 let SID = store.get("sid", null);
 if (!SID) { SID = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2)); store.set("sid", SID); }
-const favs = new Set(store.get("favs", []));
-const tops = new Set(store.get("tops", []).filter((x) => favs.has(x)).slice(0, 3));
+const favs = new Set(), tops = new Set(); // ログインすると推しリストが入る
 const seen = new Set(store.get("seen", []));
 
 let CH = [], ST = [], DAILY = [], byId = new Map(), live = false;
@@ -586,26 +639,76 @@ let rescueOpen = false;
 document.addEventListener("click", (e) => { if (e.target.closest("[data-sosmore]")) { rescueOpen = true; renderRescue(); } });
 setInterval(() => { if (live) loadRescue(); }, 60000);
 
-document.addEventListener("click", (e) => {
-  const b = e.target.closest("[data-top]"); if (!b) return; e.stopPropagation();
-  const id = b.dataset.top;
-  if (tops.has(id)) { tops.delete(id); toast("最推しから外しました"); }
-  else if (tops.size >= 3) { toast("最推しは3人までです。だれかを外してから選んでください"); return; }
-  else { tops.add(id); toast("★ 最推しにしました！ 救援を優先してお知らせします"); }
-  store.set("tops", [...tops]); pushSync(); if (curId) renderProfile(); if (tab === "home") renderRescue();
-}, true);
-
-/* ---------- 古参の証（この端末に記録。早く・少ない時に来た人ほど価値が高い） ---------- */
-const KOSAN = store.get("kosan", {});
+/* ---------- 推し・最推し・古参の証（アカウントに保存。ログインが必要） ---------- */
+// KOSAN[channel_id] = { since, subs, day, visits:[streamId], rescues:[rescueId] }（OSHIテーブルの写し）
+const KOSAN = {};
+function oshiApply(rows) {
+  favs.clear(); tops.clear(); for (const k in KOSAN) delete KOSAN[k];
+  (rows || []).forEach((r) => {
+    favs.add(r.channel_id); if (r.is_top) tops.add(r.channel_id);
+    KOSAN[r.channel_id] = { since: r.since, subs: r.subs_at, day: r.day_at, visits: r.visits || [], rescues: r.rescues || [] };
+  });
+}
+async function oshiLoad() {
+  if (!AUTH || !SESSION) { oshiApply([]); return; }
+  const { data } = await AUTH.from("oshi").select("*");
+  oshiApply(data || []);
+}
+// ログイン前にこの端末で推していた子を、アカウントに引っ越す（1回だけ）
+async function oshiMigrate() {
+  const lf = store.get("favs", []), lt = new Set(store.get("tops", [])), lk = store.get("kosan", {});
+  if (!lf.length && !Object.keys(lk).length) return;
+  const ids = [...new Set([...lf, ...Object.keys(lk)])].filter((id) => byId.has(id) && !favs.has(id));
+  let topLeft = 3 - tops.size;
+  const rows = ids.map((id) => { const k = lk[id] || {}, c = byId.get(id); const top = lt.has(id) && topLeft-- > 0;
+    return { user_id: SESSION.user.id, channel_id: id, is_top: top, since: k.since || new Date().toISOString(), subs_at: k.subs ?? (c.subscriber_hidden ? null : c.subscriber_count), day_at: k.day ?? debutDays(c), visits: (k.visits || []).slice(-200), rescues: (k.rescues || []).filter((x) => Number.isInteger(x)) }; });
+  if (rows.length) await AUTH.from("oshi").upsert(rows, { onConflict: "user_id,channel_id", ignoreDuplicates: true });
+  store.set("favs", []); store.set("tops", []); store.set("kosan", {});
+  await oshiLoad();
+}
+async function oshiToggle(id) {
+  if (!needLogin("推しリストと古参の証")) return;
+  const c = byId.get(id); if (!c) return;
+  if (favs.has(id)) {
+    const { error } = await AUTH.from("oshi").delete().eq("channel_id", id);
+    if (error) return toast("うまくいきませんでした。もう一度お試しください");
+    favs.delete(id); tops.delete(id); delete KOSAN[id]; toast("推しリストから外しました");
+  } else {
+    const row = { user_id: SESSION.user.id, channel_id: id, since: new Date().toISOString(), subs_at: c.subscriber_hidden ? null : c.subscriber_count, day_at: debutDays(c) };
+    const { error } = await AUTH.from("oshi").insert(row);
+    if (error) return toast("うまくいきませんでした。もう一度お試しください");
+    favs.add(id); KOSAN[id] = { since: row.since, subs: row.subs_at, day: row.day_at, visits: [], rescues: [] };
+    toast(`🏅 推しリストに入れました！ 古参の証${row.subs_at != null ? `「登録者${row.subs_at.toLocaleString("ja-JP")}人の頃から」` : ""}をゲット`);
+  }
+  oshiRefreshUI(id);
+}
+async function topToggle(id) {
+  if (!needLogin("最推し")) return;
+  if (!favs.has(id)) return toast("先に推しリストに入れてください");
+  const on = !tops.has(id);
+  if (on && tops.size >= 3) return toast("最推しは3人までです。だれかを外してから選んでください");
+  const { error } = await AUTH.from("oshi").update({ is_top: on }).eq("channel_id", id);
+  if (error) return toast(/top_limit/.test(error.message) ? "最推しは3人までです" : "うまくいきませんでした");
+  on ? tops.add(id) : tops.delete(id);
+  toast(on ? "★ 最推しにしました！ 救援を優先してお知らせします" : "最推しから外しました");
+  oshiRefreshUI(id);
+}
+function oshiRefreshUI(id) {
+  document.querySelectorAll(`[data-fav="${CSS.escape(id)}"]`).forEach((b) => b.setAttribute("aria-pressed", favs.has(id)));
+  if (curId) renderProfile(); else if (typeof refreshCurrent === "function") refreshCurrent();
+  if (tab === "home") renderRescue();
+}
+// 配信を見に行った・救援に駆けつけた記録（推しの子だけ）
+let kosanSaveT = {};
 function kosanMark(cid, { streamId = null, rescueId = null } = {}) {
-  const c = byId.get(cid); if (!c) return;
-  let k = KOSAN[cid], isNew = false;
-  if (!k) { k = KOSAN[cid] = { since: new Date().toISOString(), subs: c.subscriber_hidden ? null : c.subscriber_count, day: debutDays(c), visits: [], rescues: [] }; isNew = true; }
-  if (streamId && !k.visits.includes(streamId)) k.visits.push(streamId);
-  if (rescueId && !k.rescues.includes(rescueId)) { k.rescues.push(rescueId); toast("🆘 救援に駆けつけました！ 救援バッジをゲット"); logEvent("rescue_join", cid); }
-  k.visits = k.visits.slice(-200);
-  store.set("kosan", KOSAN);
-  if (isNew && !rescueId) toast(`🏅 古参の証をゲット！${k.subs != null ? `（登録者${k.subs.toLocaleString("ja-JP")}人の頃から）` : ""}`);
+  const k = KOSAN[cid];
+  if (!k) { if (rescueId) toast("🆘 救援に来てくれてありがとう！ 推しリストに入れると救援バッジが残ります"); return; }
+  let changed = false;
+  if (streamId && !k.visits.includes(streamId)) { k.visits.push(streamId); k.visits = k.visits.slice(-200); changed = true; }
+  if (rescueId && !k.rescues.includes(rescueId)) { k.rescues.push(rescueId); changed = true; toast("🆘 救援に駆けつけました！ 救援バッジをゲット"); logEvent("rescue_join", cid); }
+  if (!changed || !SESSION) return;
+  clearTimeout(kosanSaveT[cid]);
+  kosanSaveT[cid] = setTimeout(() => AUTH.from("oshi").update({ visits: k.visits, rescues: k.rescues }).eq("channel_id", cid).then(() => {}), 500);
 }
 function kosanTitle(k) { return k.subs != null ? `登録者${k.subs.toLocaleString("ja-JP")}人の頃から` : k.day ? `デビュー${k.day}日目から` : `${jst(k.since, { year: "numeric", month: "numeric", day: "numeric" })}から`; }
 function kosanShareUrl(c, k) {
@@ -622,6 +725,10 @@ function kosanBox(c) {
     <div class="bd2"><em>👀 配信に${k.visits.length}回</em>${k.rescues.length ? `<em>🆘 救援${k.rescues.length}回</em>` : ""}</div>
     <a class="shr" href="${kosanShareUrl(c, k)}" target="_blank" rel="noopener">𝕏 古参の証をシェア</a></div>`;
 }
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-top]"); if (!b) return; e.stopPropagation(); e.preventDefault();
+  topToggle(b.dataset.top);
+}, true);
 
 /* ---------- helpers ---------- */
 const now = () => Date.now();
@@ -1012,68 +1119,158 @@ function renderSched() {
 }
 
 /* ---------- MY ---------- */
-/* ---------- 本人登録（YouTubeのアカウントでログイン） ---------- */
+/* ---------- アカウント（全員Googleログイン。VTuberはYouTubeで本人確認） ---------- */
 const AUTH = window.supabase?.createClient ? window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, detectSessionInUrl: true, flowType: "pkce" } }) : null;
 const GENRES = ["雑談", "ゲーム", "歌", "ASMR", "お絵描き", "企画", "ホラー", "FPS", "マイクラ", "その他"];
-let SESSION = null, MINE = null, SOS_TODAY = [], ownBusy = false, ownMsg = "";
+const ADMINS = ["sinjin.vtuber.lab@gmail.com", "core.tagishi@gmail.com"];
+let SESSION = null, PROFILE = null, MINE = [], SOS_TODAY = [], COLLAB = { incoming: [], outgoing: [] }, collabPending = 0, ownMsg = "", authBusy = false, authReady = false;
+let myRole = store.get("myRole", "listener"), PREVIEW = "me";
+const isAdmin = () => !!(SESSION && ADMINS.includes(SESSION.user?.email));
+const loggedIn = () => !!(SESSION && PROFILE);
+const viewAs = () => (isAdmin() && PREVIEW !== "me" ? PREVIEW : loggedIn() ? (MINE.length ? "vtuber" : "listener") : "guest");
+const G_ICON = `<svg viewBox="0 0 24 24"><path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.3-1.6 3.8-5.5 3.8-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.2 14.6 2.2 12 2.2 6.6 2.2 2.2 6.6 2.2 12s4.4 9.8 9.8 9.8c5.7 0 9.4-4 9.4-9.6 0-.6-.1-1.1-.2-1.6H12z"/></svg>`;
+
 async function ownerApi(body) {
   const r = await fetch(`${SB_URL}/functions/v1/owner`, { method: "POST", headers: { apikey: SB_KEY, Authorization: `Bearer ${SESSION.access_token}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
   return r.json();
 }
-function applyMineR(r) { SOS_TODAY = r.sos_today || []; applyMine(r.mine); }
-function applyMine(mine) {
-  MINE = mine || [];
-  MINE.forEach((m) => { const c = byId.get(m.id); if (c) Object.assign(c, { registered: m.registered, collab_open: m.collab_open, collab_genres: m.collab_genres, x_handle: m.x_handle }); });
-  if (tab === "my") renderMy();
+function navBadge() {
+  const b = $("#navMyBadge"); if (!b) return;
+  const n = viewAs() === "vtuber" || (loggedIn() && MINE.length) ? collabPending : 0;
+  b.hidden = !n; b.textContent = n > 9 ? "9+" : String(n);
 }
-async function ownerLogin() {
+async function refreshMine() {
+  if (!SESSION) { MINE = []; return; }
+  const r = await ownerApi({ action: "mine" });
+  MINE = r.mine || []; SOS_TODAY = r.sos_today || []; collabPending = r.collab_pending || 0;
+  MINE.forEach((m) => { const c = byId.get(m.id); if (c) Object.assign(c, { registered: m.registered, collab_open: m.collab_open, collab_genres: m.collab_genres, x_handle: m.x_handle }); });
+  navBadge();
+}
+async function collabLoad() { if (SESSION && MINE.length) { const r = await ownerApi({ action: "collab_list" }); COLLAB = { incoming: r.incoming || [], outgoing: r.outgoing || [] }; } }
+
+// ログインが必要な機能に触ったとき：登録の案内を出す
+function needLogin(feature) {
+  if (loggedIn()) return true;
+  if (!authReady) { toast("読み込み中です。少し待ってからもう一度押してください"); return false; }
+  if (SESSION && !PROFILE) { openNick(); return false; }
+  openJoin(feature); return false;
+}
+function listenerLogin() {
   if (!AUTH) return toast("ログインの準備ができませんでした。通信を確認してください");
   store.set("tab", "my");
-  await AUTH.auth.signInWithOAuth({ provider: "google", options: { scopes: "https://www.googleapis.com/auth/youtube.readonly", redirectTo: location.origin + location.pathname + "?claim=1", queryParams: { prompt: "select_account" } } });
+  AUTH.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin + location.pathname + "?reg=1", queryParams: { prompt: "select_account" } } });
 }
-async function ownerInit() {
-  if (!AUTH) return;
-  const claim = new URLSearchParams(location.search).get("claim");
+function vtuberLogin() {
+  if (!AUTH) return toast("ログインの準備ができませんでした。通信を確認してください");
+  store.set("tab", "my"); store.set("myRole", "vtuber");
+  AUTH.auth.signInWithOAuth({ provider: "google", options: { scopes: "https://www.googleapis.com/auth/youtube.readonly", redirectTo: location.origin + location.pathname + "?claim=1", queryParams: { prompt: "select_account" } } });
+}
+
+/* 登録の案内シート（リスナー／VTuberを選ぶ → それぞれの説明 → 登録） */
+const JOIN_FEAT = {
+  listener: ["推しリストと★最推し（3人まで）", "古参の証「登録者○人の頃から」が残る・𝕏でシェア", "推しの救援要請をスマホに通知"],
+  vtuber: ["本人登録バッジ・配信中の一覧でいちばん上に", "人が少ない時に🆘救援を呼べる（1日1回）", "同期とコラボ申請・同期ランキング"],
+};
+function joinPick(feature, inline) {
+  return `<div class="jn">
+    ${inline ? "" : `<button class="jx" data-join="close" aria-label="閉じる">×</button>`}
+    <div class="jh">${feature ? `<span class="jk">🔒 ${esc(feature)}は登録すると使えます</span>` : `<span class="jk">Vぶいに登録しよう</span>`}<b>どちらで登録しますか？</b><span class="jf">基本利用は<b>無料</b>です。Googleのアカウントで1分で登録できます</span></div>
+    <button class="jc" data-join="listener"><span class="ji">🎧</span><span class="jt"><b>リスナーで登録</b>${JOIN_FEAT.listener.map((x) => `<span>✓ ${x}</span>`).join("")}</span><span class="ja">›</span></button>
+    <button class="jc v" data-join="vtuber"><span class="ji">🎙</span><span class="jt"><b>VTuberで登録</b>${JOIN_FEAT.vtuber.map((x) => `<span>✓ ${x}</span>`).join("")}</span><span class="ja">›</span></button>
+  </div>`;
+}
+function joinRole(role) {
+  if (role === "listener") return `<div class="jn"><button class="jx" data-join="close" aria-label="閉じる">×</button>
+    <button class="jb" data-join="back">‹ 戻る</button>
+    <div class="jh"><span class="jk">🎧 リスナー登録</span><b>まだ誰も知らない推しを、いちばん最初に。</b></div>
+    <div class="jl"><p>早く・人が少ない時に応援した人ほど、<b>古参の証</b>が残ります。</p>
+      <ul><li>🏅 推しリストに入れた瞬間の登録者数が記録される</li><li>★ 最推しは3人まで。救援がいちばん上に出る</li><li>🆘 救援に駆けつけるとバッジが付く</li><li>🔔 推しの救援をスマホに通知</li></ul></div>
+    <button class="gbtn" data-join="go-listener">${G_ICON}Googleで登録する（無料）</button>
+    <small class="js">名前とメールアドレスだけ使います。YouTubeの権限は使いません。<a href="for-listener.html">くわしく見る</a>・<a href="privacy.html">プライバシーポリシー</a></small></div>`;
+  return `<div class="jn"><button class="jx" data-join="close" aria-label="閉じる">×</button>
+    <button class="jb" data-join="back">‹ 戻る</button>
+    <div class="jh"><span class="jk">🎙 VTuber登録</span><b>新人だって、ブイブイ言わせたい。</b></div>
+    <div class="jl"><p>YouTubeのアカウントでログインすると、チャンネルの持ち主か確認して登録します。</p>
+      <ul><li>✅ すでにVぶいに載っている子は、そのまま本人と紐付け</li><li>🆕 まだ載っていない子は、チャンネルの情報を自動で取り込んで新しく登録</li><li>🔝 配信中の一覧でいちばん上・🆘 救援・🤝 コラボ申請</li></ul></div>
+    <button class="gbtn" data-join="go-vtuber">${G_ICON}YouTubeのアカウントで登録（無料）</button>
+    <small class="js">見せてもらうのはチャンネル名とIDだけ。投稿や設定の変更は一切できません。<a href="for-vtuber.html">くわしく見る</a>・<a href="privacy.html">プライバシーポリシー</a></small></div>`;
+}
+let joinFeature = null;
+function overlay(id, html) {
+  let el = document.getElementById(id);
+  if (!el) { el = document.createElement("div"); el.id = id; el.className = "ov"; document.body.appendChild(el); el.addEventListener("click", (e) => { if (e.target === el && id !== "nick") closeOv(id); }); }
+  el.innerHTML = `<div class="ovp">${html}</div>`; el.hidden = false; requestAnimationFrame(() => el.classList.add("on"));
+}
+function closeOv(id) { const el = document.getElementById(id); if (!el) return; el.classList.remove("on"); setTimeout(() => { el.hidden = true; }, 200); }
+function openJoin(feature) { joinFeature = feature; overlay("join", joinPick(feature)); }
+function openNick() {
+  const nm = (SESSION?.user?.user_metadata?.full_name || SESSION?.user?.user_metadata?.name || "").slice(0, 20);
+  overlay("nick", `<div class="jn"><div class="jh"><span class="jk">🎉 あと少し！</span><b>ニックネームを決めよう</b><span class="jf">古参の証やマイページに表示されます（あとで変えられます）</span></div>
+    <input type="text" id="nickIn" maxlength="20" value="${esc(nm)}" placeholder="ニックネーム（20文字まで）" autocomplete="off">
+    <button class="gbtn" data-nick="save">はじめる</button>
+    <button class="jb" data-nick="cancel" style="align-self:center">登録をやめる（ログアウト）</button></div>`);
+}
+async function saveNick() {
+  const v = ($("#nickIn")?.value || "").trim();
+  if (!v) return toast("ニックネームを入れてください");
+  const q = PROFILE ? AUTH.from("profiles").update({ nickname: v, updated_at: new Date().toISOString() }).eq("user_id", SESSION.user.id) : AUTH.from("profiles").insert({ user_id: SESSION.user.id, nickname: v });
+  const { error } = await q; if (error) return toast("保存できませんでした。もう一度お試しください");
+  const first = !PROFILE; PROFILE = { ...(PROFILE || {}), user_id: SESSION.user.id, nickname: v };
+  closeOv("nick");
+  if (first) { await oshiLoad(); await oshiMigrate(); toast(`🎉 登録完了！ ようこそ、${v}さん`); } else toast("ニックネームを変えました");
+  renderMy(); if (curId) renderProfile();
+}
+async function logout() {
+  try { if (pushSub) { await pushApi({ action: "unsubscribe", subscription: pushSub.toJSON() }); await pushSub.unsubscribe(); pushSub = null; } } catch {}
+  await AUTH?.auth.signOut();
+  SESSION = null; PROFILE = null; MINE = []; COLLAB = { incoming: [], outgoing: [] }; collabPending = 0; ownMsg = ""; PREVIEW = "me";
+  oshiApply([]); navBadge(); renderMy(); toast("ログアウトしました");
+}
+
+async function authInit() {
+  if (!AUTH) { authReady = true; return; }
+  const q = new URLSearchParams(location.search), claim = q.get("claim"), reg = q.get("reg");
+  if (q.get("role") === "vtuber") myRole = "vtuber";
   const { data } = await AUTH.auth.getSession(); SESSION = data.session;
-  if (claim) try { history.replaceState({}, "", location.pathname); } catch {}
-  if (!SESSION) return;
-  ownBusy = true; if (tab === "my") renderMy();
+  AUTH.auth.onAuthStateChange((_e, s) => { if (s) SESSION = s; });
+  if (claim || reg) try { history.replaceState({}, "", location.pathname); } catch {}
+  if (!SESSION) { authReady = true; if (tab === "my") renderMy(); return; }
+  authBusy = true; if (tab === "my") renderMy();
   try {
-    if (claim && !SESSION.provider_token) ownMsg = "Googleからの確認情報が届きませんでした。いったんログアウトして、もう一度お試しください。";
-    if (claim && SESSION.provider_token) {
-      const r = await ownerApi({ action: "claim", provider_token: SESSION.provider_token });
-      if (r.error === "no_channel") ownMsg = "このGoogleアカウントにはYouTubeチャンネルがありませんでした。配信しているチャンネルのアカウントでログインしてください。";
-      else if (r.error === "no_scope") ownMsg = "YouTubeの表示を許可してもらえなかったため、確認できませんでした。もう一度押して、Googleの画面で「YouTube アカウントの表示」にチェックを入れたまま進んでください。";
-      else if (r.error === "no_token") ownMsg = "Googleからの確認情報が届きませんでした。いったんログアウトして、もう一度お試しください。";
-      else if (r.error) ownMsg = "うまく確認できませんでした。もう一度お試しください。（" + (r.detail || r.error) + "）";
+    if (claim) {
+      if (!SESSION.provider_token) ownMsg = "Googleからの確認情報が届きませんでした。いったんログアウトして、もう一度お試しください。";
       else {
-        const taken = (r.results || []).filter((x) => x.result === "taken");
-        ownMsg = taken.length ? "このチャンネルは、すでに別のアカウントで登録されています。お心当たりがない場合は公式Xまでご連絡ください。" : "本人登録が完了しました🎉";
-        (r.results || []).filter((x) => x.result === "added").forEach(() => { ownMsg = "本人登録が完了しました🎉 名鑑への反映は、少し時間がかかることがあります。"; });
+        const r = await ownerApi({ action: "claim", provider_token: SESSION.provider_token });
+        if (r.error === "no_channel") ownMsg = "このGoogleアカウントにはYouTubeチャンネルがありませんでした。配信しているチャンネルのアカウントでログインしてください。";
+        else if (r.error === "no_scope") ownMsg = "YouTubeの表示を許可してもらえなかったため、確認できませんでした。もう一度押して、Googleの画面で「YouTube アカウントの表示」にチェックを入れたまま進んでください。";
+        else if (r.error) ownMsg = "うまく確認できませんでした。もう一度お試しください。（" + (r.detail || r.error) + "）";
+        else {
+          const taken = (r.results || []).some((x) => x.result === "taken"), added = (r.results || []).some((x) => x.result === "added");
+          ownMsg = taken ? "このチャンネルは、すでに別のアカウントで登録されています。お心当たりがない場合は公式Xまでご連絡ください。" : added ? "本人登録が完了しました🎉 チャンネルの情報を取り込んで、名鑑に登録しました。" : "本人登録が完了しました🎉";
+          myRole = "vtuber"; store.set("myRole", "vtuber");
+        }
       }
-      applyMineR(await ownerApi({ action: "mine" }));
-    } else applyMineR(await ownerApi({ action: "mine" }));
-  } catch { ownMsg = "通信に失敗しました。"; }
-  ownBusy = false; if (tab === "my") renderMy();
+    }
+    const { data: p } = await AUTH.from("profiles").select("*").maybeSingle(); PROFILE = p || null;
+    await refreshMine();
+    if (PROFILE) { await oshiLoad(); await oshiMigrate(); if (MINE.length) await collabLoad(); }
+  } catch (e) { ownMsg = "通信に失敗しました。"; }
+  authBusy = false; authReady = true;
+  if (SESSION && !PROFILE) openNick();
+  pushInit(); navBadge();
+  if (tab === "my") renderMy(); else if (curId) renderProfile(); else if (typeof refreshCurrent === "function") refreshCurrent();
 }
+
+/* ---------- VTuber：自分のチャンネル・救援・コラボ設定 ---------- */
 function sosBlock(m) {
   const L = liveOf(m.id), used = SOS_TODAY.find((s) => s.channel_id === m.id), act = used && Date.parse(used.expires_at) > Date.now();
-  const note = act ? "救援を呼んでいます（10分間、ホームのいちばん上に出ます）" : used ? "今日の救援は使いました。また明日使えます" : L ? "人が少なくてつらい時に。ホームのいちばん上に10分間出ます（1日1回）" : "配信中だけ使えます（1日1回）";
+  const note = act ? "救援を呼んでいます（10分間、ホームのいちばん上に出ます）" : used ? "今日の救援は使いました。また明日使えます" : L ? "人が少なくてつらい時に。ホームのいちばん上に10分間出て、推してくれている人に通知が届きます（1日1回）" : "配信中だけ使えます（1日1回）";
   return `<div style="display:flex;flex-direction:column;gap:6px"><button class="gbtn sosbtn" data-own="sos" ${L && !used ? "" : "disabled"}>🆘 救援を呼ぶ</button>
     ${L && !used ? `<input type="text" data-own="sosmsg" maxlength="40" placeholder="ひとこと（任意）例：初見さん歓迎！ゲーム実況中" autocomplete="off">` : ""}<small>${note}</small></div>`;
 }
 function ownerBox() {
-  const G = `<svg viewBox="0 0 24 24"><path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.3-1.6 3.8-5.5 3.8-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.2 14.6 2.2 12 2.2 6.6 2.2 2.2 6.6 2.2 12s4.4 9.8 9.8 9.8c5.7 0 9.4-4 9.4-9.6 0-.6-.1-1.1-.2-1.6H12z"/></svg>`;
   const msg = ownMsg ? `<p style="color:#fff;font-weight:700">${esc(ownMsg)}</p>` : "";
-  if (ownBusy) return `<div class="own"><h3>本人登録</h3><p>確認しています…</p></div>`;
-  if (!SESSION || !MINE || !MINE.length) {
-    return `<div class="own"><h3>🎙 VTuberのかたへ</h3>${msg}
-      <p>YouTubeのアカウントでログインするだけで、本人登録ができます。無料です。 <a href="for-vtuber.html" style="color:var(--accent);font-weight:700">くわしく見る →</a></p>
-      <ul><li>配信中の一覧で、いちばん上に表示</li><li>同期ランキングで、自分の順位がわかる</li><li>コラボ相手さがしに「申請する」ボタンが出る</li><li>配信開始を公式Xで自動告知（準備中）</li></ul>
-      <button class="gbtn" data-own="login">${G}YouTubeのアカウントで本人登録</button>
-      <small>見せてもらうのは、チャンネル名とIDだけです。動画の投稿や設定の変更は一切できません。<br><a href="privacy.html" style="color:#B8B4CC">プライバシーポリシー</a>・<a href="terms.html" style="color:#B8B4CC">利用規約</a></small>
-      ${SESSION ? `<button class="lnk" data-own="logout">ログアウト</button>` : ""}</div>`;
-  }
+  if (!MINE.length) return `<div class="own"><h3>🎙 VTuberのかたへ</h3>${msg}<p>YouTubeのアカウントで本人確認すると、救援・コラボ申請・同期ランキングが使えます。無料です。</p><button class="gbtn" data-own="login">${G_ICON}YouTubeのアカウントで本人登録</button></div>`;
   const more = `<div class="own" style="gap:6px"><button class="lnk" data-own="login" style="font-size:13px">＋ 別のチャンネルも本人登録する</button><small>Googleの画面で、登録したいチャンネルを選んでください。</small></div>`;
   return MINE.map((m) => {
     const c = byId.get(m.id) || m; const gs = m.collab_genres || [];
@@ -1083,65 +1280,89 @@ function ownerBox() {
       ${sosBlock(m)}
       <label class="row2">コラボ相手を募集する<input type="checkbox" class="sw" data-own="collab" ${m.collab_open ? "checked" : ""}></label>
       <div><p style="margin-bottom:6px">得意なジャンル（5つまで）</p><div class="gen">${GENRES.map((g) => `<button data-own="genre" data-g="${g}" aria-pressed="${gs.includes(g)}">${g}</button>`).join("")}</div></div>
-      <div><p style="margin-bottom:6px">XのID（コラボ申請の連絡先になります）</p><input type="text" data-own="x" value="${esc(m.x_handle ? "@" + m.x_handle : "")}" placeholder="@your_id" autocomplete="off"></div>
+      <div><p style="margin-bottom:6px">XのID（コラボが成立した相手にだけ見えます）</p><input type="text" data-own="x" value="${esc(m.x_handle ? "@" + m.x_handle : "")}" placeholder="@your_id" autocomplete="off"></div>
       <button class="gbtn" data-own="save">保存する</button>
-      <div style="display:flex;gap:16px"><button class="lnk" data-own="logout">ログアウト</button><button class="lnk" data-own="unreg">本人登録を解除する</button></div></div>`;
+      <button class="lnk" data-own="unreg">本人登録を解除する</button></div>`;
   }).join("") + more;
 }
-document.addEventListener("click", async (e) => {
-  const b = e.target.closest("[data-own]"); if (!b) return;
-  const k = b.dataset.own;
-  if (k === "login") return ownerLogin();
-  if (k === "logout") { await AUTH?.auth.signOut(); SESSION = null; MINE = null; ownMsg = ""; return renderMy(); }
-  if (k === "sos") {
-    const w = b.closest("[data-mine]"); if (!b.dataset.sure) { b.dataset.sure = "1"; b.textContent = "🆘 本当に呼ぶ？（もう一度押す）"; return; }
-    b.disabled = true; b.textContent = "呼んでいます…";
-    const r = await ownerApi({ action: "sos", channel_id: w.dataset.mine, message: w.querySelector('[data-own="sosmsg"]')?.value || "" });
-    ownMsg = r.ok ? "🆘 救援を呼びました！ ホームのいちばん上に10分間表示されます" : r.error === "used_today" ? "今日の救援はもう使いました" : r.error === "not_live" ? "配信中だけ使えます。配信が始まってから数分待ってお試しください" : "うまくいきませんでした";
-    await loadRescue(); return applyMineR(await ownerApi({ action: "mine" }));
-  }
-  if (k === "unreg") {
-    if (!b.dataset.sure) { b.dataset.sure = "1"; b.textContent = "本当に解除する？（もう一度押す）"; return; }
-    const w = b.closest("[data-mine]"); await ownerApi({ action: "unregister", channel_id: w.dataset.mine });
-    const c = byId.get(w.dataset.mine); if (c) Object.assign(c, { registered: false, collab_open: false });
-    ownMsg = "本人登録を解除しました。"; return applyMineR(await ownerApi({ action: "mine" }));
-  }
-  if (k === "genre") { const box = b.closest(".gen"); const on = b.getAttribute("aria-pressed") === "true"; if (!on && box.querySelectorAll('[aria-pressed="true"]').length >= 5) return toast("5つまで選べます"); b.setAttribute("aria-pressed", String(!on)); return; }
-  if (k === "save") {
-    const w = b.closest("[data-mine]"); b.disabled = true; b.textContent = "保存中…";
-    const r = await ownerApi({ action: "update", channel_id: w.dataset.mine, collab_open: w.querySelector(".sw").checked,
-      collab_genres: [...w.querySelectorAll('.gen [aria-pressed="true"]')].map((x) => x.dataset.g), x_handle: w.querySelector('input[data-own="x"]').value });
-    ownMsg = r.error ? "保存できませんでした。" : "保存しました✨"; applyMine(r.mine || MINE);
-  }
-});
-/* ---------- プッシュ通知（推しの救援要請をスマホに届ける） ---------- */
+
+/* ---------- VTuber：コラボ申請 ---------- */
+const greetFor = (me, accepted) => accepted
+  ? `Vぶいでコラボ申請をいただいた${me}です！ OKさせてもらいました🙌 内容や日程のご相談、ぜひよろしくお願いします！`
+  : `Vぶいでコラボ申請させてもらった${me}です！ OKありがとうございます🙌 内容や日程のご相談をさせてください！`;
+function collabRow(c, inner) {
+  return `<div class="cl"><button class="av" data-open="${esc(c?.id || "")}">${c ? img(c.thumbnail_url, c) : ""}</button><div class="cb">${inner}</div></div>`;
+}
+function collabBox() {
+  const inc = COLLAB.incoming, out = COLLAB.outgoing;
+  const pend = inc.filter((r) => r.status === "pending");
+  const okList = [...inc.filter((r) => r.status === "accepted").map((r) => ({ r, other: r.from, me: r.to, side: "in" })), ...out.filter((r) => r.status === "accepted").map((r) => ({ r, other: r.to, me: r.from, side: "out" }))];
+  const wait = out.filter((r) => r.status !== "accepted");
+  let h = `<div class="sec-h">コラボ申請${pend.length ? `<span class="redn">${pend.length}件</span>` : `<span>届いた申請はありません</span>`}</div>`;
+  h += pend.map((r) => collabRow(r.from, `<b>${esc(r.from?.title || "")}</b><span>${r.from?.collab_genres?.length ? esc(r.from.collab_genres.join("／")) + "・" : ""}${rel(r.created_at)}</span>${r.message ? `<p class="cm">「${esc(r.message)}」</p>` : ""}
+    <div class="cbtn"><button class="shr" data-collab="ok" data-id="${r.id}">🤝 OKする</button><button class="shr gray" data-collab="ng" data-id="${r.id}">今回は見送る</button></div>`)).join("");
+  if (okList.length) h += `<div class="sec-h">コラボ成立<span>${okList.length}件</span></div>` + okList.map(({ r, other, me, side }) => collabRow(other, `<b>🎉 ${esc(other?.title || "")}</b>
+    ${other?.x_handle ? `<span>Xで連絡を取りましょう：<a href="https://x.com/${encodeURIComponent(other.x_handle)}" target="_blank" rel="noopener">@${esc(other.x_handle)}</a></span>
+    <p class="cm">${esc(greetFor(me?.title || "", side === "in"))}</p><div class="cbtn"><button class="shr" data-collab="copy" data-t="${esc(greetFor(me?.title || "", side === "in"))}">あいさつ文をコピー</button><a class="shr" href="https://x.com/${encodeURIComponent(other.x_handle)}" target="_blank" rel="noopener">𝕏 を開く</a></div>`
+    : `<span>相手がXのIDをまだ登録していません。相手の配信に遊びに行ってみましょう</span>`}`)).join("");
+  if (wait.length) h += `<div class="sec-h">送った申請<span>${wait.length}件</span></div>` + wait.map((r) => collabRow(r.to, `<b>${esc(r.to?.title || "")}</b><span>${r.status === "pending" ? "⏳ 返事待ち" : "今回は見送りになりました"}・${rel(r.created_at)}</span>`)).join("");
+  return h;
+}
+function partnersBox() {
+  const mineIds = new Set(MINE.map((m) => m.id));
+  const st = new Map(COLLAB.outgoing.map((r) => [r.to_channel, r.status]));
+  const list = CH.filter((c) => !mineIds.has(c.id) && c.status === "active" && (c.registered || c.x_handle))
+    .sort((a, b) => (b.registered && b.collab_open ? 1 : 0) - (a.registered && a.collab_open ? 1 : 0) || Date.parse(b.first_stream_at || 0) - Date.parse(a.first_stream_at || 0));
+  return `<div class="sec-h">コラボ相手をさがす<span>募集中 ${list.filter((c) => c.registered && c.collab_open).length}人</span></div>
+    <p class="note" style="margin-top:0">本人登録してコラボ募集中の子に申請できます。OKをもらえると、お互いのXが見えるようになります。</p>
+    ${list.map((c) => { const ok = c.registered && c.collab_open, s = st.get(c.id);
+      const btn = s === "pending" ? `<span class="cb-btn" aria-disabled="true">申請中</span>` : s === "accepted" ? `<span class="cb-btn" aria-disabled="true">成立</span>` : ok ? `<button class="cb-btn" data-collab="new" data-to="${esc(c.id)}">申請する</button>` : `<span class="cb-btn" aria-disabled="true">${c.registered ? "募集していません" : "まだ未登録です"}</span>`;
+      return `<div class="rk-row cb-row"><button class="av" data-open="${esc(c.id)}" aria-label="カードを見る">${img(c.thumbnail_url, c)}</button>
+      <span class="bd"><div class="nm">${esc(c.title)}${c.registered ? `<span class="tag reg">本人登録</span>` : ""}</div><div class="sm">${c.first_stream_at ? cohortLabel(cohortOf(c)) : ""}${c.collab_genres?.length ? "・" + esc(c.collab_genres.join("／")) : ""}</div></span>${btn}</div>`; }).join("")}`;
+}
+function openCollabNew(to) {
+  const c = byId.get(to); if (!c) return;
+  const mine = MINE.filter((m) => m.id !== to); if (!mine.length) return;
+  const from = mine[0], g = (from.collab_genres || [])[0] || "配信";
+  const tmpl = [
+    `はじめまして、${from.title}です！ Vぶいで見つけて、ぜひコラボしたいと思い申請しました。よろしくお願いします！`,
+    `${from.title}です！ 同じ時期にデビューした同期として、雑談コラボできたらうれしいです！`,
+    `${from.title}です！ ${g}が好きで、一緒に配信できたら楽しそうだなと思いました。ご都合いかがですか？`,
+  ];
+  overlay("collabNew", `<div class="jn"><button class="jx" data-join="closeCollab" aria-label="閉じる">×</button>
+    <div class="jh"><span class="jk">🤝 コラボ申請</span><b>${esc(c.title)}さんに申請する</b><span class="jf">OKをもらえると、お互いのXが見えるようになります</span></div>
+    ${mine.length > 1 ? `<select id="cnFrom">${mine.map((m) => `<option value="${esc(m.id)}">${esc(m.title)}として申請</option>`).join("")}</select>` : `<input type="hidden" id="cnFrom" value="${esc(from.id)}">`}
+    <div class="tm">${tmpl.map((t, i) => `<button data-collab="tmpl" data-t="${esc(t)}" aria-pressed="${i === 0}">${esc(t)}</button>`).join("")}</div>
+    <textarea id="cnMsg" maxlength="200" rows="4">${esc(tmpl[0])}</textarea>
+    <button class="gbtn" data-collab="send" data-to="${esc(to)}">申請を送る</button></div>`);
+}
+
+/* ---------- 通知 ---------- */
 const VAPID_PUB = "BJrS7id_cQ0OmCJaesYBF9vVtk2uuH_PKylZvA1EBDf7bri49x35kbUg3A1K_64cQKnVY8FAK3EqOl-noudAGMM";
 const pushOK = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
 let pushSub = null, pushBusy = false;
 const b64u = (s) => { const p = "=".repeat((4 - s.length % 4) % 4); const r = atob((s + p).replace(/-/g, "+").replace(/_/g, "/")); return Uint8Array.from([...r].map((c) => c.charCodeAt(0))); };
 async function pushApi(body) {
-  const r = await fetch(`${SB_URL}/functions/v1/push`, { method: "POST", headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const r = await fetch(`${SB_URL}/functions/v1/push`, { method: "POST", headers: { apikey: SB_KEY, Authorization: `Bearer ${SESSION?.access_token || SB_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
   return r.json();
 }
 async function pushInit() {
   if (!pushOK) return;
-  try { const reg = await navigator.serviceWorker.register("sw.js"); pushSub = await reg.pushManager.getSubscription(); if (pushSub) pushSync(); } catch {}
+  try { const reg = await navigator.serviceWorker.register("sw.js"); pushSub = await reg.pushManager.getSubscription(); if (pushSub && loggedIn()) pushApi({ action: "subscribe", subscription: pushSub.toJSON() }).catch(() => {}); } catch {}
   if (tab === "my") renderMy();
 }
-let pushT = 0;
-function pushSync() { clearTimeout(pushT); pushT = setTimeout(() => { if (pushSub) pushApi({ action: "subscribe", subscription: pushSub.toJSON(), favs: [...favs], tops: [...tops] }).catch(() => {}); }, 800); }
 function pushBox() {
-  if (!pushOK) {
-    if (isIOS && !isStandalone) return `<div class="ks" style="border-color:var(--line);background:var(--surface)"><b>🔔 推しの救援を通知で受け取る</b><span>iPhoneは、Vぶいを<b>ホーム画面に追加</b>すると通知が使えます。Safariで開いて「共有」→「ホーム画面に追加」→ ホーム画面のVぶいから開いて、ここでオンにしてください。</span></div>`;
-    return `<div class="ks" style="border-color:var(--line);background:var(--surface)"><b>🔔 通知</b><span>このブラウザは通知に対応していません。</span></div>`;
-  }
-  if (Notification.permission === "denied") return `<div class="ks" style="border-color:var(--line);background:var(--surface)"><b>🔔 通知がブロックされています</b><span>ブラウザ（またはスマホ）の設定で、Vぶいの通知を「許可」にしてから、もう一度開いてください。</span></div>`;
-  if (!pushSub) return `<div class="ks" style="border-color:var(--line);background:var(--surface)"><b>🔔 推しの救援を通知で受け取る</b><span>推しリストの子が救援要請を出したら、スマホに通知が届きます。★最推しは必ず、ほかの推しは1日3件までお知らせします。</span><button class="shr" data-push="on" ${pushBusy ? "disabled" : ""}>${pushBusy ? "設定中…" : "通知をオンにする"}</button></div>`;
-  return `<div class="ks"><b>🔔 通知オン</b><span>推し${favs.size}人の救援要請をお知らせします（★最推し${tops.size}人は必ず、ほかは1日3件まで）。</span><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="shr" data-push="test">テスト通知を送る</button><button class="shr" data-push="off" style="background:var(--chip);color:var(--ink)">通知をオフ</button></div></div>`;
+  const box = (b, s, x = "") => `<div class="ks" style="border-color:var(--line);background:var(--surface)"><b>${b}</b><span>${s}</span>${x}</div>`;
+  if (!pushOK) return isIOS && !isStandalone ? box("🔔 推しの救援を通知で受け取る", "iPhoneは、Vぶいを<b>ホーム画面に追加</b>すると通知が使えます。Safariで開いて「共有」→「ホーム画面に追加」→ ホーム画面のVぶいから開いて、ここでオンにしてください。") : box("🔔 通知", "このブラウザは通知に対応していません。");
+  if (Notification.permission === "denied") return box("🔔 通知がブロックされています", "ブラウザ（またはスマホ）の設定で、Vぶいの通知を「許可」にしてから、もう一度開いてください。");
+  const vt = MINE.length ? "・コラボ申請" : "";
+  if (!pushSub) return box("🔔 推しの救援を通知で受け取る", `推しリストの子が救援要請を出したら、スマホに通知が届きます${vt ? "（コラボ申請も届きます）" : ""}。★最推しは必ず、ほかの推しは1日3件までお知らせします。`, `<button class="shr" data-push="on" ${pushBusy ? "disabled" : ""}>${pushBusy ? "設定中…" : "通知をオンにする"}</button>`);
+  return `<div class="ks"><b>🔔 通知オン</b><span>推し${favs.size}人の救援${vt}をお知らせします（★最推し${tops.size}人は必ず、ほかは1日3件まで）。</span><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="shr" data-push="test">テスト通知を送る</button><button class="shr gray" data-push="off">通知をオフ</button></div></div>`;
 }
 document.addEventListener("click", async (e) => {
   const b = e.target.closest("[data-push]"); if (!b) return;
   const k = b.dataset.push;
+  if (!needLogin("通知")) return;
   try {
     if (k === "on") {
       pushBusy = true; renderMy();
@@ -1149,9 +1370,8 @@ document.addEventListener("click", async (e) => {
       if (perm !== "granted") { pushBusy = false; renderMy(); return toast("通知が許可されませんでした"); }
       const reg = await navigator.serviceWorker.register("sw.js"); await navigator.serviceWorker.ready;
       pushSub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64u(VAPID_PUB) });
-      const r = await pushApi({ action: "subscribe", subscription: pushSub.toJSON(), favs: [...favs], tops: [...tops] });
+      const r = await pushApi({ action: "subscribe", subscription: pushSub.toJSON() });
       pushBusy = false; renderMy(); toast(r.ok ? "🔔 通知をオンにしました" : "うまく設定できませんでした");
-      if (!favs.size) setTimeout(() => toast("推しリストに入れた子の救援が届きます"), 1900);
     } else if (k === "test") {
       b.textContent = "送信中…"; const r = await pushApi({ action: "test", subscription: pushSub.toJSON() });
       b.textContent = "テスト通知を送る"; toast(r.ok ? "テスト通知を送りました" : "送れませんでした。いったんオフにして、もう一度オンにしてください");
@@ -1162,25 +1382,100 @@ document.addEventListener("click", async (e) => {
   } catch (err) { pushBusy = false; renderMy(); toast("通知の設定に失敗しました"); }
 });
 
+/* ---------- マイページの描画 ---------- */
 function kosanList() {
   const ids = Object.keys(KOSAN).filter((id) => byId.has(id)).sort((a, b) => Date.parse(KOSAN[a].since) - Date.parse(KOSAN[b].since));
   const res = ids.reduce((n, id) => n + KOSAN[id].rescues.length, 0);
   return `<div class="sec-h">古参の証<span>${ids.length}人${res ? `・🆘救援${res}回` : ""}</span></div>` + (ids.length
-    ? `<div class="ksl">${ids.map((id) => { const c = byId.get(id), k = KOSAN[id]; return `<div class="ks"><div class="krow"><button class="av" data-open="${esc(id)}">${img(c.thumbnail_url, c)}</button><div style="min-width:0"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.title)}</b><span>${kosanTitle(k)}の古参・配信に${k.visits.length}回${k.rescues.length ? `・🆘${k.rescues.length}回` : ""}</span></div></div><a class="shr" href="${kosanShareUrl(c, k)}" target="_blank" rel="noopener">𝕏 シェア</a></div>`; }).join("")}</div>`
-    : `<div class="empty" style="padding:20px 8px"><strong>まだ古参の証はありません</strong>推しリストに入れるか、配信を見に行くと「登録者○人の頃から」の証が残ります。早く・人が少ない時ほど価値が上がります。</div>`);
+    ? `<div class="ksl">${ids.map((id) => { const c = byId.get(id), k = KOSAN[id]; return `<div class="ks"><div class="krow"><button class="av" data-open="${esc(id)}">${img(c.thumbnail_url, c)}</button><div style="min-width:0"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tops.has(id) ? "★ " : ""}${esc(c.title)}</b><span>${kosanTitle(k)}の古参・配信に${k.visits.length}回${k.rescues.length ? `・🆘${k.rescues.length}回` : ""}</span></div></div><a class="shr" href="${kosanShareUrl(c, k)}" target="_blank" rel="noopener">𝕏 シェア</a></div>`; }).join("")}</div>`
+    : `<div class="empty" style="padding:20px 8px"><strong>まだ古参の証はありません</strong>気になった子のカードで「推しリストに入れる」を押すと、その時の登録者数で「登録者○人の頃から」の証が残ります。</div>`);
 }
+const footLinks = `<p class="note"><a href="for-listener.html">Vぶいの楽しみ方</a>　<a href="for-vtuber.html">VTuberのかたへ</a>　<a href="guide-vtuber.html">使い方ガイド</a><br><a href="privacy.html">プライバシーポリシー</a>　<a href="terms.html">利用規約</a>　<a href="https://x.com/vv__buibui" target="_blank" rel="noopener">お問い合わせ（公式X）</a></p>`;
 function renderMy() {
+  const el = $("#my"); if (!el) return;
   const total = CH.length, got = CH.filter((c) => seen.has(c.id)).length, pct = total ? Math.round(got / total * 100) : 0;
+  const stat = `<div class="stat-card"><div style="flex:1"><div style="font-weight:700">発掘した新人</div><div class="bar"><i style="width:${pct}%"></i></div></div><div class="big">${got}<small>/${total}</small></div></div>`;
+  const v = viewAs();
+  const adm = isAdmin() ? `<div class="adm"><span>👀 運営用：見え方</span>${[["me", "自分"], ["guest", "未ログイン"], ["listener", "リスナー"], ["vtuber", "VTuber"]].map(([k, l]) => `<button data-preview="${k}" aria-pressed="${PREVIEW === k}">${l}</button>`).join("")}</div>` : "";
+  if (authBusy) { el.innerHTML = adm + `<div class="own"><h3>読み込み中…</h3><p>アカウントを確認しています</p></div>`; return; }
+  if (v === "guest") { el.innerHTML = adm + `<div class="jwrap">${joinPick(null, true)}</div>` + stat + footLinks; navBadge(); return; }
+  const nick = PROFILE?.nickname || (isAdmin() ? "（プレビュー）" : "");
+  const head = `<div class="me"><span class="mav">${esc([...nick][0] || "V")}</span><div class="mt"><b>${esc(nick)}</b><span>${v === "vtuber" ? "VTuber・リスナー" : "リスナー"}</span></div><button class="lnk dk" data-me="nick">名前を変える</button><button class="lnk dk" data-me="logout">ログアウト</button></div>`;
+  const role = v === "vtuber" ? myRole : "listener";
+  const seg = v === "vtuber" ? `<div class="seg" style="margin-top:12px"><button data-myrole="listener" aria-selected="${role === "listener"}">🎧 リスナー</button><button data-myrole="vtuber" aria-selected="${role === "vtuber"}">🎙 VTuber${collabPending ? `<i class="segn">${collabPending}</i>` : ""}</button></div>` : "";
   const fav = CH.filter((c) => favs.has(c.id)).sort((a, b) => (tops.has(b.id) ? 1 : 0) - (tops.has(a.id) ? 1 : 0));
-  $("#my").innerHTML = ownerBox() + `
-    <div class="stat-card"><div style="flex:1"><div style="font-weight:700">発掘した新人</div><div class="bar"><i style="width:${pct}%"></i></div></div><div class="big">${got}<small>/${total}</small></div></div>
-    ${pushBox()}
-    ${kosanList()}
+  const listenerView = `${pushBox()}${kosanList()}
     <div class="sec-h">推しリスト<span>${fav.length}人・★最推し${tops.size}/3</span></div>
-    ${fav.length ? `<div class="grid">${fav.map(miniCard).join("")}</div>` : `<div class="empty"><strong>まだ推しがいません</strong>発掘タブで気になった子のハートを押すと、ここに集まります。</div>`}
-    <p class="note">配信開始のお知らせ、新人巡りスタンプ、コメントは準備中です。推しリストはこの端末に保存されます。</p>
-    <p class="note"><a href="for-listener.html">Vぶいの楽しみ方</a>　<a href="for-vtuber.html">VTuberのかたへ</a>　<a href="guide-vtuber.html">使い方ガイド</a><br><a href="privacy.html">プライバシーポリシー</a>　<a href="terms.html">利用規約</a>　<a href="https://x.com/vv__buibui" target="_blank" rel="noopener">お問い合わせ（公式X）</a></p>`;
+    ${fav.length ? `<div class="grid">${fav.map(miniCard).join("")}</div>` : `<div class="empty"><strong>まだ推しがいません</strong>気になった子のカードで「推しリストに入れる」を押すと、ここに集まります。</div>`}
+    ${stat}
+    ${v === "listener" && !isAdmin() ? `<div class="vtin"><b>🎙 VTuberのかたへ</b><span>YouTubeで本人確認すると、救援やコラボ申請が使えます。</span><button class="shr" data-own="login">本人登録する</button></div>` : ""}`;
+  const vtuberView = `${ownerBox()}${collabBox()}${partnersBox()}`;
+  el.innerHTML = adm + head + seg + (role === "vtuber" ? vtuberView : listenerView) + footLinks;
+  navBadge();
 }
+document.addEventListener("click", async (e) => {
+  const t = e.target.closest("[data-join],[data-nick],[data-me],[data-myrole],[data-preview],[data-collab]"); if (!t) return;
+  const d = t.dataset;
+  if (d.join) {
+    if (d.join === "close") return closeOv("join");
+    if (d.join === "closeCollab") return closeOv("collabNew");
+    if (d.join === "back") return overlay("join", joinPick(joinFeature));
+    if (d.join === "listener" || d.join === "vtuber") return overlay("join", joinRole(d.join));
+    if (d.join === "go-listener") return listenerLogin();
+    if (d.join === "go-vtuber") return vtuberLogin();
+  }
+  if (d.nick === "save") return saveNick();
+  if (d.nick === "cancel") { closeOv("nick"); return logout(); }
+  if (d.me === "nick") return openNick();
+  if (d.me === "logout") return logout();
+  if (d.myrole) { myRole = d.myrole; store.set("myRole", myRole); if (myRole === "vtuber" && SESSION && MINE.length) { await collabLoad(); } return renderMy(); }
+  if (d.preview) { PREVIEW = d.preview; return renderMy(); }
+  if (d.collab === "new") return openCollabNew(d.to);
+  if (d.collab === "tmpl") { t.parentElement.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b === t))); $("#cnMsg").value = d.t; return; }
+  if (d.collab === "send") {
+    const from = $("#cnFrom").value, me = MINE.find((m) => m.id === from);
+    if (!me?.x_handle) return toast("先にVTuberタブで、自分のXのIDを保存してください（成立したときの連絡先になります）");
+    t.disabled = true; t.textContent = "送っています…";
+    const r = await ownerApi({ action: "collab_send", from_channel: from, to_channel: d.to, message: $("#cnMsg").value });
+    t.disabled = false; t.textContent = "申請を送る";
+    if (!r.ok) return toast({ already: "すでに申請しています", already_ok: "すでにコラボが成立しています", not_open: "この子はいまコラボを募集していません", too_many: "申請は1日10件までです" }[r.error] || "送れませんでした");
+    closeOv("collabNew"); toast("🤝 申請を送りました！ 返事が来たら通知でお知らせします"); await collabLoad(); return renderMy();
+  }
+  if (d.collab === "ok" || d.collab === "ng") {
+    if (d.collab === "ng" && !t.dataset.sure) { t.dataset.sure = "1"; t.textContent = "本当に見送る？"; return; }
+    t.disabled = true;
+    const r = await ownerApi({ action: "collab_respond", id: Number(d.id), accept: d.collab === "ok" });
+    toast(r.ok ? (d.collab === "ok" ? "🎉 コラボ成立！ Xで連絡を取りましょう" : "見送りました") : "うまくいきませんでした");
+    await collabLoad(); await refreshMine(); return renderMy();
+  }
+  if (d.collab === "copy") { try { await navigator.clipboard.writeText(d.t); toast("コピーしました。XのDMに貼って送ってね"); } catch { toast("コピーできませんでした。長押しでコピーしてください"); } return; }
+});
+document.addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-own]"); if (!b) return;
+  const k = b.dataset.own;
+  if (k === "login") return vtuberLogin();
+  if (!SESSION) return;
+  if (k === "sos") {
+    const w = b.closest("[data-mine]"); if (!b.dataset.sure) { b.dataset.sure = "1"; b.textContent = "🆘 本当に呼ぶ？（もう一度押す）"; return; }
+    b.disabled = true; b.textContent = "呼んでいます…";
+    const r = await ownerApi({ action: "sos", channel_id: w.dataset.mine, message: w.querySelector('[data-own="sosmsg"]')?.value || "" });
+    ownMsg = r.ok ? `🆘 救援を呼びました！ ホームのいちばん上に10分間表示されます${r.push?.sent ? `（${r.push.sent}人に通知しました）` : ""}` : r.error === "used_today" ? "今日の救援はもう使いました" : r.error === "not_live" ? "配信中だけ使えます。配信が始まってから数分待ってお試しください" : "うまくいきませんでした";
+    await loadRescue(); await refreshMine(); return renderMy();
+  }
+  if (k === "unreg") {
+    if (!b.dataset.sure) { b.dataset.sure = "1"; b.textContent = "本当に解除する？（もう一度押す）"; return; }
+    const w = b.closest("[data-mine]"); await ownerApi({ action: "unregister", channel_id: w.dataset.mine });
+    const c = byId.get(w.dataset.mine); if (c) Object.assign(c, { registered: false, collab_open: false });
+    ownMsg = "本人登録を解除しました。"; await refreshMine(); if (!MINE.length) myRole = "listener"; return renderMy();
+  }
+  if (k === "genre") { const box = b.closest(".gen"); const on = b.getAttribute("aria-pressed") === "true"; if (!on && box.querySelectorAll('[aria-pressed="true"]').length >= 5) return toast("5つまで選べます"); b.setAttribute("aria-pressed", String(!on)); return; }
+  if (k === "save") {
+    const w = b.closest("[data-mine]"); b.disabled = true; b.textContent = "保存中…";
+    const r = await ownerApi({ action: "update", channel_id: w.dataset.mine, collab_open: w.querySelector(".sw").checked,
+      collab_genres: [...w.querySelectorAll('.gen [aria-pressed="true"]')].map((x) => x.dataset.g), x_handle: w.querySelector('input[data-own="x"]').value });
+    ownMsg = r.error ? "保存できませんでした。" : "保存しました✨"; await refreshMine(); renderMy();
+  }
+});
 
 /* ---------- DISCOVER ---------- */
 let discOrder = null, io = null;
@@ -1373,7 +1668,7 @@ function refreshCurrent() {
   else if (tab === "discover") { if (!$("#v-discover .slide")) renderDiscover(); else $("#v-discover").querySelectorAll("[data-fav]").forEach((b) => b.setAttribute("aria-pressed", favs.has(b.dataset.fav))); }
   else if (tab === "dir") setDirSeg(dirSeg);
   else if (tab === "sched") renderSched();
-  else if (tab === "my") renderMy();
+  else if (tab === "my") { renderMy(); if (authReady && viewAs() === "guest" && !isAdmin()) openJoin(null); }
 }
 
 document.addEventListener("click", (e) => {
@@ -1400,15 +1695,7 @@ document.addEventListener("click", (e) => {
   if (t.dataset.watch) { logEvent("click_watch", t.dataset.watch); return; }
   if (t.dataset.sub) { logEvent("click_subscribe", t.dataset.sub); return; }
   if (t.dataset.open) { e.preventDefault(); return openProfile(t.dataset.open); }
-  if (t.dataset.fav) {
-    const id = t.dataset.fav; favs.has(id) ? favs.delete(id) : favs.add(id); store.set("favs", [...favs]);
-    toast(favs.has(id) ? "推しリストに入れました" : "推しリストから外しました");
-    if (favs.has(id)) kosanMark(id); else if (tops.delete(id)) store.set("tops", [...tops]);
-    pushSync();
-    if (curId) renderProfile(); else refreshCurrent();
-    document.querySelectorAll(`[data-fav="${CSS.escape(id)}"]`).forEach((b) => b.setAttribute("aria-pressed", favs.has(id)));
-    return;
-  }
+  if (t.dataset.fav) { e.preventDefault(); oshiToggle(t.dataset.fav); return; }
   if (t.dataset.go) { if (curId) closeProfile(); return setTab(t.dataset.go); }
   if (t.id === "back") return closeProfile();
   if (t.id === "tcard") { if (e.target.closest("a,button,[data-btab],input")) return; cardFlip(1); return; }
@@ -1435,7 +1722,7 @@ load().then(() => {
   if (id && byId.has(id)) openProfile(id, false);
   const wq = new URLSearchParams(location.search).get("w");
   if (wq) openWatch(wq, false);
-  ownerInit(); pushInit();
+  authInit();
   setInterval(() => { if (tab === "home" && !curId && !HP?.target) renderHome(); }, 60000);
   setInterval(async () => { if (!live) return; try { const s = await rest("streams?select=id,channel_id,title,thumbnail_url,status,scheduled_start_at,actual_start_at,actual_end_at,peak_viewers,last_viewers,is_first_stream,embeddable,is_vertical,chat_enabled&status=neq.none&order=updated_at.desc&limit=3000"); ST = s.filter((x) => byId.has(x.channel_id) && x.embeddable !== false); if (tab !== "discover") discOrder = null; } catch {} }, 5 * 60000);
 });
