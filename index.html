@@ -104,8 +104,9 @@ a{color:inherit;text-decoration:none}
 .wb[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
 .w-chat{flex:1;min-height:0;position:relative;background:#fff;border-top:1px solid #2A2738}
 .w-chat{overflow:hidden}
-.w-chat iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
-.w-chat.crop iframe{height:calc(100% + 76px)}
+/* YouTubeチャットの上の「トップチャット・メニュー」の帯（約49px）は使わないので、上にずらして隠す */
+.w-chat iframe{position:absolute;left:0;right:0;top:-49px;width:100%;height:calc(100% + 49px);border:0}
+.w-chat.crop iframe{height:calc(100% + 49px + 76px)}
 #v-home,#v-discover{position:relative}
 #discList{height:100%}
 .pl{position:absolute;z-index:3;background:#000;overflow:hidden;pointer-events:none;transition:opacity .12s ease}
