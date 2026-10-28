@@ -907,22 +907,47 @@ addEventListener("resize", () => PLAYERS.forEach((p) => p.place()));
 setInterval(() => PLAYERS.forEach((p) => p.target && p.place()), 1000);
 let homeIO = null;
 const stopPlayer = () => HP?.stop();
+let homeScrollFn = null;
 function watchHome() {
   homeIO?.disconnect();
+  const root = $("#v-home");
+  if (homeScrollFn) root.removeEventListener("scroll", homeScrollFn);
   if (!live) { HP?.stop(); return; }
   if (!HP) HP = new Player("feed");
-  HP.host($("#v-home"));
-  const ratios = new Map(); let cur = null;
-  homeIO = new IntersectionObserver((ents) => {
-    ents.forEach((e) => ratios.set(e.target, e.intersectionRatio));
-    let best = null, br = 0.75;
-    ratios.forEach((r, el) => { if (r > br + 0.01 || (r >= br && !best)) { best = el; br = r; } });
+  HP.host(root);
+  const ts = [...document.querySelectorAll("#feed .thumb[data-emb]")];
+  if (!ts.length) { HP.stop(); return; }
+  let cur = null, raf = 0;
+  // 画面の「注目ライン」に一番近いカードを再生する。
+  // ふだんは上から4割の位置、いちばん上ではページ上端、いちばん下までスクロールしたらページ下端を基準にする
+  const pick = () => {
+    raf = 0;
+    if (tab !== "home") return;
+    const rr = root.getBoundingClientRect(), navTop = $(".nav")?.getBoundingClientRect().top ?? rr.bottom;
+    const top = rr.top, bottom = Math.min(rr.bottom, navTop), h = bottom - top;
+    const atTop = root.scrollTop < 8, atBottom = root.scrollTop + root.clientHeight >= root.scrollHeight - 8;
+    const focus = atBottom ? bottom : atTop ? top : top + h * 0.4;
+    let best = null, bd = Infinity;
+    for (const el of ts) {
+      const r = el.getBoundingClientRect();
+      const vis = Math.max(0, Math.min(r.bottom, bottom) - Math.max(r.top, top)) / (r.height || 1);
+      if (vis < 0.6) continue;
+      const d = Math.abs((r.top + r.bottom) / 2 - focus);
+      if (d < bd) { bd = d; best = el; }
+    }
     if (best && best !== cur) { cur = best; if (!watchVid) HP.play(best, best.dataset.vid, true); else HP.target = best; }
-    else if (!best && cur && (ratios.get(cur) ?? 0) < 0.4) { cur = null; HP.stop(); }
-  }, { root: $("#v-home"), threshold: [0, .4, .75, 1] });
-  const ts = document.querySelectorAll("#feed .thumb[data-emb]");
-  if (!ts.length) HP.stop();
-  ts.forEach((t) => homeIO.observe(t));
+    else if (!best && cur) {
+      const r = cur.getBoundingClientRect();
+      const vis = Math.max(0, Math.min(r.bottom, bottom) - Math.max(r.top, top)) / (r.height || 1);
+      if (vis < 0.4) { cur = null; HP.stop(); }
+    }
+  };
+  const later = () => { if (!raf) raf = requestAnimationFrame(pick); };
+  homeIO = new IntersectionObserver(later, { root, threshold: [0, .4, .6, .8, 1] });
+  ts.forEach((el) => homeIO.observe(el));
+  homeScrollFn = () => { clearTimeout(homeScrollFn.t); homeScrollFn.t = setTimeout(later, 120); };
+  root.addEventListener("scroll", homeScrollFn, { passive: true });
+  later();
 }
 
 /* ---------- WATCH (in-site player + chat) ---------- */
