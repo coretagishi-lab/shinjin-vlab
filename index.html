@@ -938,10 +938,13 @@ async function ownerInit() {
   if (!SESSION) return;
   ownBusy = true; if (tab === "my") renderMy();
   try {
+    if (claim && !SESSION.provider_token) ownMsg = "Googleからの確認情報が届きませんでした。いったんログアウトして、もう一度お試しください。";
     if (claim && SESSION.provider_token) {
       const r = await ownerApi({ action: "claim", provider_token: SESSION.provider_token });
       if (r.error === "no_channel") ownMsg = "このGoogleアカウントにはYouTubeチャンネルがありませんでした。配信しているチャンネルのアカウントでログインしてください。";
-      else if (r.error) ownMsg = "うまく確認できませんでした。もう一度お試しください。";
+      else if (r.error === "no_scope") ownMsg = "YouTubeの表示を許可してもらえなかったため、確認できませんでした。もう一度押して、Googleの画面で「YouTube アカウントの表示」にチェックを入れたまま進んでください。";
+      else if (r.error === "no_token") ownMsg = "Googleからの確認情報が届きませんでした。いったんログアウトして、もう一度お試しください。";
+      else if (r.error) ownMsg = "うまく確認できませんでした。もう一度お試しください。（" + (r.detail || r.error) + "）";
       else {
         const taken = (r.results || []).filter((x) => x.result === "taken");
         ownMsg = taken.length ? "このチャンネルは、すでに別のアカウントで登録されています。お心当たりがない場合は公式Xまでご連絡ください。" : "本人登録が完了しました🎉";
