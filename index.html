@@ -1705,6 +1705,8 @@ async function loadOverlayStatus() {
 const vbuiOK = (cid) => !!OVL.get(cid)?.connected;
 setInterval(() => { if (live) loadOverlayStatus(); }, 60000);
 const OKEYS = {}, OSET = {};
+// 「このパソコンで設定した」の目印は、OBSのURL（カギ）ごとに覚える（URLを作り直したら、まっさらに戻る）
+const obsFlag = (ch) => "obsAdded:" + ch + ":" + String(OKEYS[ch] || "").slice(0, 8);
 const isMobileUA = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 const OSET0 = { pos: "bl", size: "m", show: "auto", side: "r", hero: true };
 const overlayUrl = (k) => `${location.origin}/overlay.html?k=${encodeURIComponent(k)}`;
@@ -1751,7 +1753,7 @@ function ocApiStep() {
 }
 function obsBlock(m) {
   const k = OKEYS[m.id], st = OVL.get(m.id), oc = (OSET[m.id] || {}).oc || "";
-  const done = !!st?.last_seen || store.get("obsAdded:" + m.id, false);
+  const done = !!st?.last_seen || store.get(obsFlag(m.id), false);
   const ocMissing = oc === "yes" && done && st && st.onecomme === false;
   const stat = st?.connected ? `<span class="okc">● いまOBSとつながっています${oc === "yes" ? (st.onecomme ? "（わんコメにもつながっています）" : "（わんコメにはまだつながっていません）") : ""}</span>` : done ? `<span class="ngc">● いまはOBSが閉じています（OBSを起動すると、自動でつながります）</span>` : `<span class="ngc">● まだ設定していません</span>`;
   const isNew = store.get("ocNew:" + m.id, false);
@@ -1889,14 +1891,14 @@ async function obsTest(ch, out) {
     const s = await overlayApi({ action: "status", channel_id: ch }, false); const st = s.status?.[0];
     if (st) OVL.set(ch, st);
     if (st && Number(st.last_test_ack) >= r.test_id) {
-      store.set("obsAdded:" + ch, true);
+      store.set(obsFlag(ch), true);
       if ((OSET[ch] || {}).oc === "yes" && !st.onecomme) { rerenderSettings(); const o2 = document.querySelector(`[data-obsres="${CSS.escape(ch)}"]`); if (o2) o2.innerHTML = "✅ OBSとはつながりました！ あとはわんコメだけです。上の手順をやってから、もう一度「設定確認」を押してください。"; return; }
       JUST_DONE.add(ch); rerenderSettings();
       const box = document.querySelector(`[data-obs="${CSS.escape(ch)}"]`); if (box) box.scrollIntoView({ block: "start", behavior: "smooth" });
       return;
     }
   }
-  out.innerHTML = !store.get("obsAdded:" + ch, false)
+  out.innerHTML = !store.get(obsFlag(ch), false)
     ? "❌ まだOBSにVぶいが入っていないようです。<br>先に<b>「⚡ OBSに自動で追加」</b>を押して、✅が出てから「設定確認」を押してください。"
     : "❌ OBSから返事がありませんでした。次の3つを見てください。<br>① OBSは開いたままですか？<br>② OBSの画面の下の方にある<b>「ソース」</b>の一覧に<b>「Vぶい（コメント・演出）」</b>がありますか？ その横の👁（目のマーク）が開いていますか？<br>③ もう一度<b>「⚡ OBSに自動で追加」→「設定確認」</b>の順に押してみてください。";
 }
@@ -1911,7 +1913,7 @@ document.addEventListener("click", async (e) => {
     t.disabled = true;
     try {
       const r = await overlayApi({ action: "reset", channel_id: ch });
-      if (r.ok) { store.set("obsAdded:" + ch, false); OVL.delete(ch); OSET[ch] = r.settings; OC_ASK.delete(ch); OC_STEP.delete(ch); toast("リセットしました。最初の質問から始められます"); return rerenderSettings(); }
+      if (r.ok) { store.set(obsFlag(ch), false); OVL.delete(ch); OSET[ch] = r.settings; OC_ASK.delete(ch); OC_STEP.delete(ch); toast("リセットしました。最初の質問から始められます"); return rerenderSettings(); }
       toast("リセットできませんでした");
     } catch { toast("リセットできませんでした"); }
     t.disabled = false; return;
@@ -1945,7 +1947,7 @@ document.addEventListener("click", async (e) => {
           await new Promise((res) => setTimeout(res, 2500));
         }
       }
-      store.set("obsAdded:" + ch, true);
+      store.set(obsFlag(ch), true);
       out.innerHTML = `✅ OBSに${r.updated ? "Vぶいを入れ直しました" : "Vぶいを追加しました"}！ 続けて<b>「設定確認」</b>を押してください。`;
     } catch (err) {
       const m = err.message;
