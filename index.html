@@ -1400,12 +1400,12 @@ function channelSettings(m) {
   </section>`;
 }
 // アイコンは1アカウント1枚：VTuberはチャンネルのアイコンをそのまま使う
-function myAvatar() { const m = MINE[0]; return m ? (m.custom_icon_url || m.thumbnail_url) : PROFILE?.avatar_url; }
+function myAvatar() { const m = setAsVtuber() ? MINE[0] : null; return m ? (m.custom_icon_url || m.thumbnail_url) : PROFILE?.avatar_url; }
 function accountSettings() {
   const nick = PROFILE?.nickname || "", av = PROFILE?.avatar_url;
   return `<section class="sbox">
     <h4>👤 アカウント</h4>
-    ${MINE.length ? "" : `<div class="srow2"><span class="sav">${av ? `<img src="${esc(av)}" alt="">` : `<span class="ph" style="background:var(--card-navy);color:var(--card-gold)">${esc([...nick][0] || "V")}</span>`}</span><div class="sact">
+    ${setAsVtuber() ? "" : `<div class="srow2"><span class="sav">${av ? `<img src="${esc(av)}" alt="">` : `<span class="ph" style="background:var(--card-navy);color:var(--card-gold)">${esc([...nick][0] || "V")}</span>`}</span><div class="sact">
       <label class="sbtn">画像を変える<input type="file" accept="image/*" data-set="myicon" hidden></label>
       ${av ? `<button class="sbtn gray" data-set="myiconreset">画像を消す</button>` : ""}</div></div>`}
     <label class="sl">ニックネーム（20文字まで）</label>
@@ -1413,15 +1413,17 @@ function accountSettings() {
     <small class="note2">${esc(SESSION?.user?.email || "")} でログイン中</small>
   </section>`;
 }
+// 設定の中身は「VTuberとして本人登録しているか」で決める（運営の見え方切り替えにも合わせる）
+const setAsVtuber = () => viewAs() === "vtuber" && MINE.length > 0;
 function settingsHTML() {
-  const vt = MINE.length > 0;
+  const vt = setAsVtuber();
   const chs = MINE.map(channelSettings).join("");
   const addCh = `<button class="sbox addch" data-own="login">＋ 別のチャンネルも本人登録する<small>Googleの画面で、登録したいチャンネルを選んでください</small></button>`;
   const beVt = `<button class="sbox addch" data-own="login">🎙 VTuberとして本人登録する<small>YouTubeで本人確認すると、救援やコラボ申請が使えます</small></button>`;
   return `<div class="jn"><button class="jx" data-set="close" aria-label="閉じる">×</button>
     <div class="jh"><span class="jk">⚙ 設定</span><b>${vt ? "VTuberの設定" : "リスナーの設定"}</b></div>
     ${setMsg ? `<p class="smsg">${esc(setMsg)}</p>` : ""}
-    ${vt ? chs + addCh + accountSettings() : accountSettings() + beVt}
+    ${vt ? chs + addCh + accountSettings() : accountSettings()}
     <div class="sfoot"><a href="guide-vtuber.html">使い方ガイド</a><a href="privacy.html">プライバシー</a><a href="terms.html">利用規約</a></div>
     <div class="sfoot end"><button data-set="switch">アカウントを切り替える</button><button data-set="logout">ログアウト</button></div></div>`;
 }
