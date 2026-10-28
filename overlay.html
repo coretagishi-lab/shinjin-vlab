@@ -155,7 +155,9 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
     await wait(300); heroNext();
   }
   async function heroPlay(c) {
-    const R = S.side === "r", dir = R ? 1 : -1, w = vw(), h = vh(), size = 120;
+    // わんコメを使わない人は、コメントを出している側（四隅の左右）に飛び込む
+    const side = S.oc === "no" ? (S.pos[1] === "l" ? "l" : "r") : S.side;
+    const R = side === "r", dir = R ? 1 : -1, w = vw(), h = vh(), size = 120;
     const el = document.createElement("div"); el.className = "hero fly" + (R ? "" : " l");
     const face = c.avatar_url ? `<img src="${esc(c.avatar_url)}" alt="">` : esc([...(c.nickname || "V")][0]);
     el.innerHTML = `<div class="hb">${CAPE}<div class="face">${face}</div><span class="emb">救援</span></div><div class="tag"><em>${esc(c.nickname)}</em> さんが救援にきた！</div>`;
@@ -206,7 +208,7 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
           continue;
         }
         if (c.kind === "rescue") { if (S.hero) hero(c); else deliver(c, { cls: "hr", text: "🦸 救援に駆けつけました！" }); continue; }
-        await deliver(c);
+        await deliver(c); // ふつうのコメント・レイアウト確認の見本（sample）
       }
     } catch { if (++failCount > 5) err("Vぶい：通信できません。インターネットの接続を確認してください"); }
     setTimeout(poll, 2000);

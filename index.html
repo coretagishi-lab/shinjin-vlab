@@ -318,6 +318,10 @@ a{color:inherit;text-decoration:none}
 .bdg.vbc b{background:#fff;color:#ff5fa8;border-radius:4px;padding:0 4px;font-weight:900;letter-spacing:-.02em}
 .obsreset{background:#fff4f4;border-radius:10px;padding:10px;margin:6px 0;display:flex;flex-direction:column;gap:6px}
 .obsreset p{margin:0;font-size:12.5px;line-height:1.7}
+.opart{display:flex;flex-direction:column;gap:8px;border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--surface)}
+.opart h5{margin:0;font-size:14px;display:flex;align-items:center;gap:8px}
+.opart h5 i{font-style:normal;width:22px;height:22px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-size:12px;flex:none}
+.olook h5 small{display:block;font-weight:400;font-size:12px;color:var(--muted);margin-top:2px}
 .ocq{display:flex;flex-direction:column;gap:8px}
 .ocqt{margin:0;font-weight:700;font-size:15px}.ocqt small{display:block;font-weight:400;font-size:12px;color:var(--muted);margin-top:2px}
 .ocpicks{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -1721,14 +1725,15 @@ function ocQuestion(ch, cur) {
     <button class="lnk2" data-set="ocstep" data-v="q1" data-ch="${esc(ch)}">‹ 前の質問にもどる</button>
   </div>`;
   if (step === "install") return `<div class="ocq">
-    <p class="ocqt">わんコメの入れ方<small>OBSを入れた時とほぼ同じです</small></p>
+    <p class="ocqt">わんコメの入れ方<small>OBSを入れた時とほぼ同じです。終わったら、いちばん下のボタンを押してね</small></p>
     <ol class="obsteps">
       <li><a href="https://onecomme.com/" target="_blank" rel="noopener"><b>わんコメの公式サイト</b></a>を開いて、「ダウンロード」から自分のパソコン（Mac か Windows）の方を選ぶ</li>
       <li>ダウンロードしたファイルを開いて、わんコメを入れる（Macは「アプリケーション」にドラッグ）</li>
-      <li>わんコメを起動して、最初の案内にそって<b>自分のYouTubeチャンネル</b>を登録する</li>
-      <li>わんコメのコメントを配信画面に出す設定をする（わんコメの公式サイトの「導入ガイド」に、画像つきで載っています）</li>
+      <li>わんコメを起動すると<b>「初回セットアップ」</b>が出るので、配信サイトで<b>「YouTube」</b>を選ぶ</li>
+      <li>「ブラウザで開く」を押して、<b>配信に使っているGoogleアカウント</b>でログイン（「YouTube アカウントの表示」にチェックが入ったまま「次へ」）→ わんコメに戻って<b>「保存」→「完了」</b></li>
+      <li>配信のコメントをわんコメで受け取る方法と、配信画面に出す方法は、<a href="https://onecomme.com/docs/guide/get-comment" target="_blank" rel="noopener"><b>わんコメの公式ガイド</b></a>に画像つきで載っています（配信を始める前に1回見ておけばOK）</li>
     </ol>
-    <div class="cbtn2"><button class="gbtn" data-set="occhoice" data-v="yes" data-ch="${esc(ch)}">入れ終わった！ 次へ</button><button class="sbtn" data-set="occhoice" data-v="no" data-ch="${esc(ch)}">やっぱり、いまはやめておく</button></div>
+    <div class="cbtn2"><button class="gbtn" data-set="occhoice" data-v="yes" data-new="1" data-ch="${esc(ch)}">入れ終わった！ 次へ</button><button class="sbtn" data-set="occhoice" data-v="no" data-ch="${esc(ch)}">やっぱり、いまはやめておく</button></div>
   </div>`;
   return `<div class="ocq">
     <p class="ocqt">Q1.「<b>わんコメ</b>」を、いま使っていますか？<small>わんコメ ＝ YouTubeのコメントを配信画面に出す、無料のアプリです</small></p>
@@ -1738,44 +1743,65 @@ function ocQuestion(ch, cur) {
     </div>
   </div>`;
 }
-const OC_STEP = new Map();
+const OC_STEP = new Map(), JUST_DONE = new Set();
+// わんコメの許可ホストの手順（わんコメを使う人だけ）
+function ocApiStep() {
+  return `わんコメの右上の<b>「…」（点3つ）→「設定」→「API」</b>のタブを開いて、<b>「許可ホスト」</b>の欄に下の文字を入れる（コピーして貼り付けでOK。自動で保存されます）
+        <div class="srow3"><input type="text" readonly value="${esc(location.host)}"><button class="sbtn" data-set="ocopy">コピー</button></div>`;
+}
 function obsBlock(m) {
   const k = OKEYS[m.id], st = OVL.get(m.id), oc = (OSET[m.id] || {}).oc || "";
   const done = !!st?.last_seen || store.get("obsAdded:" + m.id, false);
+  const ocMissing = oc === "yes" && done && st && st.onecomme === false;
   const stat = st?.connected ? `<span class="okc">● いまOBSとつながっています${oc === "yes" ? (st.onecomme ? "（わんコメにもつながっています）" : "（わんコメにはまだつながっていません）") : ""}</span>` : done ? `<span class="ngc">● いまはOBSが閉じています（OBSを起動すると、自動でつながります）</span>` : `<span class="ngc">● まだ設定していません</span>`;
-  const ocStep = oc === "yes" ? `<li><b>わんコメを起動</b>して、<b>「設定」→「API」→「許可するホスト」</b>に、下の文字を1行追加 → 保存（https:// は付けません）
-        <div class="srow3"><input type="text" readonly value="${esc(location.host)}"><button class="sbtn" data-set="ocopy">コピー</button></div></li>` : "";
-  const steps = `${isMobileUA ? `<p class="obswarn">📱 いまスマホで見ています。この設定は、<b>OBSが入っているパソコン</b>でVぶい（vvbuibui.com）を開いて行ってください。</p>` : ""}
-    <ol class="obsteps">
-      <li><b>OBSが入っているパソコンで、Vぶいを開く</b>（Chromeがおすすめ）。OBSも起動しておく</li>
-      <li>OBSの上のメニュー<b>「ツール」→「WebSocketサーバー設定」</b>を開いて、<b>「WebSocketサーバーを有効にする」にチェック →「適用」</b></li>
-      <li>同じ画面の<b>「接続情報を表示」</b>を押して、<b>「サーバーパスワード」の横の「コピー」</b>を押す → 下の欄に貼り付け</li>
-      <li>OBSの画面は<b>「OK」で閉じる</b>（開いたままだと、OBSが止まることがあります）</li>
-      <li><b>「⚡ OBSに自動で追加」</b>を押す。Chromeで「このデバイス上の他のアプリやサービスにアクセス」と出たら<b>「許可する」</b></li>
-      ${ocStep}
-      <li><b>「設定確認」</b>を押して、OBSの画面に「✅ Vぶいと接続できました」と出たら完了！</li>
-    </ol>
-    <label class="sl">サーバーパスワード（手順3でコピーしたもの）</label>
-    <input type="password" data-f="obspw" placeholder="ここに貼り付け" autocomplete="off">
-    <div class="cbtn2"><button class="gbtn" data-set="obsadd" data-ch="${esc(m.id)}">⚡ OBSに自動で追加</button><button class="sbtn" data-set="obstest" data-ch="${esc(m.id)}">設定確認</button></div>`;
+  const isNew = store.get("ocNew:" + m.id, false);
+  // やることを「1. わんコメ」「2. OBS」「3. 確認」のかたまりに分ける
+  const partOC = oc === "yes" ? `<div class="opart"><h5><i>1</i>わんコメの準備${isNew ? "" : "（いつものわんコメに1つ足すだけ）"}</h5>
+      <ol class="obsteps"><li>わんコメを起動しておく</li><li>${ocApiStep()}</li></ol></div>` : "";
+  const n0 = oc === "yes" ? 1 : 0;
+  const partOBS = `<div class="opart"><h5><i>${n0 + 1}</i>OBSとVぶいをつなぐ</h5>
+      ${isMobileUA ? `<p class="obswarn">📱 いまスマホで見ています。ここからは、<b>OBSが入っているパソコン</b>でVぶい（vvbuibui.com）を開いてやってください。</p>` : ""}
+      <ol class="obsteps">
+        <li><b>OBSが入っているパソコンで、Vぶいを開く</b>（Chromeがおすすめ）。OBSも起動しておく</li>
+        <li>OBSの上のメニュー<b>「ツール」→「WebSocketサーバー設定」</b>を開いて、<b>「WebSocketサーバーを有効にする」にチェック →「適用」</b></li>
+        <li>同じ画面の<b>「接続情報を表示」</b>を押して、<b>「サーバーパスワード」の横の「コピー」</b>を押す → 下の欄に貼り付け</li>
+        <li>OBSの画面は<b>「OK」で閉じる</b>（開いたままだと、OBSが止まることがあります）</li>
+        <li><b>「⚡ OBSに自動で追加」</b>を押す。Chromeで「このデバイス上の他のアプリやサービスにアクセス」と出たら<b>「許可する」</b></li>
+      </ol>
+      <label class="sl">サーバーパスワード（手順3でコピーしたもの）</label>
+      <input type="password" data-f="obspw" placeholder="ここに貼り付け" autocomplete="off">
+      <button class="gbtn" data-set="obsadd" data-ch="${esc(m.id)}">⚡ OBSに自動で追加</button></div>`;
+  const partTest = `<div class="opart"><h5><i>${n0 + 2}</i>ちゃんとつながったか確認</h5>
+      <p class="note2">下のボタンを押して、<b>OBSの画面</b>に「✅ Vぶいと接続できました」と出たら完了です。${oc === "yes" ? "わんコメのコメント欄にも、テストのコメントが出ます。" : ""}</p>
+      <button class="gbtn" data-set="obstest" data-ch="${esc(m.id)}">設定確認</button></div>`;
+  const steps = partOC + partOBS + partTest;
   const ocLine = oc === "yes" ? `<div class="ocsum"><span>💬 <b>いまの出し方：</b>わんコメのコメント欄に、YouTubeとVぶいのコメントをまぜて出す</span><button class="lnk2" data-set="ocask" data-ch="${esc(m.id)}">変える</button></div>`
     : oc === "no" ? `<div class="ocsum"><span>💬 <b>いまの出し方：</b>Vぶいから来たコメントだけを、画面のすみっこに出す</span><button class="lnk2" data-set="ocask2" data-ch="${esc(m.id)}">わんコメを入れて、YouTubeのコメントもまとめて出す ›</button></div>` : "";
+  const layoutBtn = `<div class="opart"><h5>📺 配信画面での見え方を確かめる</h5>
+      <p class="note2">ボタンを押したら、<b>OBSの画面</b>を見てください。見本のコメント2つと、救援ヒーローが出ます（配信中でなくても大丈夫。リスナーさんには見えません）。</p>
+      <button class="gbtn" data-set="layout" data-ch="${esc(m.id)}">📺 レイアウト確認</button></div>`;
   let body;
   if (!oc || OC_ASK.has(m.id)) body = ocQuestion(m.id, oc);
-  else if (done) body = `${ocLine}<div class="obsdone">✅ <b>設定ずみです！</b><br>次からは<b>いつも通りOBSを起動するだけ</b>で、自動でVぶいとつながります。このページを開く必要もありません。</div>
-    <div class="cbtn2"><button class="sbtn" data-set="obstest" data-ch="${esc(m.id)}">設定確認</button><button class="sbtn" data-set="herotest" data-ch="${esc(m.id)}">🦸 登場をテスト</button></div>
+  else if (done && !ocMissing) body = `${ocLine}
+    <div class="obsdone">${JUST_DONE.has(m.id) ? "🎉 <b>設定が完了しました！ おつかれさまでした。</b><br>" : "✅ <b>設定はぜんぶ終わっています。</b><br>"}この画面は<b>閉じて大丈夫</b>です。次からは<b>いつも通りOBSを起動するだけ</b>で、自動でVぶいとつながります。</div>
     <p class="obsres" data-obsres="${esc(m.id)}"></p>
+    ${layoutBtn}
+    ${obsLook(m.id)}
     <details class="obsman"><summary>はじめから設定し直す（パソコンを変えた時など）</summary>
       <div class="obsreset"><p><b>OBS連携を、いちばん最初の状態にもどします。</b><br>① 先にOBSの「ソース」の「Vぶい（コメント・演出）」をクリック → 下のゴミ箱マークで消す<br>② 下のボタンを押す<br>（①をしないと、OBSがすぐつながって「設定ずみ」にもどってしまいます）</p>
       <button class="sbtn" data-set="obsreset" data-ch="${esc(m.id)}">OBS連携をリセットする</button></div>
       ${steps}</details>`;
-  else body = `${ocLine}${steps}<p class="obsres" data-obsres="${esc(m.id)}"></p>`;
+  else if (ocMissing) body = `${ocLine}
+    <div class="obswarn">⚠️ <b>OBSとはつながっていますが、わんコメにはまだつながっていません。</b>あと1つだけ！</div>
+    <div class="opart"><h5><i>1</i>わんコメの準備</h5><ol class="obsteps"><li>わんコメを起動しておく</li><li>${ocApiStep()}</li></ol></div>
+    <div class="opart"><h5><i>2</i>確認</h5><p class="note2">ボタンを押して、わんコメのコメント欄にテストのコメントが出たら完了です。</p><button class="gbtn" data-set="obstest" data-ch="${esc(m.id)}">設定確認</button></div>
+    <p class="obsres" data-obsres="${esc(m.id)}"></p>`;
+  else body = `${ocLine}<p class="note2">やることは<b>全部で${n0 + 2}つ</b>です。上から順番にやれば大丈夫！</p>${steps}<p class="obsres" data-obsres="${esc(m.id)}"></p>`;
   return `<section class="sbox" data-obs="${esc(m.id)}">
     <h4>📺 OBS連携（Vぶいのコメント・演出を配信画面に出す）</h4>
     ${stat}
     ${body}
     ${oc && !OC_ASK.has(m.id) ? `<p class="note2">🛡 OBSに追加されるのは<b>透明な1枚のシート</b>だけです。いまの立ち絵や枠の位置・大きさは動かしません。うっかり動かさないように、カギもかけておきます。</p>
-    ${obsLook(m.id)}
     <details class="obsman"><summary>自分で追加する場合（くわしい人向け）</summary>
       <p>OBSの「ソース」の＋ →「ブラウザ」を追加して、URLに下を貼り付け、幅と高さをOBSの画面サイズ（ふつうは1920と1080）にしてください。</p>
       <div class="srow3"><input type="text" readonly value="${k ? esc(overlayUrl(k)) : "読み込み中…"}" data-f="ourl"><button class="sbtn" data-set="ocopy" data-ch="${esc(m.id)}">コピー</button></div>
@@ -1784,29 +1810,33 @@ function obsBlock(m) {
   </section>`;
 }
 const OC_ASK = new Set();
-// 表示のしかた（OBSをさわらずに、ここで変えるだけで配信画面に反映）
+// 表示のしかた（押した瞬間に保存。OBSをさわらなくても配信画面に反映）
 function obsLook(ch) {
   const o = { ...OSET0, ...(OSET[ch] || {}) };
-  const seg = (f, opts) => `<div class="oseg" data-of="${f}">${opts.map(([v, t]) => `<button type="button" data-ov="${v}" aria-pressed="${String(o[f]) === String(v)}">${t}</button>`).join("")}</div>`;
-  return `<div class="olook" data-olook="${esc(ch)}">
-    <h5>表示のしかた</h5>
-    <p class="note2"><b>わからなければ、さわらなくてOK！</b> そのままで、ちゃんと出ます。</p>
-    ${o.oc === "yes" ? `<p class="note2">わんコメを使っている時は、コメントはわんコメのコメント欄に出ます。下の「場所・大きさ」は、わんコメが閉じている時だけ使われます。</p>` : ""}
-    <label class="sl">コメントを出す場所（画面のすみっこ）</label>
-    ${seg("pos", [["tl", "↖ 左上"], ["tr", "↗ 右上"], ["bl", "↙ 左下"], ["br", "↘ 右下"]])}
-    <label class="sl">大きさ</label>
-    ${seg("size", [["s", "小"], ["m", "中"], ["l", "大"]])}
-    <label class="sl">🦸 救援ヒーローの登場演出</label>
+  const seg = (f, opts) => `<div class="oseg" data-of="${f}" data-ch="${esc(ch)}">${opts.map(([v, t]) => `<button type="button" data-ov="${v}" aria-pressed="${String(o[f]) === String(v)}">${t}</button>`).join("")}</div>`;
+  const hero = `<label class="sl">🦸 救援ヒーローの登場演出</label>
     ${seg("hero", [["true", "出す"], ["false", "出さない"]])}
-    <p class="note2">救援通知を見て駆けつけてくれたリスナーさんが、ヒーローになって画面に飛んでくる演出です。</p>
-    <label class="sl">ヒーローが飛んでいく方向（コメント欄がある側を選んでね）</label>
-    ${seg("side", [["l", "← 左"], ["r", "右 →"]])}
-    <div class="cbtn2"><button class="gbtn" data-set="olsave" data-ch="${esc(ch)}">保存して配信画面で確認</button><button class="sbtn" data-set="herotest" data-ch="${esc(ch)}">🦸 登場をテスト</button></div>
+    <p class="note2">救援通知を見て駆けつけてくれたリスナーさんが、ヒーローになって画面に飛んでくる演出です。</p>`;
+  return `<div class="olook">
+    <h5>表示のしかた <small>押すと自動で保存されます。わからなければ、さわらなくてOK！</small></h5>
+    ${o.oc === "yes" ? `<p class="note2">💬 コメントは、<b>わんコメのコメント欄</b>（いつもの場所・見た目）に出ます。場所や大きさはわんコメ側で決まるので、ここで選ぶものはありません。</p>
+    ${hero}
+    <label class="sl">ヒーローが飛びこむ方向（わんコメのコメント欄がある側）</label>
+    ${seg("side", [["l", "← 左"], ["r", "右 →"]])}`
+    : `<label class="sl">コメントを出す場所（画面のすみっこ）</label>
+    ${seg("pos", [["tl", "↖ 左上"], ["tr", "↗ 右上"], ["bl", "↙ 左下"], ["br", "↘ 右下"]])}
+    <label class="sl">コメントの大きさ</label>
+    ${seg("size", [["s", "小"], ["m", "中"], ["l", "大"]])}
+    ${hero}
+    <p class="note2">ヒーローは、コメントを出している側に飛びこみます。</p>`}
   </div>`;
 }
-document.addEventListener("click", (e) => {
+document.addEventListener("click", async (e) => {
   const b = e.target.closest(".oseg [data-ov]"); if (!b) return;
-  b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  const g = b.parentElement; g.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  const ch = g.dataset.ch; if (!ch) return;
+  const v = b.dataset.ov, val = v === "true" ? true : v === "false" ? false : v;
+  try { const r = await overlayApi({ action: "settings", channel_id: ch, settings: { ...OSET0, ...(OSET[ch] || {}), [g.dataset.of]: val } }); if (r.ok) { OSET[ch] = r.settings; toast(vbuiOK(ch) ? "保存しました（OBSの画面に「表示位置の確認」が出ます）" : "保存しました"); } else toast("保存できませんでした"); } catch { toast("保存できませんでした"); }
 });
 async function loadKeys() {
   for (const m of MINE) if (!OKEYS[m.id]) { try { const r = await overlayApi({ action: "key", channel_id: m.id }); if (r.key) OKEYS[m.id] = r.key; if (r.settings) OSET[m.id] = r.settings; } catch {} }
@@ -1860,7 +1890,9 @@ async function obsTest(ch, out) {
     if (st) OVL.set(ch, st);
     if (st && Number(st.last_test_ack) >= r.test_id) {
       store.set("obsAdded:" + ch, true);
-      out.innerHTML = `🎉 <b>設定完了です！</b> OBSの画面に「Vぶいと接続できました」と出ていればOK。<br>次からは<b>OBSを起動するだけ</b>で、自動でつながります。${(OSET[ch] || {}).oc === "yes" ? (st.onecomme ? "<br>💬 わんコメにもつながりました！ わんコメのコメント欄にもテストのコメントが出ていればOKです。" : "<br>⚠️ <b>わんコメにはまだつながっていません。</b>わんコメを起動して、「設定」→「API」→「許可するホスト」に <b>" + esc(location.host) + "</b> を追加・保存してから、もう一度「設定確認」を押してください。") : "<br>💬 Vぶいから来たコメントは、配信画面のすみっこに出ます（場所は下の「表示のしかた」で変えられます）。"}`;
+      if ((OSET[ch] || {}).oc === "yes" && !st.onecomme) { rerenderSettings(); const o2 = document.querySelector(`[data-obsres="${CSS.escape(ch)}"]`); if (o2) o2.innerHTML = "✅ OBSとはつながりました！ あとはわんコメだけです。上の手順をやってから、もう一度「設定確認」を押してください。"; return; }
+      JUST_DONE.add(ch); rerenderSettings();
+      const box = document.querySelector(`[data-obs="${CSS.escape(ch)}"]`); if (box) box.scrollIntoView({ block: "start", behavior: "smooth" });
       return;
     }
   }
@@ -1888,21 +1920,14 @@ document.addEventListener("click", async (e) => {
   if (d.set === "ocask2") { OC_ASK.add(ch); OC_STEP.set(ch, "q2"); return rerenderSettings(); }
   if (d.set === "ocstep") { OC_ASK.add(ch); OC_STEP.set(ch, d.v); return rerenderSettings(); }
   if (d.set === "occhoice") {
-    const v = d.v; t.disabled = true;
+    const v = d.v; t.disabled = true; store.set("ocNew:" + ch, !!d.new);
     try { const r = await overlayApi({ action: "settings", channel_id: ch, settings: { ...OSET0, ...(OSET[ch] || {}), oc: v, show: v === "yes" ? "auto" : "on" } }); if (r.ok) { OSET[ch] = r.settings; OC_ASK.delete(ch); OC_STEP.delete(ch); rerenderSettings(); toast(v === "yes" ? "わんコメを使う設定にしました" : "わんコメを使わない設定にしました"); } else toast("保存できませんでした"); } catch { toast("保存できませんでした"); }
     t.disabled = false; return;
   }
-  if (d.set === "olsave") {
-    const box = document.querySelector(`[data-olook="${CSS.escape(ch)}"]`), st = {};
-    box.querySelectorAll(".oseg").forEach((g) => { const v = g.querySelector('[aria-pressed="true"]')?.dataset.ov; if (v != null) st[g.dataset.of] = v === "true" ? true : v === "false" ? false : v; });
+  if (d.set === "layout") {
     t.disabled = true;
-    try { const r = await overlayApi({ action: "settings", channel_id: ch, settings: { ...OSET0, ...(OSET[ch] || {}), ...st } }); if (r.ok) { OSET[ch] = r.settings; toast(vbuiOK(ch) ? "保存しました。配信画面に「表示位置の確認」が出ます" : "保存しました（OBSとつながると反映されます）"); } else toast("保存できませんでした"); } catch { toast("保存できませんでした"); }
-    t.disabled = false; return;
-  }
-  if (d.set === "herotest") {
-    t.disabled = true;
-    try { const r = await overlayApi({ action: "test", channel_id: ch, hero: true }); toast(r.test_id ? (vbuiOK(ch) ? "配信画面にテストのヒーローが飛んでいきます🦸" : "送りました（OBSとつながっていると表示されます）") : "送れませんでした"); } catch { toast("送れませんでした"); }
-    t.disabled = false; return;
+    try { const r = await overlayApi({ action: "layout", channel_id: ch }); toast(r.ok ? (vbuiOK(ch) ? "📺 OBSの画面を見てください！ コメントとヒーローが出ます" : "送りました（OBSを起動していると、OBSの画面に出ます）") : "送れませんでした"); } catch { toast("送れませんでした"); }
+    setTimeout(() => { t.disabled = false; }, 8000); return;
   }
   if (d.set === "obsadd") {
     const out = document.querySelector(`[data-obsres="${CSS.escape(ch)}"]`), pw = document.querySelector(`[data-obs="${CSS.escape(ch)}"] [data-f="obspw"]`).value;
