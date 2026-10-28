@@ -964,6 +964,7 @@ function ownerBox() {
       <small>見せてもらうのは、チャンネル名とIDだけです。動画の投稿や設定の変更は一切できません。</small>
       ${SESSION ? `<button class="lnk" data-own="logout">ログアウト</button>` : ""}</div>`;
   }
+  const more = `<div class="own" style="gap:6px"><button class="lnk" data-own="login" style="font-size:13px">＋ 別のチャンネルも本人登録する</button><small>Googleの画面で、登録したいチャンネルを選んでください。</small></div>`;
   return MINE.map((m) => {
     const c = byId.get(m.id) || m; const gs = m.collab_genres || [];
     return `<div class="own" data-mine="${esc(m.id)}">${msg}
@@ -973,7 +974,7 @@ function ownerBox() {
       <div><p style="margin-bottom:6px">XのID（コラボ申請の連絡先になります）</p><input type="text" data-own="x" value="${esc(m.x_handle ? "@" + m.x_handle : "")}" placeholder="@your_id" autocomplete="off"></div>
       <button class="gbtn" data-own="save">保存する</button>
       <button class="lnk" data-own="logout">ログアウト</button></div>`;
-  }).join("");
+  }).join("") + more;
 }
 document.addEventListener("click", async (e) => {
   const b = e.target.closest("[data-own]"); if (!b) return;
