@@ -335,7 +335,9 @@ a{color:inherit;text-decoration:none}
 .scr em{font-style:normal;background:#ff5fa8;color:#fff;border-radius:3px;padding:0 3px;margin-right:3px;font-size:7.5px}
 .vcards{position:absolute;left:4%;bottom:6%;display:flex;flex-direction:column;gap:3px}
 .vcards span{font-size:8.5px;color:#fff;background:rgba(20,16,32,.85);border:1px solid #ff7ab8;border-radius:5px;padding:2px 5px;white-space:nowrap}
-.ocsum{margin:0;font-size:13px;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.ocsum{font-size:13px;display:flex;flex-direction:column;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.ocsum .lnk2{color:var(--ink);font-weight:700}
+.scr.q{display:grid;place-items:center}.scr.q span{font-size:42px;font-weight:900;color:#fff;opacity:.7}
 .obsdone{background:#e8f7ee;color:#1d5c37;border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.7}
 .obswarn{margin:0;background:#fff4d6;color:#6b4a00;border-radius:10px;padding:8px 10px;font-size:13px;line-height:1.6}
 .jlogin{text-align:center;font-size:13px;color:var(--muted);padding-top:4px}
@@ -1703,18 +1705,38 @@ const overlayUrl = (k) => `${location.origin}/overlay.html?k=${encodeURIComponen
 // 見え方の違いの図（ミニ配信画面）
 function ocDiagram(kind) {
   const fig = `<span class="sfig"><i></i><b></b></span>`;
-  if (kind === "yes") return `<div class="scr">${fig}<div class="ocol"><span class="yt">▶ みかん：こんばんは</span><span class="vb"><em>Vぶい</em>たぎし：はじめまして！</span><span class="yt">▶ ゆず：きた〜</span><span class="vb"><em>Vぶい</em>りん：救援きたよ</span></div></div>`;
+  if (kind === "yes") return `<div class="scr">${fig}<div class="ocol"><span class="yt">▶ みかん：こんばんは</span><span class="vb"><em>Vぶい</em>ねこまる：はじめまして！</span><span class="yt">▶ ゆず：きた〜</span><span class="vb"><em>Vぶい</em>りん：救援きたよ</span></div></div>`;
   return `<div class="scr">${fig}<div class="vcards"><span><em>Vぶい</em>はじめまして！</span><span><em>Vぶい</em>救援きたよ</span></div></div>`;
 }
 function ocQuestion(ch, cur) {
-  return `<div class="ocq">
-    <p class="ocqt">Q.「<b>わんコメ</b>」を使っていますか？<small>わんコメ ＝ YouTubeのコメントを配信画面に出す、無料のアプリです</small></p>
+  const step = OC_STEP.get(ch) || "q1";
+  if (step === "q2") return `<div class="ocq">
+    <p class="ocqt">Q2. わんコメを入れて、使ってみますか？<small>あとから入れることもできます。いま決めなくても大丈夫！</small></p>
     <div class="ocpicks">
-      <div class="ocpick${cur === "yes" ? " on" : ""}">${ocDiagram("yes")}<p><b>使っている人</b><br>いつものコメント欄に、<b>YouTubeとVぶいのコメントがまざって</b>出ます。見た目も位置もいつものまま。</p><button class="${cur === "yes" ? "gbtn" : "sbtn"}" data-set="occhoice" data-v="yes" data-ch="${esc(ch)}">はい、使っている</button></div>
-      <div class="ocpick${cur === "no" ? " on" : ""}">${ocDiagram("no")}<p><b>使っていない人</b><br>Vぶいから来たコメントだけが、<b>画面のすみっこ</b>に出ます。アプリを増やさなくてOK。</p><button class="${cur === "no" ? "gbtn" : "sbtn"}" data-set="occhoice" data-v="no" data-ch="${esc(ch)}">いいえ、使っていない</button></div>
+      <div class="ocpick">${ocDiagram("yes")}<p><b>入れてみる（無料・10分くらい）</b><br>YouTubeのコメントも配信画面に出せて、<b>Vぶいのコメントとまとめて</b>1つのコメント欄に並びます。</p><button class="gbtn" data-set="ocstep" data-v="install" data-ch="${esc(ch)}">わんコメを入れてみる</button></div>
+      <div class="ocpick">${ocDiagram("no")}<p><b>いまはこのまま</b><br>アプリは増やさず、Vぶいから来たコメントだけを<b>画面のすみっこ</b>に出します。</p><button class="sbtn" data-set="occhoice" data-v="no" data-ch="${esc(ch)}">いまはこのままでいい</button></div>
+    </div>
+    <button class="lnk2" data-set="ocstep" data-v="q1" data-ch="${esc(ch)}">‹ 前の質問にもどる</button>
+  </div>`;
+  if (step === "install") return `<div class="ocq">
+    <p class="ocqt">わんコメの入れ方<small>OBSを入れた時とほぼ同じです</small></p>
+    <ol class="obsteps">
+      <li><a href="https://onecomme.com/" target="_blank" rel="noopener"><b>わんコメの公式サイト</b></a>を開いて、「ダウンロード」から自分のパソコン（Mac か Windows）の方を選ぶ</li>
+      <li>ダウンロードしたファイルを開いて、わんコメを入れる（Macは「アプリケーション」にドラッグ）</li>
+      <li>わんコメを起動して、最初の案内にそって<b>自分のYouTubeチャンネル</b>を登録する</li>
+      <li>わんコメのコメントを配信画面に出す設定をする（わんコメの公式サイトの「導入ガイド」に、画像つきで載っています）</li>
+    </ol>
+    <div class="cbtn2"><button class="gbtn" data-set="occhoice" data-v="yes" data-ch="${esc(ch)}">入れ終わった！ 次へ</button><button class="sbtn" data-set="occhoice" data-v="no" data-ch="${esc(ch)}">やっぱり、いまはやめておく</button></div>
+  </div>`;
+  return `<div class="ocq">
+    <p class="ocqt">Q1.「<b>わんコメ</b>」を、いま使っていますか？<small>わんコメ ＝ YouTubeのコメントを配信画面に出す、無料のアプリです</small></p>
+    <div class="ocpicks">
+      <div class="ocpick${cur === "yes" ? " on" : ""}">${ocDiagram("yes")}<p><b>使っている人は、こうなります</b><br>いつものコメント欄に、<b>YouTubeとVぶいのコメントがまざって</b>出ます。見た目も位置もいつものまま。</p><button class="gbtn" data-set="occhoice" data-v="yes" data-ch="${esc(ch)}">はい、使っている</button></div>
+      <div class="ocpick${cur === "no" ? " on" : ""}"><div class="scr q"><span>？</span></div><p><b>使っていない・わからない人</b><br>次の質問で、どうするか選べます。</p><button class="sbtn" data-set="ocstep" data-v="q2" data-ch="${esc(ch)}">いいえ・わからない</button></div>
     </div>
   </div>`;
 }
+const OC_STEP = new Map();
 function obsBlock(m) {
   const k = OKEYS[m.id], st = OVL.get(m.id), oc = (OSET[m.id] || {}).oc || "";
   const done = !!st?.last_seen || store.get("obsAdded:" + m.id, false);
@@ -1734,7 +1756,8 @@ function obsBlock(m) {
     <label class="sl">サーバーパスワード（手順3でコピーしたもの）</label>
     <input type="password" data-f="obspw" placeholder="ここに貼り付け" autocomplete="off">
     <div class="cbtn2"><button class="gbtn" data-set="obsadd" data-ch="${esc(m.id)}">⚡ OBSに自動で追加</button><button class="sbtn" data-set="obstest" data-ch="${esc(m.id)}">設定確認</button></div>`;
-  const ocLine = oc ? `<p class="ocsum">${oc === "yes" ? "💬 わんコメを使う（YouTubeとVぶいのコメントをまぜて出す）" : "💬 わんコメは使わない（Vぶいのコメントを画面のすみっこに出す）"} <button class="lnk2" data-set="ocask" data-ch="${esc(m.id)}">変える</button></p>` : "";
+  const ocLine = oc === "yes" ? `<div class="ocsum"><span>💬 <b>いまの出し方：</b>わんコメのコメント欄に、YouTubeとVぶいのコメントをまぜて出す</span><button class="lnk2" data-set="ocask" data-ch="${esc(m.id)}">変える</button></div>`
+    : oc === "no" ? `<div class="ocsum"><span>💬 <b>いまの出し方：</b>Vぶいから来たコメントだけを、画面のすみっこに出す</span><button class="lnk2" data-set="ocask2" data-ch="${esc(m.id)}">わんコメを入れて、YouTubeのコメントもまとめて出す ›</button></div>` : "";
   let body;
   if (!oc || OC_ASK.has(m.id)) body = ocQuestion(m.id, oc);
   else if (done) body = `${ocLine}<div class="obsdone">✅ <b>設定ずみです！</b><br>次からは<b>いつも通りOBSを起動するだけ</b>で、自動でVぶいとつながります。このページを開く必要もありません。</div>
@@ -1846,10 +1869,12 @@ document.addEventListener("click", async (e) => {
   if (d.set === "ocopy") { const v = t.parentElement.querySelector("input").value; try { await navigator.clipboard.writeText(v); toast("コピーしました"); } catch { t.parentElement.querySelector("input").select(); toast("長押しでコピーしてください"); } return; }
   if (d.set === "okeyreset") { if (!t.dataset.sure) { t.dataset.sure = "1"; t.textContent = "本当に作り直す？（もう一度押す）"; return; } const r = await overlayApi({ action: "key", channel_id: ch, reset: true }); if (r.key) { OKEYS[ch] = r.key; toast("新しいURLを作りました。OBSのURLも入れ直してください"); rerenderSettings(); } return; }
   if (d.set === "obstest") return obsTest(ch, document.querySelector(`[data-obsres="${CSS.escape(ch)}"]`));
-  if (d.set === "ocask") { OC_ASK.add(ch); return rerenderSettings(); }
+  if (d.set === "ocask") { OC_ASK.add(ch); OC_STEP.set(ch, "q1"); return rerenderSettings(); }
+  if (d.set === "ocask2") { OC_ASK.add(ch); OC_STEP.set(ch, "q2"); return rerenderSettings(); }
+  if (d.set === "ocstep") { OC_ASK.add(ch); OC_STEP.set(ch, d.v); return rerenderSettings(); }
   if (d.set === "occhoice") {
     const v = d.v; t.disabled = true;
-    try { const r = await overlayApi({ action: "settings", channel_id: ch, settings: { ...OSET0, ...(OSET[ch] || {}), oc: v, show: v === "yes" ? "auto" : "on" } }); if (r.ok) { OSET[ch] = r.settings; OC_ASK.delete(ch); rerenderSettings(); toast(v === "yes" ? "わんコメを使う設定にしました" : "わんコメを使わない設定にしました"); } else toast("保存できませんでした"); } catch { toast("保存できませんでした"); }
+    try { const r = await overlayApi({ action: "settings", channel_id: ch, settings: { ...OSET0, ...(OSET[ch] || {}), oc: v, show: v === "yes" ? "auto" : "on" } }); if (r.ok) { OSET[ch] = r.settings; OC_ASK.delete(ch); OC_STEP.delete(ch); rerenderSettings(); toast(v === "yes" ? "わんコメを使う設定にしました" : "わんコメを使わない設定にしました"); } else toast("保存できませんでした"); } catch { toast("保存できませんでした"); }
     t.disabled = false; return;
   }
   if (d.set === "olsave") {
