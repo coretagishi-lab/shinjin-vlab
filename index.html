@@ -961,7 +961,7 @@ function ownerBox() {
       <p>YouTubeのアカウントでログインするだけで、本人登録ができます。無料です。</p>
       <ul><li>配信中の一覧で、いちばん上に表示</li><li>同期ランキングで、自分の順位がわかる</li><li>コラボ相手さがしに「申請する」ボタンが出る</li><li>配信開始を公式Xで自動告知（準備中）</li></ul>
       <button class="gbtn" data-own="login">${G}YouTubeのアカウントで本人登録</button>
-      <small>見せてもらうのは、チャンネル名とIDだけです。動画の投稿や設定の変更は一切できません。</small>
+      <small>見せてもらうのは、チャンネル名とIDだけです。動画の投稿や設定の変更は一切できません。<br><a href="privacy.html" style="color:#B8B4CC">プライバシーポリシー</a>・<a href="terms.html" style="color:#B8B4CC">利用規約</a></small>
       ${SESSION ? `<button class="lnk" data-own="logout">ログアウト</button>` : ""}</div>`;
   }
   const more = `<div class="own" style="gap:6px"><button class="lnk" data-own="login" style="font-size:13px">＋ 別のチャンネルも本人登録する</button><small>Googleの画面で、登録したいチャンネルを選んでください。</small></div>`;
@@ -973,7 +973,7 @@ function ownerBox() {
       <div><p style="margin-bottom:6px">得意なジャンル（5つまで）</p><div class="gen">${GENRES.map((g) => `<button data-own="genre" data-g="${g}" aria-pressed="${gs.includes(g)}">${g}</button>`).join("")}</div></div>
       <div><p style="margin-bottom:6px">XのID（コラボ申請の連絡先になります）</p><input type="text" data-own="x" value="${esc(m.x_handle ? "@" + m.x_handle : "")}" placeholder="@your_id" autocomplete="off"></div>
       <button class="gbtn" data-own="save">保存する</button>
-      <button class="lnk" data-own="logout">ログアウト</button></div>`;
+      <div style="display:flex;gap:16px"><button class="lnk" data-own="logout">ログアウト</button><button class="lnk" data-own="unreg">本人登録を解除する</button></div></div>`;
   }).join("") + more;
 }
 document.addEventListener("click", async (e) => {
@@ -981,6 +981,12 @@ document.addEventListener("click", async (e) => {
   const k = b.dataset.own;
   if (k === "login") return ownerLogin();
   if (k === "logout") { await AUTH?.auth.signOut(); SESSION = null; MINE = null; ownMsg = ""; return renderMy(); }
+  if (k === "unreg") {
+    if (!b.dataset.sure) { b.dataset.sure = "1"; b.textContent = "本当に解除する？（もう一度押す）"; return; }
+    const w = b.closest("[data-mine]"); await ownerApi({ action: "unregister", channel_id: w.dataset.mine });
+    const c = byId.get(w.dataset.mine); if (c) Object.assign(c, { registered: false, collab_open: false });
+    ownMsg = "本人登録を解除しました。"; return applyMine((await ownerApi({ action: "mine" })).mine);
+  }
   if (k === "genre") { const box = b.closest(".gen"); const on = b.getAttribute("aria-pressed") === "true"; if (!on && box.querySelectorAll('[aria-pressed="true"]').length >= 5) return toast("5つまで選べます"); b.setAttribute("aria-pressed", String(!on)); return; }
   if (k === "save") {
     const w = b.closest("[data-mine]"); b.disabled = true; b.textContent = "保存中…";
@@ -996,7 +1002,8 @@ function renderMy() {
     <div class="stat-card"><div style="flex:1"><div style="font-weight:700">発掘した新人</div><div class="bar"><i style="width:${pct}%"></i></div></div><div class="big">${got}<small>/${total}</small></div></div>
     <div class="sec-h">推しリスト<span>${fav.length}人</span></div>
     ${fav.length ? `<div class="grid">${fav.map(miniCard).join("")}</div>` : `<div class="empty"><strong>まだ推しがいません</strong>発掘タブで気になった子のハートを押すと、ここに集まります。</div>`}
-    <p class="note">配信開始のお知らせ、新人巡りスタンプ、コメントは準備中です。推しリストはこの端末に保存されます。</p>`;
+    <p class="note">配信開始のお知らせ、新人巡りスタンプ、コメントは準備中です。推しリストはこの端末に保存されます。</p>
+    <p class="note"><a href="privacy.html">プライバシーポリシー</a>　<a href="terms.html">利用規約</a>　<a href="https://x.com/vv__buibui" target="_blank" rel="noopener">お問い合わせ（公式X）</a></p>`;
 }
 
 /* ---------- DISCOVER ---------- */
