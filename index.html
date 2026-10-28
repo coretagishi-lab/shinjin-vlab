@@ -316,6 +316,26 @@ a{color:inherit;text-decoration:none}
 .obsman p{font-size:12.5px;line-height:1.7;margin:6px 0}
 .bdg.vbc{left:58px;bottom:8px;top:auto;background:#ff5fa8;color:#fff;display:flex;align-items:center;gap:4px}
 .bdg.vbc b{background:#fff;color:#ff5fa8;border-radius:4px;padding:0 4px;font-weight:900;letter-spacing:-.02em}
+.ocq{display:flex;flex-direction:column;gap:8px}
+.ocqt{margin:0;font-weight:700;font-size:15px}.ocqt small{display:block;font-weight:400;font-size:12px;color:var(--muted);margin-top:2px}
+.ocpicks{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:520px){.ocpicks{grid-template-columns:1fr}}
+.ocpick{display:flex;flex-direction:column;gap:6px;border:1.5px solid var(--line);border-radius:14px;padding:10px;background:var(--surface)}
+.ocpick.on{border-color:var(--accent)}
+.ocpick p{margin:0;font-size:12.5px;line-height:1.6}
+.ocpick button{width:100%}
+.scr{position:relative;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:linear-gradient(160deg,#3a3f6b,#1f2240)}
+.sfig{position:absolute;left:16%;bottom:0;width:30%;height:78%}
+.sfig i{position:absolute;left:30%;top:0;width:40%;aspect-ratio:1;border-radius:50%;background:#ffb3d6}
+.sfig b{position:absolute;left:12%;bottom:0;width:76%;height:52%;border-radius:40% 40% 0 0;background:#ff7ab8}
+.ocol{position:absolute;right:3%;top:8%;bottom:8%;width:50%;background:rgba(0,0,0,.45);border-radius:6px;padding:4px;display:flex;flex-direction:column;gap:3px;justify-content:flex-end}
+.ocol span{font-size:8.5px;color:#fff;background:rgba(255,255,255,.12);border-radius:4px;padding:2px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ocol span.yt{color:#ddd}
+.ocol span.vb{background:rgba(255,95,168,.55);font-weight:700}
+.scr em{font-style:normal;background:#ff5fa8;color:#fff;border-radius:3px;padding:0 3px;margin-right:3px;font-size:7.5px}
+.vcards{position:absolute;left:4%;bottom:6%;display:flex;flex-direction:column;gap:3px}
+.vcards span{font-size:8.5px;color:#fff;background:rgba(20,16,32,.85);border:1px solid #ff7ab8;border-radius:5px;padding:2px 5px;white-space:nowrap}
+.ocsum{margin:0;font-size:13px;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
 .obsdone{background:#e8f7ee;color:#1d5c37;border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.7}
 .obswarn{margin:0;background:#fff4d6;color:#6b4a00;border-radius:10px;padding:8px 10px;font-size:13px;line-height:1.6}
 .jlogin{text-align:center;font-size:13px;color:var(--muted);padding-top:4px}
@@ -1680,10 +1700,27 @@ const OKEYS = {}, OSET = {};
 const isMobileUA = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 const OSET0 = { pos: "bl", size: "m", show: "auto", side: "r", hero: true };
 const overlayUrl = (k) => `${location.origin}/overlay.html?k=${encodeURIComponent(k)}`;
+// 見え方の違いの図（ミニ配信画面）
+function ocDiagram(kind) {
+  const fig = `<span class="sfig"><i></i><b></b></span>`;
+  if (kind === "yes") return `<div class="scr">${fig}<div class="ocol"><span class="yt">▶ みかん：こんばんは</span><span class="vb"><em>Vぶい</em>たぎし：はじめまして！</span><span class="yt">▶ ゆず：きた〜</span><span class="vb"><em>Vぶい</em>りん：救援きたよ</span></div></div>`;
+  return `<div class="scr">${fig}<div class="vcards"><span><em>Vぶい</em>はじめまして！</span><span><em>Vぶい</em>救援きたよ</span></div></div>`;
+}
+function ocQuestion(ch, cur) {
+  return `<div class="ocq">
+    <p class="ocqt">Q.「<b>わんコメ</b>」を使っていますか？<small>わんコメ ＝ YouTubeのコメントを配信画面に出す、無料のアプリです</small></p>
+    <div class="ocpicks">
+      <div class="ocpick${cur === "yes" ? " on" : ""}">${ocDiagram("yes")}<p><b>使っている人</b><br>いつものコメント欄に、<b>YouTubeとVぶいのコメントがまざって</b>出ます。見た目も位置もいつものまま。</p><button class="${cur === "yes" ? "gbtn" : "sbtn"}" data-set="occhoice" data-v="yes" data-ch="${esc(ch)}">はい、使っている</button></div>
+      <div class="ocpick${cur === "no" ? " on" : ""}">${ocDiagram("no")}<p><b>使っていない人</b><br>Vぶいから来たコメントだけが、<b>画面のすみっこ</b>に出ます。アプリを増やさなくてOK。</p><button class="${cur === "no" ? "gbtn" : "sbtn"}" data-set="occhoice" data-v="no" data-ch="${esc(ch)}">いいえ、使っていない</button></div>
+    </div>
+  </div>`;
+}
 function obsBlock(m) {
-  const k = OKEYS[m.id], st = OVL.get(m.id);
+  const k = OKEYS[m.id], st = OVL.get(m.id), oc = (OSET[m.id] || {}).oc || "";
   const done = !!st?.last_seen || store.get("obsAdded:" + m.id, false);
-  const stat = st?.connected ? `<span class="okc">● いまOBSとつながっています</span>` : done ? `<span class="ngc">● いまはOBSが閉じています（OBSを起動すると、自動でつながります）</span>` : `<span class="ngc">● まだ設定していません</span>`;
+  const stat = st?.connected ? `<span class="okc">● いまOBSとつながっています${oc === "yes" ? (st.onecomme ? "（わんコメにもつながっています）" : "（わんコメにはまだつながっていません）") : ""}</span>` : done ? `<span class="ngc">● いまはOBSが閉じています（OBSを起動すると、自動でつながります）</span>` : `<span class="ngc">● まだ設定していません</span>`;
+  const ocStep = oc === "yes" ? `<li><b>わんコメを起動</b>して、<b>「設定」→「API」→「許可するホスト」</b>に、下の文字を1行追加 → 保存（https:// は付けません）
+        <div class="srow3"><input type="text" readonly value="${esc(location.host)}"><button class="sbtn" data-set="ocopy">コピー</button></div></li>` : "";
   const steps = `${isMobileUA ? `<p class="obswarn">📱 いまスマホで見ています。この設定は、<b>OBSが入っているパソコン</b>でVぶい（vvbuibui.com）を開いて行ってください。</p>` : ""}
     <ol class="obsteps">
       <li><b>OBSが入っているパソコンで、Vぶいを開く</b>（Chromeがおすすめ）。OBSも起動しておく</li>
@@ -1691,28 +1728,34 @@ function obsBlock(m) {
       <li>同じ画面の<b>「接続情報を表示」</b>を押して、<b>「サーバーパスワード」の横の「コピー」</b>を押す → 下の欄に貼り付け</li>
       <li>OBSの画面は<b>「OK」で閉じる</b>（開いたままだと、OBSが止まることがあります）</li>
       <li><b>「⚡ OBSに自動で追加」</b>を押す。Chromeで「このデバイス上の他のアプリやサービスにアクセス」と出たら<b>「許可する」</b></li>
+      ${ocStep}
       <li><b>「設定確認」</b>を押して、OBSの画面に「✅ Vぶいと接続できました」と出たら完了！</li>
     </ol>
     <label class="sl">サーバーパスワード（手順3でコピーしたもの）</label>
     <input type="password" data-f="obspw" placeholder="ここに貼り付け" autocomplete="off">
     <div class="cbtn2"><button class="gbtn" data-set="obsadd" data-ch="${esc(m.id)}">⚡ OBSに自動で追加</button><button class="sbtn" data-set="obstest" data-ch="${esc(m.id)}">設定確認</button></div>`;
+  const ocLine = oc ? `<p class="ocsum">${oc === "yes" ? "💬 わんコメを使う（YouTubeとVぶいのコメントをまぜて出す）" : "💬 わんコメは使わない（Vぶいのコメントを画面のすみっこに出す）"} <button class="lnk2" data-set="ocask" data-ch="${esc(m.id)}">変える</button></p>` : "";
+  let body;
+  if (!oc || OC_ASK.has(m.id)) body = ocQuestion(m.id, oc);
+  else if (done) body = `${ocLine}<div class="obsdone">✅ <b>設定ずみです！</b><br>次からは<b>いつも通りOBSを起動するだけ</b>で、自動でVぶいとつながります。このページを開く必要もありません。</div>
+    <div class="cbtn2"><button class="sbtn" data-set="obstest" data-ch="${esc(m.id)}">設定確認</button><button class="sbtn" data-set="herotest" data-ch="${esc(m.id)}">🦸 登場をテスト</button></div>
+    <p class="obsres" data-obsres="${esc(m.id)}"></p>
+    <details class="obsman"><summary>はじめから設定し直す（パソコンを変えた時など）</summary>${steps}</details>`;
+  else body = `${ocLine}${steps}<p class="obsres" data-obsres="${esc(m.id)}"></p>`;
   return `<section class="sbox" data-obs="${esc(m.id)}">
     <h4>📺 OBS連携（Vぶいのコメント・演出を配信画面に出す）</h4>
     ${stat}
-    ${done ? `<div class="obsdone">✅ <b>設定ずみです！</b><br>次からは<b>いつも通りOBSを起動するだけ</b>で、自動でVぶいとつながります。このページを開く必要もありません。</div>
-    <div class="cbtn2"><button class="sbtn" data-set="obstest" data-ch="${esc(m.id)}">設定確認</button><button class="sbtn" data-set="herotest" data-ch="${esc(m.id)}">🦸 登場をテスト</button></div>
-    <p class="obsres" data-obsres="${esc(m.id)}"></p>
-    <details class="obsman"><summary>はじめから設定し直す（パソコンを変えた時など）</summary>${steps}</details>`
-    : `${steps}<p class="obsres" data-obsres="${esc(m.id)}"></p>`}
-    <p class="note2">🛡 OBSに追加されるのは<b>透明な1枚のシート</b>だけです。いまの立ち絵や枠の位置・大きさは動かしません。うっかり動かさないように、カギもかけておきます。</p>
+    ${body}
+    ${oc && !OC_ASK.has(m.id) ? `<p class="note2">🛡 OBSに追加されるのは<b>透明な1枚のシート</b>だけです。いまの立ち絵や枠の位置・大きさは動かしません。うっかり動かさないように、カギもかけておきます。</p>
     ${obsLook(m.id)}
     <details class="obsman"><summary>自分で追加する場合（くわしい人向け）</summary>
       <p>OBSの「ソース」の＋ →「ブラウザ」を追加して、URLに下を貼り付け、幅と高さをOBSの画面サイズ（ふつうは1920と1080）にしてください。</p>
       <div class="srow3"><input type="text" readonly value="${k ? esc(overlayUrl(k)) : "読み込み中…"}" data-f="ourl"><button class="sbtn" data-set="ocopy" data-ch="${esc(m.id)}">コピー</button></div>
-      <p class="note2">わんコメを使っている人は、わんコメの「設定」→「API」で <b>${esc(location.host)}</b> を許可すると、Vぶいのコメントがわんコメの中にも出ます。<br>このURLは人に教えないでください。漏れたときは <button class="lnk2" data-set="okeyreset" data-ch="${esc(m.id)}">URLを作り直す</button></p>
-    </details>
+      <p class="note2">このURLは人に教えないでください。漏れたときは <button class="lnk2" data-set="okeyreset" data-ch="${esc(m.id)}">URLを作り直す</button></p>
+    </details>` : ""}
   </section>`;
 }
+const OC_ASK = new Set();
 // 表示のしかた（OBSをさわらずに、ここで変えるだけで配信画面に反映）
 function obsLook(ch) {
   const o = { ...OSET0, ...(OSET[ch] || {}) };
@@ -1720,9 +1763,7 @@ function obsLook(ch) {
   return `<div class="olook" data-olook="${esc(ch)}">
     <h5>表示のしかた</h5>
     <p class="note2"><b>わからなければ、さわらなくてOK！</b> そのままで、ちゃんと出ます。</p>
-    <label class="sl">Vぶいから来たコメントの出し方</label>
-    ${seg("show", [["auto", "おまかせ（おすすめ）"], ["on", "いつも画面に出す"], ["off", "画面に出さない"]])}
-    <p class="note2">「おまかせ」だと、Vぶいから来たコメントが<b>配信画面のすみっこ</b>に出ます。<br>「わんコメ」（YouTubeのコメントを配信画面に出すアプリ）を使っている人は、<b>わんコメのコメント欄の中</b>に、ほかのコメントと一緒に出ます。</p>
+    ${o.oc === "yes" ? `<p class="note2">わんコメを使っている時は、コメントはわんコメのコメント欄に出ます。下の「場所・大きさ」は、わんコメが閉じている時だけ使われます。</p>` : ""}
     <label class="sl">コメントを出す場所（画面のすみっこ）</label>
     ${seg("pos", [["tl", "↖ 左上"], ["tr", "↗ 右上"], ["bl", "↙ 左下"], ["br", "↘ 右下"]])}
     <label class="sl">大きさ</label>
@@ -1791,7 +1832,7 @@ async function obsTest(ch, out) {
     if (st) OVL.set(ch, st);
     if (st && Number(st.last_test_ack) >= r.test_id) {
       store.set("obsAdded:" + ch, true);
-      out.innerHTML = `🎉 <b>設定完了です！</b> OBSの画面に「Vぶいと接続できました」と出ていればOK。<br>次からは<b>OBSを起動するだけ</b>で、自動でつながります。${st.onecomme ? "<br>💬 わんコメを使っているので、Vぶいから来たコメントはわんコメのコメント欄に出ます。" : "<br>💬 Vぶいから来たコメントは、配信画面のすみっこに出ます（場所は下の「表示のしかた」で変えられます）。"}`;
+      out.innerHTML = `🎉 <b>設定完了です！</b> OBSの画面に「Vぶいと接続できました」と出ていればOK。<br>次からは<b>OBSを起動するだけ</b>で、自動でつながります。${(OSET[ch] || {}).oc === "yes" ? (st.onecomme ? "<br>💬 わんコメにもつながりました！ わんコメのコメント欄にもテストのコメントが出ていればOKです。" : "<br>⚠️ <b>わんコメにはまだつながっていません。</b>わんコメを起動して、「設定」→「API」→「許可するホスト」に <b>" + esc(location.host) + "</b> を追加・保存してから、もう一度「設定確認」を押してください。") : "<br>💬 Vぶいから来たコメントは、配信画面のすみっこに出ます（場所は下の「表示のしかた」で変えられます）。"}`;
       return;
     }
   }
@@ -1805,11 +1846,17 @@ document.addEventListener("click", async (e) => {
   if (d.set === "ocopy") { const v = t.parentElement.querySelector("input").value; try { await navigator.clipboard.writeText(v); toast("コピーしました"); } catch { t.parentElement.querySelector("input").select(); toast("長押しでコピーしてください"); } return; }
   if (d.set === "okeyreset") { if (!t.dataset.sure) { t.dataset.sure = "1"; t.textContent = "本当に作り直す？（もう一度押す）"; return; } const r = await overlayApi({ action: "key", channel_id: ch, reset: true }); if (r.key) { OKEYS[ch] = r.key; toast("新しいURLを作りました。OBSのURLも入れ直してください"); rerenderSettings(); } return; }
   if (d.set === "obstest") return obsTest(ch, document.querySelector(`[data-obsres="${CSS.escape(ch)}"]`));
+  if (d.set === "ocask") { OC_ASK.add(ch); return rerenderSettings(); }
+  if (d.set === "occhoice") {
+    const v = d.v; t.disabled = true;
+    try { const r = await overlayApi({ action: "settings", channel_id: ch, settings: { ...OSET0, ...(OSET[ch] || {}), oc: v, show: v === "yes" ? "auto" : "on" } }); if (r.ok) { OSET[ch] = r.settings; OC_ASK.delete(ch); rerenderSettings(); toast(v === "yes" ? "わんコメを使う設定にしました" : "わんコメを使わない設定にしました"); } else toast("保存できませんでした"); } catch { toast("保存できませんでした"); }
+    t.disabled = false; return;
+  }
   if (d.set === "olsave") {
     const box = document.querySelector(`[data-olook="${CSS.escape(ch)}"]`), st = {};
     box.querySelectorAll(".oseg").forEach((g) => { const v = g.querySelector('[aria-pressed="true"]')?.dataset.ov; if (v != null) st[g.dataset.of] = v === "true" ? true : v === "false" ? false : v; });
     t.disabled = true;
-    try { const r = await overlayApi({ action: "settings", channel_id: ch, settings: st }); if (r.ok) { OSET[ch] = r.settings; toast(vbuiOK(ch) ? "保存しました。配信画面に「表示位置の確認」が出ます" : "保存しました（OBSとつながると反映されます）"); } else toast("保存できませんでした"); } catch { toast("保存できませんでした"); }
+    try { const r = await overlayApi({ action: "settings", channel_id: ch, settings: { ...OSET0, ...(OSET[ch] || {}), ...st } }); if (r.ok) { OSET[ch] = r.settings; toast(vbuiOK(ch) ? "保存しました。配信画面に「表示位置の確認」が出ます" : "保存しました（OBSとつながると反映されます）"); } else toast("保存できませんでした"); } catch { toast("保存できませんでした"); }
     t.disabled = false; return;
   }
   if (d.set === "herotest") {

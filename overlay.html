@@ -68,7 +68,7 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
   const SHOW_URL = q.get("show");                 // URLで指定があればそれを優先（"1"/"0"）
   const W = 1920, H = 1080;
   let after = 0, ack = null, onecomme = null, ocService = q.get("ocsvc") || null, failCount = 0;
-  let S = { pos: "bl", size: "m", show: "auto", side: "r", hero: true }, settingsAt = undefined;
+  let S = { pos: "bl", size: "m", show: "auto", side: "r", hero: true, oc: "" }, settingsAt = undefined;
   const $ = (s) => document.querySelector(s);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const err = (t) => { const e = $("#err"); e.textContent = t; e.style.display = t ? "block" : "none"; };
@@ -86,7 +86,8 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
     const st = $("#stack"); st.className = S.pos;
     st.style.transform = `scale(${{ s: 0.75, m: 1, l: 1.3 }[S.size] || 1})`;
   }
-  const showMode = () => SHOW_URL === "1" ? "on" : SHOW_URL === "0" ? "off" : S.show;
+  // わんコメを使わない人（oc=no）は、いつもこの画面にコメントを出す
+  const showMode = () => SHOW_URL === "1" ? "on" : SHOW_URL === "0" ? "off" : S.oc === "no" ? "on" : S.show;
 
   if (!KEY) { err("Vぶい：URLにカギ（k=…）がありません。Vぶいの設定画面からURLをコピーし直してください"); return; }
 
@@ -191,7 +192,9 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
       err(""); failCount = 0; after = d.last || after;
       if (d.settings) {
         const changed = settingsAt !== undefined && d.settings_at !== settingsAt;
+        const ocBefore = S.oc;
         S = { ...S, ...d.settings }; applySettings();
+        if (S.oc === "no") onecomme = false; else if (ocBefore === "no" && OC) ocInit();
         if (changed) preview();
         settingsAt = d.settings_at;
       }
@@ -210,7 +213,7 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
   }
   applySettings();
   ocInit().then(poll);
-  setInterval(() => { if (onecomme === false && OC) ocInit(); }, 60000);
+  setInterval(() => { if (onecomme === false && OC && S.oc !== "no") ocInit(); }, 60000);
 })();
 </script>
 </body>
