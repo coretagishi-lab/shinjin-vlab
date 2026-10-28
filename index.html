@@ -186,6 +186,7 @@ a{color:inherit;text-decoration:none}
 .ks span{font-size:12.5px;color:var(--muted)}
 .ks .bd2{display:flex;gap:6px;flex-wrap:wrap}
 .ks .bd2 em{font-style:normal;font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 9px;background:var(--surface);border:1px solid var(--line)}
+.ks button.shr{border:0;cursor:pointer;font:inherit;font-weight:700;font-size:12.5px}
 .ks .shr{align-self:flex-start;background:#000;color:#fff;font-weight:700;font-size:12.5px;border-radius:999px;padding:7px 14px;text-decoration:none}
 .ksl{display:flex;flex-direction:column;gap:10px}
 .ksl .ks{margin-top:0}
@@ -589,7 +590,7 @@ document.addEventListener("click", (e) => {
   if (tops.has(id)) { tops.delete(id); toast("最推しから外しました"); }
   else if (tops.size >= 3) { toast("最推しは3人までです。だれかを外してから選んでください"); return; }
   else { tops.add(id); toast("★ 最推しにしました！ 救援を優先してお知らせします"); }
-  store.set("tops", [...tops]); if (curId) renderProfile(); if (tab === "home") renderRescue();
+  store.set("tops", [...tops]); pushSync(); if (curId) renderProfile(); if (tab === "home") renderRescue();
 }, true);
 
 /* ---------- 古参の証（この端末に記録。早く・少ない時に来た人ほど価値が高い） ---------- */
@@ -1055,7 +1056,7 @@ async function ownerInit() {
 }
 function sosBlock(m) {
   const L = liveOf(m.id), used = SOS_TODAY.find((s) => s.channel_id === m.id), act = used && Date.parse(used.expires_at) > Date.now();
-  const note = act ? "救援を呼んでいます（30分間、ホームのいちばん上に出ます）" : used ? "今日の救援は使いました。また明日使えます" : L ? "人が少なくてつらい時に。ホームのいちばん上に30分間出ます（1日1回）" : "配信中だけ使えます（1日1回）";
+  const note = act ? "救援を呼んでいます（10分間、ホームのいちばん上に出ます）" : used ? "今日の救援は使いました。また明日使えます" : L ? "人が少なくてつらい時に。ホームのいちばん上に10分間出ます（1日1回）" : "配信中だけ使えます（1日1回）";
   return `<div style="display:flex;flex-direction:column;gap:6px"><button class="gbtn sosbtn" data-own="sos" ${L && !used ? "" : "disabled"}>🆘 救援を呼ぶ</button>
     ${L && !used ? `<input type="text" data-own="sosmsg" maxlength="40" placeholder="ひとこと（任意）例：初見さん歓迎！ゲーム実況中" autocomplete="off">` : ""}<small>${note}</small></div>`;
 }
@@ -1094,7 +1095,7 @@ document.addEventListener("click", async (e) => {
     const w = b.closest("[data-mine]"); if (!b.dataset.sure) { b.dataset.sure = "1"; b.textContent = "🆘 本当に呼ぶ？（もう一度押す）"; return; }
     b.disabled = true; b.textContent = "呼んでいます…";
     const r = await ownerApi({ action: "sos", channel_id: w.dataset.mine, message: w.querySelector('[data-own="sosmsg"]')?.value || "" });
-    ownMsg = r.ok ? "🆘 救援を呼びました！ ホームのいちばん上に30分間表示されます" : r.error === "used_today" ? "今日の救援はもう使いました" : r.error === "not_live" ? "配信中だけ使えます。配信が始まってから数分待ってお試しください" : "うまくいきませんでした";
+    ownMsg = r.ok ? "🆘 救援を呼びました！ ホームのいちばん上に10分間表示されます" : r.error === "used_today" ? "今日の救援はもう使いました" : r.error === "not_live" ? "配信中だけ使えます。配信が始まってから数分待ってお試しください" : "うまくいきませんでした";
     await loadRescue(); return applyMineR(await ownerApi({ action: "mine" }));
   }
   if (k === "unreg") {
@@ -1111,6 +1112,54 @@ document.addEventListener("click", async (e) => {
     ownMsg = r.error ? "保存できませんでした。" : "保存しました✨"; applyMine(r.mine || MINE);
   }
 });
+/* ---------- プッシュ通知（推しの救援要請をスマホに届ける） ---------- */
+const VAPID_PUB = "BJrS7id_cQ0OmCJaesYBF9vVtk2uuH_PKylZvA1EBDf7bri49x35kbUg3A1K_64cQKnVY8FAK3EqOl-noudAGMM";
+const pushOK = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+let pushSub = null, pushBusy = false;
+const b64u = (s) => { const p = "=".repeat((4 - s.length % 4) % 4); const r = atob((s + p).replace(/-/g, "+").replace(/_/g, "/")); return Uint8Array.from([...r].map((c) => c.charCodeAt(0))); };
+async function pushApi(body) {
+  const r = await fetch(`${SB_URL}/functions/v1/push`, { method: "POST", headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  return r.json();
+}
+async function pushInit() {
+  if (!pushOK) return;
+  try { const reg = await navigator.serviceWorker.register("sw.js"); pushSub = await reg.pushManager.getSubscription(); if (pushSub) pushSync(); } catch {}
+  if (tab === "my") renderMy();
+}
+let pushT = 0;
+function pushSync() { clearTimeout(pushT); pushT = setTimeout(() => { if (pushSub) pushApi({ action: "subscribe", subscription: pushSub.toJSON(), favs: [...favs], tops: [...tops] }).catch(() => {}); }, 800); }
+function pushBox() {
+  if (!pushOK) {
+    if (isIOS && !isStandalone) return `<div class="ks" style="border-color:var(--line);background:var(--surface)"><b>🔔 推しの救援を通知で受け取る</b><span>iPhoneは、Vぶいを<b>ホーム画面に追加</b>すると通知が使えます。Safariで開いて「共有」→「ホーム画面に追加」→ ホーム画面のVぶいから開いて、ここでオンにしてください。</span></div>`;
+    return `<div class="ks" style="border-color:var(--line);background:var(--surface)"><b>🔔 通知</b><span>このブラウザは通知に対応していません。</span></div>`;
+  }
+  if (Notification.permission === "denied") return `<div class="ks" style="border-color:var(--line);background:var(--surface)"><b>🔔 通知がブロックされています</b><span>ブラウザ（またはスマホ）の設定で、Vぶいの通知を「許可」にしてから、もう一度開いてください。</span></div>`;
+  if (!pushSub) return `<div class="ks" style="border-color:var(--line);background:var(--surface)"><b>🔔 推しの救援を通知で受け取る</b><span>推しリストの子が救援要請を出したら、スマホに通知が届きます。★最推しは必ず、ほかの推しは1日3件までお知らせします。</span><button class="shr" data-push="on" ${pushBusy ? "disabled" : ""}>${pushBusy ? "設定中…" : "通知をオンにする"}</button></div>`;
+  return `<div class="ks"><b>🔔 通知オン</b><span>推し${favs.size}人の救援要請をお知らせします（★最推し${tops.size}人は必ず、ほかは1日3件まで）。</span><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="shr" data-push="test">テスト通知を送る</button><button class="shr" data-push="off" style="background:var(--chip);color:var(--ink)">通知をオフ</button></div></div>`;
+}
+document.addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-push]"); if (!b) return;
+  const k = b.dataset.push;
+  try {
+    if (k === "on") {
+      pushBusy = true; renderMy();
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") { pushBusy = false; renderMy(); return toast("通知が許可されませんでした"); }
+      const reg = await navigator.serviceWorker.register("sw.js"); await navigator.serviceWorker.ready;
+      pushSub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64u(VAPID_PUB) });
+      const r = await pushApi({ action: "subscribe", subscription: pushSub.toJSON(), favs: [...favs], tops: [...tops] });
+      pushBusy = false; renderMy(); toast(r.ok ? "🔔 通知をオンにしました" : "うまく設定できませんでした");
+      if (!favs.size) setTimeout(() => toast("推しリストに入れた子の救援が届きます"), 1900);
+    } else if (k === "test") {
+      b.textContent = "送信中…"; const r = await pushApi({ action: "test", subscription: pushSub.toJSON() });
+      b.textContent = "テスト通知を送る"; toast(r.ok ? "テスト通知を送りました" : "送れませんでした。いったんオフにして、もう一度オンにしてください");
+    } else if (k === "off") {
+      await pushApi({ action: "unsubscribe", subscription: pushSub.toJSON() }).catch(() => {});
+      await pushSub.unsubscribe().catch(() => {}); pushSub = null; renderMy(); toast("通知をオフにしました");
+    }
+  } catch (err) { pushBusy = false; renderMy(); toast("通知の設定に失敗しました"); }
+});
+
 function kosanList() {
   const ids = Object.keys(KOSAN).filter((id) => byId.has(id)).sort((a, b) => Date.parse(KOSAN[a].since) - Date.parse(KOSAN[b].since));
   const res = ids.reduce((n, id) => n + KOSAN[id].rescues.length, 0);
@@ -1123,6 +1172,7 @@ function renderMy() {
   const fav = CH.filter((c) => favs.has(c.id)).sort((a, b) => (tops.has(b.id) ? 1 : 0) - (tops.has(a.id) ? 1 : 0));
   $("#my").innerHTML = ownerBox() + `
     <div class="stat-card"><div style="flex:1"><div style="font-weight:700">発掘した新人</div><div class="bar"><i style="width:${pct}%"></i></div></div><div class="big">${got}<small>/${total}</small></div></div>
+    ${pushBox()}
     ${kosanList()}
     <div class="sec-h">推しリスト<span>${fav.length}人・★最推し${tops.size}/3</span></div>
     ${fav.length ? `<div class="grid">${fav.map(miniCard).join("")}</div>` : `<div class="empty"><strong>まだ推しがいません</strong>発掘タブで気になった子のハートを押すと、ここに集まります。</div>`}
@@ -1351,6 +1401,7 @@ document.addEventListener("click", (e) => {
     const id = t.dataset.fav; favs.has(id) ? favs.delete(id) : favs.add(id); store.set("favs", [...favs]);
     toast(favs.has(id) ? "推しリストに入れました" : "推しリストから外しました");
     if (favs.has(id)) kosanMark(id); else if (tops.delete(id)) store.set("tops", [...tops]);
+    pushSync();
     if (curId) renderProfile(); else refreshCurrent();
     document.querySelectorAll(`[data-fav="${CSS.escape(id)}"]`).forEach((b) => b.setAttribute("aria-pressed", favs.has(id)));
     return;
@@ -1381,7 +1432,7 @@ load().then(() => {
   if (id && byId.has(id)) openProfile(id, false);
   const wq = new URLSearchParams(location.search).get("w");
   if (wq) openWatch(wq, false);
-  ownerInit();
+  ownerInit(); pushInit();
   setInterval(() => { if (tab === "home" && !curId && !HP?.target) renderHome(); }, 60000);
   setInterval(async () => { if (!live) return; try { const s = await rest("streams?select=id,channel_id,title,thumbnail_url,status,scheduled_start_at,actual_start_at,actual_end_at,peak_viewers,last_viewers,is_first_stream,embeddable,is_vertical,chat_enabled&status=neq.none&order=updated_at.desc&limit=3000"); ST = s.filter((x) => byId.has(x.channel_id) && x.embeddable !== false); if (tab !== "discover") discOrder = null; } catch {} }, 5 * 60000);
 });
