@@ -2,30 +2,60 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=1920,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Vぶい 演出画面</title>
 <style>
-/* OBSのブラウザソース用。背景は透明。ふだんは何も表示しない */
+/* OBSのブラウザソース用。背景は透明。ふだんは何も表示しない（配信画面のレイアウトには一切さわらない） */
 html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100vh;font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif}
-#stack{position:absolute;left:32px;bottom:32px;width:560px;display:flex;flex-direction:column;gap:10px}
-.cm{display:flex;gap:12px;align-items:flex-start;background:rgba(20,16,32,.82);color:#fff;border:2px solid #ff7ab8;border-radius:18px;padding:12px 16px;font-size:26px;line-height:1.45;box-shadow:0 6px 18px rgba(0,0,0,.35);animation:in .35s cubic-bezier(.2,.9,.3,1.2) both}
+/* 1920×1080 を基準に作って、OBSの画面サイズに合わせて縮める（720pでも1080pでも同じ見え方） */
+#root{position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:none}
+#stack{position:absolute;width:560px;display:flex;flex-direction:column;gap:10px}
+#stack.bl{left:32px;bottom:32px;transform-origin:0 100%}
+#stack.br{right:32px;bottom:32px;transform-origin:100% 100%;align-items:flex-end}
+#stack.tl{left:32px;top:32px;transform-origin:0 0;flex-direction:column-reverse;justify-content:flex-end}
+#stack.tr{right:32px;top:32px;transform-origin:100% 0;align-items:flex-end;flex-direction:column-reverse;justify-content:flex-end}
+.cm{display:flex;gap:12px;align-items:flex-start;background:rgba(20,16,32,.82);color:#fff;border:2px solid #ff7ab8;border-radius:18px;padding:12px 16px;font-size:26px;line-height:1.45;box-shadow:0 6px 18px rgba(0,0,0,.35);animation:in .35s cubic-bezier(.2,.9,.3,1.2) both;max-width:100%;box-sizing:border-box;word-break:break-word}
+#stack.br .cm,#stack.tr .cm{animation-name:inr}
 .cm.out{animation:out .5s ease both}
+.cm.pv{border-style:dashed;background:rgba(20,16,32,.6)}
+.cm.hr{border-color:#ffc24a}
 .cm img,.cm .av{width:44px;height:44px;border-radius:50%;flex:none;object-fit:cover;background:#2b2340;display:grid;place-items:center;font-weight:700;color:#ffc24a}
 .cm b{display:block;font-size:18px;color:#ffb3d6}
 .cm b i{font-style:normal;font-size:14px;background:#ff5fa8;color:#fff;border-radius:6px;padding:0 6px;margin-left:8px}
-#fx{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+#fx{position:absolute;inset:0;display:grid;place-items:center}
 .banner{background:linear-gradient(90deg,#ff5fa8,#3fb8f5);color:#fff;font-weight:900;font-size:64px;padding:26px 56px;border-radius:28px;box-shadow:0 10px 40px rgba(0,0,0,.4);text-align:center;animation:pop .5s cubic-bezier(.2,.9,.3,1.3) both}
 .banner small{display:block;font-size:28px;font-weight:700;margin-top:6px;opacity:.95}
 .banner.out{animation:out .6s ease both}
 @keyframes in{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:none}}
+@keyframes inr{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
 @keyframes pop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
 @keyframes out{to{opacity:0;transform:translateY(10px)}}
 #err{position:absolute;left:24px;top:24px;background:#e5333d;color:#fff;font-size:22px;font-weight:700;border-radius:12px;padding:10px 16px;display:none}
+
+/* ---- 救援ヒーロー（救援通知から駆けつけたリスナーさんの登場演出） ---- */
+.hero{position:absolute;left:0;top:0;width:120px;height:120px;will-change:transform}
+.hero .hb{position:absolute;inset:0}
+.hero .cape{position:absolute;left:-58px;top:22px;width:120px;height:96px;transform-origin:100% 20%}
+.hero.l .cape{left:58px;transform:scaleX(-1);transform-origin:50% 20%}
+.hero.fly .cape{animation:flap .18s ease-in-out infinite alternate}
+.hero.walk .cape{animation:flap .35s ease-in-out infinite alternate}
+@keyframes flap{to{transform:scaleY(.82) rotate(-6deg)}}
+.hero.l.fly .cape,.hero.l.walk .cape{animation-name:flapl}
+@keyframes flapl{from{transform:scaleX(-1)}to{transform:scaleX(-1) scaleY(.82) rotate(-6deg)}}
+.hero .face{position:absolute;inset:8px;border-radius:50%;border:5px solid #fff;background:#2b2340;overflow:hidden;box-shadow:0 6px 16px rgba(0,0,0,.4);display:grid;place-items:center;color:#ffc24a;font-weight:900;font-size:44px}
+.hero .face img{width:100%;height:100%;object-fit:cover}
+.hero .emb{position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);background:#ffc24a;color:#2b2340;font-weight:900;font-size:18px;border-radius:8px;padding:0 8px;border:3px solid #fff;white-space:nowrap}
+.hero.walk .hb{animation:bob .3s ease-in-out infinite alternate}
+@keyframes bob{from{transform:translateY(0) rotate(-4deg)}to{transform:translateY(-12px) rotate(4deg)}}
+.hero .tag{position:absolute;bottom:132px;left:50%;transform:translateX(-50%);white-space:nowrap;background:#fff;color:#2b2340;font-weight:900;font-size:24px;border-radius:14px;padding:6px 14px;box-shadow:0 4px 12px rgba(0,0,0,.3);opacity:0;transition:opacity .25s}
+.hero .tag em{font-style:normal;color:#ff5fa8}
+.hero.named .tag{opacity:1}
+.puff{position:absolute;width:140px;height:40px;border-radius:50%;background:radial-gradient(rgba(255,255,255,.9),rgba(255,255,255,0) 70%);animation:puff .5s ease-out both}
+@keyframes puff{from{opacity:1;transform:scale(.4)}to{opacity:0;transform:scale(1.6)}}
 </style>
 </head>
 <body>
-<div id="stack"></div>
-<div id="fx"></div>
+<div id="root"><div id="stack" class="bl"></div><div id="fx"></div></div>
 <div id="err"></div>
 <script>
 (() => {
@@ -35,11 +65,29 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
   const KEY = q.get("k") || "";
   const OC = q.get("oc") !== "0";                 // わんコメにも流す（初期はオン）
   const OC_URL = q.get("ocurl") || "http://localhost:11180";
-  const SHOW = q.get("show");                     // "1"=この画面にもコメントを出す / "0"=出さない / 無し=わんコメが使えない時だけ出す
+  const SHOW_URL = q.get("show");                 // URLで指定があればそれを優先（"1"/"0"）
+  const W = 1920, H = 1080;
   let after = 0, ack = null, onecomme = null, ocService = q.get("ocsvc") || null, failCount = 0;
+  let S = { pos: "bl", size: "m", show: "auto", side: "r", hero: true }, settingsAt = undefined;
   const $ = (s) => document.querySelector(s);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const err = (t) => { const e = $("#err"); e.textContent = t; e.style.display = t ? "block" : "none"; };
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  // 画面サイズに合わせて 1920×1080 の座標を縮める
+  function fit() {
+    const s = Math.min(innerWidth / W, innerHeight / H) || 1, r = $("#root");
+    r.style.width = innerWidth / s + "px"; r.style.height = innerHeight / s + "px"; r.style.transform = `scale(${s})`;
+  }
+  addEventListener("resize", fit); fit();
+  const vw = () => $("#root").offsetWidth, vh = () => $("#root").offsetHeight;
+
+  function applySettings() {
+    const st = $("#stack"); st.className = S.pos;
+    st.style.transform = `scale(${{ s: 0.75, m: 1, l: 1.3 }[S.size] || 1})`;
+  }
+  const showMode = () => SHOW_URL === "1" ? "on" : SHOW_URL === "0" ? "off" : S.show;
+
   if (!KEY) { err("Vぶい：URLにカギ（k=…）がありません。Vぶいの設定画面からURLをコピーし直してください"); return; }
 
   // ---- わんコメ（配信者さんのPCで動いているコメントツール）に、Vぶいのコメントを混ぜる ----
@@ -55,25 +103,38 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
       onecomme = !!ocService;
     } catch { onecomme = false; }
   }
-  async function ocSend(c) {
+  async function ocSend(c, text) {
     if (!onecomme) return false;
     try {
       const r = await fetch(OC_URL + "/api/comments", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
         service: { id: ocService },
-        comment: { id: "vbui-" + c.id, userId: "vbui-" + (c.nickname || ""), name: (c.nickname || "Vぶい") + " ［Vぶい］", comment: c.body, profileImage: c.avatar_url || "https://vvbuibui.com/icon-192.png", badges: [{ label: "Vぶい", url: "https://vvbuibui.com/icon-192.png" }], hasGift: false, isOwner: false, timestamp: Date.parse(c.created_at) || Date.now() },
+        comment: { id: "vbui-" + c.id, userId: "vbui-" + (c.nickname || ""), name: (c.nickname || "Vぶい") + " ［Vぶい］", comment: text ?? c.body, profileImage: c.avatar_url || "https://vvbuibui.com/icon-192.png", badges: [{ label: "Vぶい", url: "https://vvbuibui.com/icon-192.png" }], hasGift: false, isOwner: false, timestamp: Date.parse(c.created_at) || Date.now() },
       }) });
       return r.ok;
     } catch { onecomme = false; return false; }
   }
 
-  // ---- この画面に直接コメントを出す（わんコメを使っていない人向け） ----
-  function showComment(c) {
-    const el = document.createElement("div"); el.className = "cm";
-    el.innerHTML = `${c.avatar_url ? `<img src="${esc(c.avatar_url)}" alt="">` : `<span class="av">${esc([...(c.nickname || "V")][0])}</span>`}<div><b>${esc(c.nickname)}<i>Vぶい</i></b>${esc(c.body)}</div>`;
+  // ---- この画面に直接コメントを出す（わんコメを使っていない人向け／設定で「いつも出す」の人） ----
+  function showComment(c, { cls = "", text, ms = 15000 } = {}) {
+    const el = document.createElement("div"); el.className = "cm " + cls;
+    el.innerHTML = `${c.avatar_url ? `<img src="${esc(c.avatar_url)}" alt="">` : `<span class="av">${esc([...(c.nickname || "V")][0])}</span>`}<div><b>${esc(c.nickname)}<i>Vぶい</i></b>${esc(text ?? c.body)}</div>`;
     const st = $("#stack"); st.appendChild(el);
     while (st.children.length > 5) st.firstChild.remove();
-    setTimeout(() => { el.classList.add("out"); setTimeout(() => el.remove(), 600); }, 15000);
+    setTimeout(() => { el.classList.add("out"); setTimeout(() => el.remove(), 600); }, ms);
   }
+  // わんコメ優先、なければこの画面に（設定に従う）
+  async function deliver(c, opt = {}) {
+    const mode = showMode();
+    const sent = mode === "on" ? false : await ocSend(c, opt.text);
+    if (mode === "on" || (!sent && mode !== "off")) showComment(c, opt);
+  }
+  // 設定を変えた直後：どこに出るかを数秒だけ見せる
+  function preview() {
+    const mode = showMode();
+    const sample = { nickname: "表示位置の確認", body: mode === "off" ? "（この画面にはコメントを出さない設定です）" : "Vぶいのコメントはここに出ます" };
+    showComment(sample, { cls: "pv", ms: 6000 });
+  }
+
   // ---- 演出（ギフトなどは今後ここに追加） ----
   function banner(title, sub, ms = 5000) {
     const fx = $("#fx"); const b = document.createElement("div"); b.className = "banner";
@@ -81,6 +142,44 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
     setTimeout(() => { b.classList.add("out"); setTimeout(() => b.remove(), 700); }, ms);
   }
   window.VBUI_EFFECT = (type, data) => { /* ギフト演出の入口（準備中） */ banner(data?.title || "🎁", data?.sub || "", 4000); };
+
+  // ---- 救援ヒーロー：画面の端に小さく飛んできて、着地、とことこ歩いてコメント欄の方へ飛び込む ----
+  const CAPE = `<svg class="cape" viewBox="0 0 120 96"><path d="M118 6 C80 0 40 10 4 30 C18 44 10 66 0 92 C40 80 78 60 118 40 Z" fill="#ff5fa8"/><path d="M118 6 C84 4 52 14 22 30 C34 40 30 58 24 76 C56 62 88 48 118 40 Z" fill="#ff8cc4"/></svg>`;
+  const heroQ = []; let heroBusy = false;
+  function hero(c) { if (heroQ.length < 6) heroQ.push(c); if (!heroBusy) heroNext(); }
+  async function heroNext() {
+    const c = heroQ.shift(); if (!c) { heroBusy = false; return; }
+    heroBusy = true;
+    try { await heroPlay(c); } catch {}
+    await wait(300); heroNext();
+  }
+  async function heroPlay(c) {
+    const R = S.side === "r", dir = R ? 1 : -1, w = vw(), h = vh(), size = 120;
+    const el = document.createElement("div"); el.className = "hero fly" + (R ? "" : " l");
+    const face = c.avatar_url ? `<img src="${esc(c.avatar_url)}" alt="">` : esc([...(c.nickname || "V")][0]);
+    el.innerHTML = `<div class="hb">${CAPE}<div class="face">${face}</div><span class="emb">救援</span></div><div class="tag"><em>${esc(c.nickname)}</em> さんが救援にきた！</div>`;
+    $("#root").appendChild(el);
+    const landX = R ? w - 560 : 560 - size, landY = Math.round(h * 0.56);
+    const startX = landX - dir * 520, startY = -180;
+    const edgeX = R ? w - size - 24 : 24, outX = R ? w + 60 : -size - 60;
+    const T = (x, y, rot = 0, sc = 1) => `translate(${x}px,${y}px) rotate(${rot}deg) scale(${sc})`;
+    // 1) 斜め上から飛んでくる
+    await el.animate([{ transform: T(startX, startY, dir * 35, 0.8) }, { transform: T(landX - dir * 60, landY - 40, dir * 15, 1) }, { transform: T(landX, landY, 0, 1) }], { duration: 1000, easing: "cubic-bezier(.3,.7,.4,1)", fill: "forwards" }).finished;
+    // 2) 着地（ぽよん＋けむり）
+    const puff = document.createElement("div"); puff.className = "puff"; puff.style.left = landX - 10 + "px"; puff.style.top = landY + size - 24 + "px"; $("#root").appendChild(puff); setTimeout(() => puff.remove(), 600);
+    el.classList.remove("fly");
+    await el.animate([{ transform: T(landX, landY) + " scale(1.15,.82)" }, { transform: T(landX, landY - 18) + " scale(.95,1.06)" }, { transform: T(landX, landY) }], { duration: 380, easing: "ease-out", fill: "forwards" }).finished;
+    // 3) 名前を出して、とことこ歩く
+    el.classList.add("named", "walk");
+    await wait(500);
+    await el.animate([{ transform: T(landX, landY) }, { transform: T(edgeX, landY) }], { duration: Math.max(1400, Math.abs(edgeX - landX) * 5.2), easing: "linear", fill: "forwards" }).finished;
+    // 4) ぴょんっとコメント欄へ飛び込む
+    el.classList.remove("walk", "named");
+    await el.animate([{ transform: T(edgeX, landY) }, { transform: T((edgeX + outX) / 2, landY - 90, dir * 20, 0.85) }, { transform: T(outX, landY - 20, dir * 40, 0.5), opacity: 0.6 }], { duration: 620, easing: "ease-in", fill: "forwards" }).finished;
+    el.remove();
+    await deliver(c, { cls: "hr", text: "🦸 救援に駆けつけました！" });
+  }
+  window.VBUI_HERO = hero; // 確認用
 
   async function poll() {
     try {
@@ -90,6 +189,12 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
       if (d.error === "bad_key") { err("Vぶい：このURLは使えなくなりました。Vぶいの設定画面から新しいURLをコピーしてください"); return setTimeout(poll, 30000); }
       if (!r.ok) throw new Error(d.error);
       err(""); failCount = 0; after = d.last || after;
+      if (d.settings) {
+        const changed = settingsAt !== undefined && d.settings_at !== settingsAt;
+        S = { ...S, ...d.settings }; applySettings();
+        if (changed) preview();
+        settingsAt = d.settings_at;
+      }
       for (const c of d.items || []) {
         if (c.kind === "test") {
           ack = c.id;
@@ -97,12 +202,13 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
           const sent = await ocSend(c); if (!sent) showComment(c);
           continue;
         }
-        const sent = SHOW === "1" ? false : await ocSend(c);
-        if (SHOW === "1" || (!sent && SHOW !== "0")) showComment(c);
+        if (c.kind === "rescue") { if (S.hero) hero(c); else deliver(c, { cls: "hr", text: "🦸 救援に駆けつけました！" }); continue; }
+        await deliver(c);
       }
     } catch { if (++failCount > 5) err("Vぶい：通信できません。インターネットの接続を確認してください"); }
     setTimeout(poll, 2000);
   }
+  applySettings();
   ocInit().then(poll);
   setInterval(() => { if (onecomme === false && OC) ocInit(); }, 60000);
 })();

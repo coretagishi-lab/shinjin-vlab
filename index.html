@@ -314,7 +314,14 @@ a{color:inherit;text-decoration:none}
 .obsres{margin:0;font-size:13px;line-height:1.7}
 .obsman summary{font-size:13px;font-weight:700;cursor:pointer}
 .obsman p{font-size:12.5px;line-height:1.7;margin:6px 0}
-.bdg.vbc{left:58px;bottom:8px;top:auto;background:#ff5fa8;color:#fff}
+.bdg.vbc{left:58px;bottom:8px;top:auto;background:#ff5fa8;color:#fff;display:flex;align-items:center;gap:4px}
+.bdg.vbc b{background:#fff;color:#ff5fa8;border-radius:4px;padding:0 4px;font-weight:900;letter-spacing:-.02em}
+.olook{display:flex;flex-direction:column;gap:6px;border-top:1px dashed var(--line);padding-top:10px;margin-top:4px}
+.olook h5{margin:0;font-size:14px}
+.oseg{display:flex;flex-wrap:wrap;gap:6px}
+.oseg button{border:1.5px solid var(--line);border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;color:var(--ink);background:var(--surface)}
+.oseg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.w-sos .hero-note{display:block;margin-top:4px;font-size:12px}
 .vbc{display:flex;gap:8px;align-items:center;margin:0 12px 8px;background:#1d1830;border:1.5px solid #ff7ab8;border-radius:14px;padding:6px 6px 6px 10px}
 .vbc .vbt{flex:none;font-size:11px;font-weight:700;background:#ff5fa8;color:#fff;border-radius:6px;padding:2px 6px}
 .vbc input{flex:1;min-width:0;border:0;background:none;color:#fff;font:inherit;font-size:16px;outline:none}
@@ -672,7 +679,7 @@ async function load() {
       rest(`channel_daily?select=*&day=gte.${since}`),
     ]);
     CH = c; ST = s; DAILY = d; live = true;
-    loadRescue(); loadOverlayStatus().then(() => { if (typeof tab !== "undefined" && tab === "home") renderHome(); });
+    const pR = loadRescue(); loadOverlayStatus().then(() => { if (typeof tab !== "undefined" && tab === "home") renderHome(); return pR; }).then(() => heroCheck(), () => {});
   } catch {
     const snap = JSON.parse($("#snap").textContent);
     CH = snap.channels || []; ST = snap.streams || []; DAILY = snap.daily || [];
@@ -831,7 +838,7 @@ function toast(t) { const el = $("#toast"); el.textContent = t; el.classList.add
 /* ---------- HOME ---------- */
 let homeMode = null;
 function homeSets() {
-  const reg = (s) => (byId.get(s.channel_id)?.registered ? 1 : 0);
+  const reg = (s) => (vbuiOK(s.channel_id) ? 2 : 0) + (byId.get(s.channel_id)?.registered ? 1 : 0);
   const L = liveNow().sort((a, b) => reg(b) - reg(a) || Date.parse(b.actual_start_at || 0) - Date.parse(a.actual_start_at || 0));
   const U = ST.filter(isUpcomingSoon).sort((a, b) => Date.parse(a.scheduled_start_at) - Date.parse(b.scheduled_start_at));
   const F = U.filter(isFirstUpcoming);
@@ -860,7 +867,7 @@ function vidCard(s) {
   else { const dur = s.actual_end_at ? (Date.parse(s.actual_end_at) - Date.parse(s.actual_start_at)) / 1000 : 0; badge = dur ? `<span class="bdg time">${Math.floor(dur / 3600)}:${String(Math.floor(dur % 3600 / 60)).padStart(2, "0")}:${String(Math.floor(dur % 60)).padStart(2, "0")}</span>` : ""; sub = `${rel(s.actual_start_at)}${s.peak_viewers ? `・最大${s.peak_viewers}人` : ""}`; }
   const first = s.status !== "ended" && isFirstUpcoming(s) ? `<span class="bdg first">初配信</span>` : "";
   return `<article class="vid">
-    <div class="thumb" role="link" tabindex="0" data-url="${ytWatch(s.id)}" data-cid="${esc(c.id)}" data-vid="${esc(s.id)}"${s.embeddable !== false ? ' data-canembed="1"' : ""}${s.status === "live" && s.embeddable !== false ? ' data-emb="1"' : ""}>${img(s.thumbnail_url, c)}${d ? `<span class="bdg debut">デビュー${d}日目</span>` : ""}${first}${badge}${s.status === "live" && vbuiOK(c.id) ? `<span class="bdg vbc">💬 Vぶいでコメント可</span>` : ""}<button class="snd" hidden aria-label="音のオンオフ">🔇 タップで音を出す</button></div>
+    <div class="thumb" role="link" tabindex="0" data-url="${ytWatch(s.id)}" data-cid="${esc(c.id)}" data-vid="${esc(s.id)}"${s.embeddable !== false ? ' data-canembed="1"' : ""}${s.status === "live" && s.embeddable !== false ? ' data-emb="1"' : ""}>${img(s.thumbnail_url, c)}${d ? `<span class="bdg debut">デビュー${d}日目</span>` : ""}${first}${badge}${s.status === "live" && vbuiOK(c.id) ? `<span class="bdg vbc"><b>VV</b>Vぶいでコメント可</span>` : ""}<button class="snd" hidden aria-label="音のオンオフ">🔇 タップで音を出す</button></div>
     <div class="meta"><button class="av" data-open="${esc(c.id)}" aria-label="${esc(c.title)}のカードを見る">${img(c.thumbnail_url, c)}</button>
       <div><div class="t">${esc(s.title)}</div><div class="s"><button data-open="${esc(c.id)}">${esc(c.title)}</button>・${sub}</div></div></div>
   </article>`;
@@ -1083,7 +1090,9 @@ function openWatch(vid, push = true) {
   const canChat = (s.status === "live" || s.status === "upcoming") && s.chat_enabled !== false;
   const chatOff = (s.status === "live" || s.status === "upcoming") && s.chat_enabled === false;
   const vbOK = s.status === "live" && vbuiOK(c.id);
-  $("#wLower").innerHTML = (vbOK ? vbuiCommentBar(c.id) : "") + (R0 ? `<div class="w-sos">🆘 <b>救援要請中</b>${R0.message ? `「${esc(R0.message)}」` : ""}　来てくれてありがとう！ コメントで「救援きたよ」って伝えてあげてね</div>` : "") + (canChat
+  const heroNote = R0 && vbOK ? (SESSION && PROFILE ? `<span class="hero-note" data-heronote="${esc(c.id)}">🦸 配信画面に、あなたのヒーロー登場の演出を出しています…</span>` : `<span class="hero-note">🦸 リスナー登録すると、配信画面にあなたの名前でヒーロー登場の演出が出ます</span>`) : "";
+  if (R0 && vbOK && SESSION && PROFILE) heroArrive(c.id, R0.id);
+  $("#wLower").innerHTML = (vbOK ? vbuiCommentBar(c.id) : "") + (R0 ? `<div class="w-sos">🆘 <b>救援要請中</b>${R0.message ? `「${esc(R0.message)}」` : ""}　来てくれてありがとう！ コメントで「救援きたよ」って伝えてあげてね${heroNote}</div>` : "") + (canChat
     ? `<div class="w-chat${isIOS ? " crop" : ""}"><iframe src="https://www.youtube.com/live_chat?v=${encodeURIComponent(vid)}&embed_domain=${encodeURIComponent(location.hostname)}" title="チャット"></iframe></div>${isIOS ? `<a class="w-cmt" href="${ytWatch(vid)}" target="_blank" rel="noopener" data-watch="${esc(c.id)}">💬 コメントする（YouTubeアプリで開く）</a>` : ""}`
     : chatOff ? `<div class="w-off">この配信はチャットがオフになっています。<br>映像と音声だけ楽しめます。</div>` : `<div class="w-note"><b>アーカイブを再生中</b><br>配信中の枠では、ここにチャットが出て、そのままコメントできます。</div>`);
   const w = $("#watch"); w.hidden = false; requestAnimationFrame(() => w.classList.add("open"));
@@ -1356,7 +1365,7 @@ async function authInit() {
   } catch (e) { ownMsg = "通信に失敗しました。"; }
   authBusy = false; authReady = true;
   if (SESSION && !PROFILE) openNick();
-  pushInit(); navBadge();
+  pushInit(); navBadge(); heroCheck();
   if (tab === "my") renderMy(); else if (curId) renderProfile(); else if (typeof refreshCurrent === "function") refreshCurrent();
 }
 
@@ -1655,7 +1664,8 @@ async function loadOverlayStatus() {
 }
 const vbuiOK = (cid) => !!OVL.get(cid)?.connected;
 setInterval(() => { if (live) loadOverlayStatus(); }, 60000);
-const OKEYS = {};
+const OKEYS = {}, OSET = {};
+const OSET0 = { pos: "bl", size: "m", show: "auto", side: "r", hero: true };
 const overlayUrl = (k) => `${location.origin}/overlay.html?k=${encodeURIComponent(k)}`;
 function obsBlock(m) {
   const k = OKEYS[m.id], st = OVL.get(m.id);
@@ -1672,6 +1682,8 @@ function obsBlock(m) {
     <input type="password" data-f="obspw" placeholder="OBSの「サーバーパスワード」" autocomplete="off">
     <div class="cbtn2"><button class="gbtn" data-set="obsadd" data-ch="${esc(m.id)}">⚡ OBSに自動で追加</button><button class="sbtn" data-set="obstest" data-ch="${esc(m.id)}">設定確認</button></div>
     <p class="obsres" data-obsres="${esc(m.id)}"></p>
+    <p class="note2">🛡 追加されるのは<b>透明な1枚のレイヤー</b>だけです。いまの配置（立ち絵・枠・わんコメの位置や大きさ）は動かしません。うっかり動かさないようにロックもかけます。</p>
+    ${obsLook(m.id)}
     <details class="obsman"><summary>自分で追加する場合（手動）</summary>
       <p>OBSの「ソース」の＋ →「ブラウザ」を追加して、URLに下を貼り付け、幅1920・高さ1080にしてください。</p>
       <div class="srow3"><input type="text" readonly value="${k ? esc(overlayUrl(k)) : "読み込み中…"}" data-f="ourl"><button class="sbtn" data-set="ocopy" data-ch="${esc(m.id)}">コピー</button></div>
@@ -1679,8 +1691,32 @@ function obsBlock(m) {
     </details>
   </section>`;
 }
+// 表示のしかた（OBSをさわらずに、ここで変えるだけで配信画面に反映）
+function obsLook(ch) {
+  const o = { ...OSET0, ...(OSET[ch] || {}) };
+  const seg = (f, opts) => `<div class="oseg" data-of="${f}">${opts.map(([v, t]) => `<button type="button" data-ov="${v}" aria-pressed="${String(o[f]) === String(v)}">${t}</button>`).join("")}</div>`;
+  return `<div class="olook" data-olook="${esc(ch)}">
+    <h5>表示のしかた</h5>
+    <label class="sl">Vぶいのコメントを、Vぶいの画面にも出す？</label>
+    ${seg("show", [["auto", "わんコメが無い時だけ"], ["on", "いつも出す"], ["off", "出さない"]])}
+    <p class="note2">わんコメを使っている人は「わんコメが無い時だけ」のままでOK。Vぶいのコメントは、いつものわんコメの表示（位置・大きさ・フォント）にそのまま混ざります。</p>
+    <label class="sl">出す場所</label>
+    ${seg("pos", [["tl", "↖ 左上"], ["tr", "↗ 右上"], ["bl", "↙ 左下"], ["br", "↘ 右下"]])}
+    <label class="sl">大きさ</label>
+    ${seg("size", [["s", "小"], ["m", "中"], ["l", "大"]])}
+    <label class="sl">🦸 救援ヒーローの登場演出</label>
+    ${seg("hero", [["true", "出す"], ["false", "出さない"]])}
+    <label class="sl">ヒーローが飛び込む方向（コメント欄がある側）</label>
+    ${seg("side", [["l", "← 左"], ["r", "右 →"]])}
+    <div class="cbtn2"><button class="gbtn" data-set="olsave" data-ch="${esc(ch)}">保存して配信画面で確認</button><button class="sbtn" data-set="herotest" data-ch="${esc(ch)}">🦸 登場をテスト</button></div>
+  </div>`;
+}
+document.addEventListener("click", (e) => {
+  const b = e.target.closest(".oseg [data-ov]"); if (!b) return;
+  b.parentElement.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+});
 async function loadKeys() {
-  for (const m of MINE) if (!OKEYS[m.id]) { try { const r = await overlayApi({ action: "key", channel_id: m.id }); if (r.key) OKEYS[m.id] = r.key; } catch {} }
+  for (const m of MINE) if (!OKEYS[m.id]) { try { const r = await overlayApi({ action: "key", channel_id: m.id }); if (r.key) OKEYS[m.id] = r.key; if (r.settings) OSET[m.id] = r.settings; } catch {} }
 }
 // OBS WebSocket（v5）で、いま映しているシーンにブラウザソースを追加する
 function obsAdd(url, password) {
@@ -1703,10 +1739,18 @@ function obsAdd(url, password) {
           const sc = await req("GetCurrentProgramScene");
           const sceneName = sc.responseData?.currentProgramSceneName || sc.responseData?.sceneName;
           const name = "Vぶい（コメント・演出）";
-          const settings = { url, width: 1920, height: 1080, reroute_audio: false, shutdown: false, restart_when_active: false };
+          const vs = await req("GetVideoSettings");
+          const width = vs.responseData?.baseWidth || 1920, height = vs.responseData?.baseHeight || 1080;
+          const settings = { url, width, height, reroute_audio: false, shutdown: false, restart_when_active: false };
           let r = await req("CreateInput", { sceneName, inputName: name, inputKind: "browser_source", inputSettings: settings, sceneItemEnabled: true });
           let updated = false;
           if (!r.requestStatus?.result) { const r2 = await req("SetInputSettings", { inputName: name, inputSettings: settings, overlay: true }); if (!r2.requestStatus?.result) throw new Error(r.requestStatus?.comment || "create"); updated = true; }
+          // いちばん上に置いて、うっかり動かさないようにロック（ほかのソースの位置や大きさは一切さわらない）
+          try {
+            const idr = r.responseData?.sceneItemId ? r : await req("GetSceneItemId", { sceneName, sourceName: name });
+            const sid = idr.responseData?.sceneItemId;
+            if (sid) { await req("SetSceneItemLocked", { sceneName, sceneItemId: sid, sceneItemLocked: true }); await req("SetSceneItemEnabled", { sceneName, sceneItemId: sid, sceneItemEnabled: true }); }
+          } catch {}
           clearTimeout(timer); ws.close(); resolve({ sceneName, updated });
         } catch (e) { clearTimeout(timer); ws.close(); reject(e); }
       } else if (m.op === 7) { const f = pend.get(m.d.requestId); if (f) { pend.delete(m.d.requestId); f(m.d); } }
@@ -1734,6 +1778,18 @@ document.addEventListener("click", async (e) => {
   if (d.set === "ocopy") { const v = t.parentElement.querySelector("input").value; try { await navigator.clipboard.writeText(v); toast("コピーしました"); } catch { t.parentElement.querySelector("input").select(); toast("長押しでコピーしてください"); } return; }
   if (d.set === "okeyreset") { if (!t.dataset.sure) { t.dataset.sure = "1"; t.textContent = "本当に作り直す？（もう一度押す）"; return; } const r = await overlayApi({ action: "key", channel_id: ch, reset: true }); if (r.key) { OKEYS[ch] = r.key; toast("新しいURLを作りました。OBSのURLも入れ直してください"); rerenderSettings(); } return; }
   if (d.set === "obstest") return obsTest(ch, document.querySelector(`[data-obsres="${CSS.escape(ch)}"]`));
+  if (d.set === "olsave") {
+    const box = document.querySelector(`[data-olook="${CSS.escape(ch)}"]`), st = {};
+    box.querySelectorAll(".oseg").forEach((g) => { const v = g.querySelector('[aria-pressed="true"]')?.dataset.ov; if (v != null) st[g.dataset.of] = v === "true" ? true : v === "false" ? false : v; });
+    t.disabled = true;
+    try { const r = await overlayApi({ action: "settings", channel_id: ch, settings: st }); if (r.ok) { OSET[ch] = r.settings; toast(vbuiOK(ch) ? "保存しました。配信画面に「表示位置の確認」が出ます" : "保存しました（OBSとつながると反映されます）"); } else toast("保存できませんでした"); } catch { toast("保存できませんでした"); }
+    t.disabled = false; return;
+  }
+  if (d.set === "herotest") {
+    t.disabled = true;
+    try { const r = await overlayApi({ action: "test", channel_id: ch, hero: true }); toast(r.test_id ? (vbuiOK(ch) ? "配信画面にテストのヒーローが飛んでいきます🦸" : "送りました（OBSとつながっていると表示されます）") : "送れませんでした"); } catch { toast("送れませんでした"); }
+    t.disabled = false; return;
+  }
   if (d.set === "obsadd") {
     const out = document.querySelector(`[data-obsres="${CSS.escape(ch)}"]`), pw = document.querySelector(`[data-obs="${CSS.escape(ch)}"] [data-f="obspw"]`).value;
     if (!OKEYS[ch]) await loadKeys();
@@ -1750,6 +1806,24 @@ document.addEventListener("click", async (e) => {
     }
   }
 });
+
+/* ---------- 救援から駆けつけた人：配信画面にヒーロー登場（1回の救援につき1回） ---------- */
+const HERO_DONE = new Set();
+// 通知から開いた時など、ログインや接続状況の読み込みが後から終わった場合にも登場させる
+function heroCheck() {
+  if (!watchVid || !SESSION || !PROFILE) return;
+  const s = ST.find((x) => x.id === watchVid); if (!s || s.status !== "live" || !vbuiOK(s.channel_id)) return;
+  const R = rescueOf(s.channel_id); if (R) heroArrive(s.channel_id, R.id, true);
+}
+async function heroArrive(cid, rid, late = false) {
+  const k = cid + ":" + rid; if (HERO_DONE.has(k)) return; HERO_DONE.add(k);
+  try {
+    const r = await overlayApi({ action: "arrive", channel_id: cid });
+    const el = document.querySelector(`[data-heronote="${CSS.escape(cid)}"]`);
+    if (el) el.textContent = r.ok ? (r.already ? "🦸 この救援では、もう登場ずみです" : "🦸 配信画面に、あなたが登場しました！") : "";
+    else if (late && r.ok && !r.already) toast("🦸 配信画面に、あなたが登場しました！");
+  } catch {}
+}
 
 /* ---------- 視聴画面：Vぶいでコメント（演出画面がつながっている配信だけ） ---------- */
 function vbuiCommentBar(cid) {
