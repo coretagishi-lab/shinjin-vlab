@@ -316,6 +316,7 @@ a{color:inherit;text-decoration:none}
 .obsman p{font-size:12.5px;line-height:1.7;margin:6px 0}
 .bdg.vbc{left:58px;bottom:8px;top:auto;background:#ff5fa8;color:#fff;display:flex;align-items:center;gap:4px}
 .bdg.vbc b{background:#fff;color:#ff5fa8;border-radius:4px;padding:0 4px;font-weight:900;letter-spacing:-.02em}
+.obsdone{background:#e8f7ee;color:#1d5c37;border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.7}
 .obswarn{margin:0;background:#fff4d6;color:#6b4a00;border-radius:10px;padding:8px 10px;font-size:13px;line-height:1.6}
 .jlogin{text-align:center;font-size:13px;color:var(--muted);padding-top:4px}
 .jlogin .lnk2{font-size:13px;color:var(--ink);font-weight:700;margin-left:2px}
@@ -1681,28 +1682,34 @@ const OSET0 = { pos: "bl", size: "m", show: "auto", side: "r", hero: true };
 const overlayUrl = (k) => `${location.origin}/overlay.html?k=${encodeURIComponent(k)}`;
 function obsBlock(m) {
   const k = OKEYS[m.id], st = OVL.get(m.id);
-  const stat = st?.connected ? `<span class="okc">● OBSとつながっています${st.onecomme ? "（わんコメ連携中）" : ""}</span>` : `<span class="ngc">● まだつながっていません</span>`;
-  return `<section class="sbox" data-obs="${esc(m.id)}">
-    <h4>📺 OBS連携（Vぶいのコメント・演出を配信画面に出す）</h4>
-    ${stat}
-    ${isMobileUA ? `<p class="obswarn">📱 いまスマホで見ています。この設定は、<b>OBSが入っているパソコン</b>でVぶい（vvbuibui.com）を開いて行ってください。</p>` : ""}
+  const done = !!st?.last_seen || store.get("obsAdded:" + m.id, false);
+  const stat = st?.connected ? `<span class="okc">● いまOBSとつながっています</span>` : done ? `<span class="ngc">● いまはOBSが閉じています（OBSを起動すると、自動でつながります）</span>` : `<span class="ngc">● まだ設定していません</span>`;
+  const steps = `${isMobileUA ? `<p class="obswarn">📱 いまスマホで見ています。この設定は、<b>OBSが入っているパソコン</b>でVぶい（vvbuibui.com）を開いて行ってください。</p>` : ""}
     <ol class="obsteps">
       <li><b>OBSが入っているパソコンで、Vぶいを開く</b>（Chromeがおすすめ）。OBSも起動しておく</li>
       <li>OBSの上のメニュー<b>「ツール」→「WebSocketサーバー設定」</b>を開いて、<b>「WebSocketサーバーを有効にする」にチェック →「適用」</b></li>
-      <li>同じ画面の<b>「接続情報を表示」→ パスワードの横の「コピー」</b>を押して、下の欄に貼り付け →「OK」で閉じる</li>
+      <li>同じ画面の<b>「接続情報を表示」</b>を押して、<b>「サーバーパスワード」の横の「コピー」</b>を押す → 下の欄に貼り付け</li>
+      <li>OBSの画面は<b>「OK」で閉じる</b>（開いたままだと、OBSが止まることがあります）</li>
       <li><b>「⚡ OBSに自動で追加」</b>を押す。Chromeで「このデバイス上の他のアプリやサービスにアクセス」と出たら<b>「許可する」</b></li>
       <li><b>「設定確認」</b>を押して、OBSの画面に「✅ Vぶいと接続できました」と出たら完了！</li>
     </ol>
-    <label class="sl">OBSのパスワード（手順3でコピーしたもの）</label>
+    <label class="sl">サーバーパスワード（手順3でコピーしたもの）</label>
     <input type="password" data-f="obspw" placeholder="ここに貼り付け" autocomplete="off">
-    <div class="cbtn2"><button class="gbtn" data-set="obsadd" data-ch="${esc(m.id)}">⚡ OBSに自動で追加</button><button class="sbtn" data-set="obstest" data-ch="${esc(m.id)}">設定確認</button></div>
+    <div class="cbtn2"><button class="gbtn" data-set="obsadd" data-ch="${esc(m.id)}">⚡ OBSに自動で追加</button><button class="sbtn" data-set="obstest" data-ch="${esc(m.id)}">設定確認</button></div>`;
+  return `<section class="sbox" data-obs="${esc(m.id)}">
+    <h4>📺 OBS連携（Vぶいのコメント・演出を配信画面に出す）</h4>
+    ${stat}
+    ${done ? `<div class="obsdone">✅ <b>設定ずみです！</b><br>次からは<b>いつも通りOBSを起動するだけ</b>で、自動でVぶいとつながります。このページを開く必要もありません。</div>
+    <div class="cbtn2"><button class="sbtn" data-set="obstest" data-ch="${esc(m.id)}">設定確認</button><button class="sbtn" data-set="herotest" data-ch="${esc(m.id)}">🦸 登場をテスト</button></div>
     <p class="obsres" data-obsres="${esc(m.id)}"></p>
-    <p class="note2">🛡 追加されるのは<b>透明な1枚のレイヤー</b>だけです。いまの配置（立ち絵・枠・わんコメの位置や大きさ）は動かしません。うっかり動かさないようにロックもかけます。</p>
+    <details class="obsman"><summary>はじめから設定し直す（パソコンを変えた時など）</summary>${steps}</details>`
+    : `${steps}<p class="obsres" data-obsres="${esc(m.id)}"></p>`}
+    <p class="note2">🛡 OBSに追加されるのは<b>透明な1枚のシート</b>だけです。いまの立ち絵や枠の位置・大きさは動かしません。うっかり動かさないように、カギもかけておきます。</p>
     ${obsLook(m.id)}
-    <details class="obsman"><summary>自分で追加する場合（手動）</summary>
-      <p>OBSの「ソース」の＋ →「ブラウザ」を追加して、URLに下を貼り付け、幅1920・高さ1080にしてください。</p>
+    <details class="obsman"><summary>自分で追加する場合（くわしい人向け）</summary>
+      <p>OBSの「ソース」の＋ →「ブラウザ」を追加して、URLに下を貼り付け、幅と高さをOBSの画面サイズ（ふつうは1920と1080）にしてください。</p>
       <div class="srow3"><input type="text" readonly value="${k ? esc(overlayUrl(k)) : "読み込み中…"}" data-f="ourl"><button class="sbtn" data-set="ocopy" data-ch="${esc(m.id)}">コピー</button></div>
-      <p class="note2">わんコメを使っている人は、わんコメの「設定」→「API」で <b>${esc(location.host)}</b> を許可すると、Vぶいのコメントがわんコメのコメントにも混ざります。<br>このURLは人に教えないでください。漏れたときは <button class="lnk2" data-set="okeyreset" data-ch="${esc(m.id)}">URLを作り直す</button></p>
+      <p class="note2">わんコメを使っている人は、わんコメの「設定」→「API」で <b>${esc(location.host)}</b> を許可すると、Vぶいのコメントがわんコメの中にも出ます。<br>このURLは人に教えないでください。漏れたときは <button class="lnk2" data-set="okeyreset" data-ch="${esc(m.id)}">URLを作り直す</button></p>
     </details>
   </section>`;
 }
@@ -1712,16 +1719,18 @@ function obsLook(ch) {
   const seg = (f, opts) => `<div class="oseg" data-of="${f}">${opts.map(([v, t]) => `<button type="button" data-ov="${v}" aria-pressed="${String(o[f]) === String(v)}">${t}</button>`).join("")}</div>`;
   return `<div class="olook" data-olook="${esc(ch)}">
     <h5>表示のしかた</h5>
-    <label class="sl">Vぶいのコメントを、Vぶいの画面にも出す？</label>
-    ${seg("show", [["auto", "わんコメが無い時だけ"], ["on", "いつも出す"], ["off", "出さない"]])}
-    <p class="note2">わんコメを使っている人は「わんコメが無い時だけ」のままでOK。Vぶいのコメントは、いつものわんコメの表示（位置・大きさ・フォント）にそのまま混ざります。</p>
-    <label class="sl">出す場所</label>
+    <p class="note2"><b>わからなければ、さわらなくてOK！</b> そのままで、ちゃんと出ます。</p>
+    <label class="sl">Vぶいから来たコメントの出し方</label>
+    ${seg("show", [["auto", "おまかせ（おすすめ）"], ["on", "いつも画面に出す"], ["off", "画面に出さない"]])}
+    <p class="note2">「おまかせ」だと、Vぶいから来たコメントが<b>配信画面のすみっこ</b>に出ます。<br>「わんコメ」（YouTubeのコメントを配信画面に出すアプリ）を使っている人は、<b>わんコメのコメント欄の中</b>に、ほかのコメントと一緒に出ます。</p>
+    <label class="sl">コメントを出す場所（画面のすみっこ）</label>
     ${seg("pos", [["tl", "↖ 左上"], ["tr", "↗ 右上"], ["bl", "↙ 左下"], ["br", "↘ 右下"]])}
     <label class="sl">大きさ</label>
     ${seg("size", [["s", "小"], ["m", "中"], ["l", "大"]])}
     <label class="sl">🦸 救援ヒーローの登場演出</label>
     ${seg("hero", [["true", "出す"], ["false", "出さない"]])}
-    <label class="sl">ヒーローが飛び込む方向（コメント欄がある側）</label>
+    <p class="note2">救援通知を見て駆けつけてくれたリスナーさんが、ヒーローになって画面に飛んでくる演出です。</p>
+    <label class="sl">ヒーローが飛んでいく方向（コメント欄がある側を選んでね）</label>
     ${seg("side", [["l", "← 左"], ["r", "右 →"]])}
     <div class="cbtn2"><button class="gbtn" data-set="olsave" data-ch="${esc(ch)}">保存して配信画面で確認</button><button class="sbtn" data-set="herotest" data-ch="${esc(ch)}">🦸 登場をテスト</button></div>
   </div>`;
@@ -1781,7 +1790,8 @@ async function obsTest(ch, out) {
     const s = await overlayApi({ action: "status", channel_id: ch }, false); const st = s.status?.[0];
     if (st) OVL.set(ch, st);
     if (st && Number(st.last_test_ack) >= r.test_id) {
-      out.innerHTML = `✅ <b>接続できました！</b> 配信画面に「Vぶいと接続できました」と出ていれば完了です。${st.onecomme ? "<br>✅ わんコメにもつながっています" : "<br>ℹ️ わんコメは見つかりませんでした。Vぶいのコメントは、Vぶいの画面に直接表示します"}`;
+      store.set("obsAdded:" + ch, true);
+      out.innerHTML = `🎉 <b>設定完了です！</b> OBSの画面に「Vぶいと接続できました」と出ていればOK。<br>次からは<b>OBSを起動するだけ</b>で、自動でつながります。${st.onecomme ? "<br>💬 わんコメを使っているので、Vぶいから来たコメントはわんコメのコメント欄に出ます。" : "<br>💬 Vぶいから来たコメントは、配信画面のすみっこに出ます（場所は下の「表示のしかた」で変えられます）。"}`;
       return;
     }
   }
@@ -1824,7 +1834,7 @@ document.addEventListener("click", async (e) => {
         }
       }
       store.set("obsAdded:" + ch, true);
-      out.innerHTML = `✅ OBSのシーン「${esc(r.sceneName)}」に${r.updated ? "Vぶいの画面を入れ直しました" : "Vぶいの画面を追加しました"}。続けて「設定確認」を押してください。`;
+      out.innerHTML = `✅ OBSに${r.updated ? "Vぶいを入れ直しました" : "Vぶいを追加しました"}！ 続けて<b>「設定確認」</b>を押してください。`;
     } catch (err) {
       const m = err.message;
       out.innerHTML = m === "need_pw" ? "🔑 OBSにパスワードが設定されています。上の欄に、OBSの「WebSocketサーバー設定」の「サーバーパスワード」を入れて、もう一度押してください。"
