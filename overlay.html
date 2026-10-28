@@ -215,7 +215,24 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
   }
   applySettings();
   ocInit().then(poll);
-  setInterval(() => { if (onecomme === false && OC && S.oc !== "no") ocInit(); }, 60000);
+  // わんコメが起動しているかを10秒ごとに確かめる
+  //  ・閉じた → Vぶいのコメントは、この画面のすみっこに自動で出す
+  //  ・また起動した → すみっこのコメントはすっと消して、また わんコメ（YouTubeのコメント）に混ぜて出す
+  async function ocWatch() {
+    if (!OC || S.oc === "no") return;
+    const was = onecomme;
+    try {
+      const r = await fetch(OC_URL + "/api/services", { cache: "no-store" });
+      const list = await r.json(); const arr = Array.isArray(list) ? list : (list.services || list.data || []);
+      if (!q.get("ocsvc")) ocService = arr[0]?.id || ocService;
+      onecomme = !!ocService;
+    } catch { onecomme = false; }
+    if (was === false && onecomme === true) clearStack();
+  }
+  function clearStack() {
+    document.querySelectorAll("#stack .cm").forEach((el) => { el.classList.add("out"); setTimeout(() => el.remove(), 600); });
+  }
+  setInterval(ocWatch, 10000);
 })();
 </script>
 </body>
