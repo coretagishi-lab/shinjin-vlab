@@ -105,3 +105,8 @@ footer a{color:var(--muted)}
 .soon-box b{color:var(--ink)}
 .cta.alt{background:var(--surface);color:var(--ink);border:2px solid var(--navy);box-shadow:0 6px 0 var(--sky)}
 @media (max-width:520px){.badges,.tabs4{grid-template-columns:1fr}}
+
+.joinbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--line);padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;gap:10px;align-items:center;justify-content:center}
+.joinbar a.j{flex:1;max-width:420px;text-align:center;background:var(--navy);color:#fff;text-decoration:none;font-weight:700;font-size:15px;border-radius:14px;padding:13px 10px;box-shadow:0 4px 0 var(--pink)}
+.joinbar a.b{flex:none;color:var(--muted);font-size:13px;text-decoration:none;padding:8px}
+body{padding-bottom:84px}
