@@ -316,6 +316,9 @@ a{color:inherit;text-decoration:none}
 .obsman p{font-size:12.5px;line-height:1.7;margin:6px 0}
 .bdg.vbc{left:58px;bottom:8px;top:auto;background:#ff5fa8;color:#fff;display:flex;align-items:center;gap:4px}
 .bdg.vbc b{background:#fff;color:#ff5fa8;border-radius:4px;padding:0 4px;font-weight:900;letter-spacing:-.02em}
+.obswarn{margin:0;background:#fff4d6;color:#6b4a00;border-radius:10px;padding:8px 10px;font-size:13px;line-height:1.6}
+.jlogin{text-align:center;font-size:13px;color:var(--muted);padding-top:4px}
+.jlogin .lnk2{font-size:13px;color:var(--ink);font-weight:700;margin-left:2px}
 .olook{display:flex;flex-direction:column;gap:6px;border-top:1px dashed var(--line);padding-top:10px;margin-top:4px}
 .olook h5{margin:0;font-size:14px}
 .oseg{display:flex;flex-wrap:wrap;gap:6px}
@@ -1262,6 +1265,12 @@ function listenerLogin() {
   store.set("tab", "my");
   AUTH.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin + location.pathname + "?reg=1", queryParams: { prompt: "select_account" } } });
 }
+// 登録済みの人のログイン（リスナーもVTuberも同じGoogleログイン。VTuberかどうかは自動で判定）
+function plainLogin() {
+  if (!AUTH) return toast("ログインの準備ができませんでした。通信を確認してください");
+  store.set("tab", "my");
+  AUTH.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin + location.pathname + "?login=1", queryParams: { prompt: "select_account" } } });
+}
 function vtuberLogin() {
   if (!AUTH) return toast("ログインの準備ができませんでした。通信を確認してください");
   store.set("tab", "my"); store.set("myRole", "vtuber");
@@ -1279,6 +1288,7 @@ function joinPick(feature, inline) {
     <div class="jh">${feature ? `<span class="jk">🔒 ${esc(feature)}は登録すると使えます</span>` : `<span class="jk">Vぶいに登録しよう</span>`}<b>どちらで登録しますか？</b><span class="jf">基本利用は<b>無料</b>です。Googleのアカウントで1分で登録できます</span></div>
     <button class="jc" data-join="listener"><span class="ji">🎧</span><span class="jt"><b>リスナーで登録</b>${JOIN_FEAT.listener.map((x) => `<span>✓ ${x}</span>`).join("")}</span><span class="ja">›</span></button>
     <button class="jc v" data-join="vtuber"><span class="ji">🎙</span><span class="jt"><b>VTuberで登録</b>${JOIN_FEAT.vtuber.map((x) => `<span>✓ ${x}</span>`).join("")}</span><span class="ja">›</span></button>
+    <div class="jlogin">すでに登録している方は<button class="lnk2" data-join="login">こちらからログイン</button></div>
   </div>`;
 }
 function joinRole(role) {
@@ -1331,13 +1341,13 @@ async function logout(quiet) {
 
 async function authInit() {
   if (!AUTH) { authReady = true; return; }
-  const q = new URLSearchParams(location.search), claim = q.get("claim"), reg = q.get("reg");
+  const q = new URLSearchParams(location.search), claim = q.get("claim"), reg = q.get("reg"), login = q.get("login");
   if (q.get("role") === "vtuber") myRole = "vtuber";
   const go = q.get("go");
   if (go) try { history.replaceState({}, "", location.pathname); } catch {}
   const { data } = await AUTH.auth.getSession(); SESSION = data.session;
   AUTH.auth.onAuthStateChange((_e, s) => { if (s) SESSION = s; });
-  if (claim || reg) try { history.replaceState({}, "", location.pathname); } catch {}
+  if (claim || reg || login) try { history.replaceState({}, "", location.pathname); } catch {}
   if (!SESSION && go === "listener") return listenerLogin();
   if (!SESSION && go === "vtuber") return vtuberLogin();
   if (SESSION && go === "vtuber") { myRole = "vtuber"; store.set("myRole", "vtuber"); }
@@ -1360,6 +1370,7 @@ async function authInit() {
     }
     const { data: p } = await AUTH.from("profiles").select("*").maybeSingle(); PROFILE = p || null;
     await refreshMine();
+    if (login && MINE.length) { myRole = "vtuber"; store.set("myRole", "vtuber"); }
     if (go === "vtuber" && !MINE.length) return vtuberLogin();
     if (PROFILE) { await oshiLoad(); await oshiMigrate(); if (MINE.length) await collabLoad(); }
   } catch (e) { ownMsg = "通信に失敗しました。"; }
@@ -1665,6 +1676,7 @@ async function loadOverlayStatus() {
 const vbuiOK = (cid) => !!OVL.get(cid)?.connected;
 setInterval(() => { if (live) loadOverlayStatus(); }, 60000);
 const OKEYS = {}, OSET = {};
+const isMobileUA = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 const OSET0 = { pos: "bl", size: "m", show: "auto", side: "r", hero: true };
 const overlayUrl = (k) => `${location.origin}/overlay.html?k=${encodeURIComponent(k)}`;
 function obsBlock(m) {
@@ -1673,13 +1685,16 @@ function obsBlock(m) {
   return `<section class="sbox" data-obs="${esc(m.id)}">
     <h4>📺 OBS連携（Vぶいのコメント・演出を配信画面に出す）</h4>
     ${stat}
+    ${isMobileUA ? `<p class="obswarn">📱 いまスマホで見ています。この設定は、<b>OBSが入っているパソコン</b>でVぶい（vvbuibui.com）を開いて行ってください。</p>` : ""}
     <ol class="obsteps">
-      <li><b>OBSの「ツール」→「WebSocketサーバー設定」</b>で「WebSocketサーバーを有効にする」にチェック（最初の1回だけ）</li>
-      <li>下の<b>「OBSに自動で追加」</b>を押す（OBSを起動したまま、このパソコンで押してください）</li>
-      <li><b>「設定確認」</b>を押して、配信画面に「✅ Vぶいと接続できました」と出ればOK</li>
+      <li><b>OBSが入っているパソコンで、Vぶいを開く</b>（Chromeがおすすめ）。OBSも起動しておく</li>
+      <li>OBSの上のメニュー<b>「ツール」→「WebSocketサーバー設定」</b>を開いて、<b>「WebSocketサーバーを有効にする」にチェック →「適用」</b></li>
+      <li>同じ画面の<b>「接続情報を表示」→ パスワードの横の「コピー」</b>を押して、下の欄に貼り付け →「OK」で閉じる</li>
+      <li><b>「⚡ OBSに自動で追加」</b>を押す。Chromeで「このデバイス上の他のアプリやサービスにアクセス」と出たら<b>「許可する」</b></li>
+      <li><b>「設定確認」</b>を押して、OBSの画面に「✅ Vぶいと接続できました」と出たら完了！</li>
     </ol>
-    <label class="sl">OBSのWebSocketのパスワード（設定している場合だけ）</label>
-    <input type="password" data-f="obspw" placeholder="OBSの「サーバーパスワード」" autocomplete="off">
+    <label class="sl">OBSのパスワード（手順3でコピーしたもの）</label>
+    <input type="password" data-f="obspw" placeholder="ここに貼り付け" autocomplete="off">
     <div class="cbtn2"><button class="gbtn" data-set="obsadd" data-ch="${esc(m.id)}">⚡ OBSに自動で追加</button><button class="sbtn" data-set="obstest" data-ch="${esc(m.id)}">設定確認</button></div>
     <p class="obsres" data-obsres="${esc(m.id)}"></p>
     <p class="note2">🛡 追加されるのは<b>透明な1枚のレイヤー</b>だけです。いまの配置（立ち絵・枠・わんコメの位置や大きさ）は動かしません。うっかり動かさないようにロックもかけます。</p>
@@ -1770,7 +1785,9 @@ async function obsTest(ch, out) {
       return;
     }
   }
-  out.innerHTML = "❌ 演出画面から返事がありませんでした。<br>・OBSが起動しているか<br>・「Vぶい（コメント・演出）」のソースが今のシーンにあって、目のマークがオンか<br>を確認して、もう一度「設定確認」を押してください。";
+  out.innerHTML = !store.get("obsAdded:" + ch, false)
+    ? "❌ まだOBSにVぶいが入っていないようです。<br>先に<b>「⚡ OBSに自動で追加」</b>を押して、✅が出てから「設定確認」を押してください。"
+    : "❌ OBSから返事がありませんでした。次の3つを見てください。<br>① OBSは開いたままですか？<br>② OBSの画面の下の方にある<b>「ソース」</b>の一覧に<b>「Vぶい（コメント・演出）」</b>がありますか？ その横の👁（目のマーク）が開いていますか？<br>③ もう一度<b>「⚡ OBSに自動で追加」→「設定確認」</b>の順に押してみてください。";
 }
 document.addEventListener("click", async (e) => {
   const t = e.target.closest("[data-set]"); if (!t) return;
@@ -1793,17 +1810,29 @@ document.addEventListener("click", async (e) => {
   if (d.set === "obsadd") {
     const out = document.querySelector(`[data-obsres="${CSS.escape(ch)}"]`), pw = document.querySelector(`[data-obs="${CSS.escape(ch)}"] [data-f="obspw"]`).value;
     if (!OKEYS[ch]) await loadKeys();
+    if (isMobileUA) { out.innerHTML = "📱 スマホからはOBSにつなげません。<b>OBSが入っているパソコン</b>でVぶいを開いて、このボタンを押してください。"; return; }
     out.textContent = "OBSにつないでいます…";
+    t.disabled = true;
     try {
-      const r = await obsAdd(overlayUrl(OKEYS[ch]), pw);
+      let r, tries = 0;
+      while (true) {
+        try { r = await obsAdd(overlayUrl(OKEYS[ch]), pw); break; }
+        catch (er) {
+          if (!["connect", "timeout"].includes(er.message) || ++tries > 8) throw er;
+          out.innerHTML = "⏳ OBSにつないでいます…<br>Chromeの左上に<b>「このデバイス上の他のアプリやサービスにアクセス」</b>と出ていたら、<b>「許可する」</b>を押してください。";
+          await new Promise((res) => setTimeout(res, 2500));
+        }
+      }
+      store.set("obsAdded:" + ch, true);
       out.innerHTML = `✅ OBSのシーン「${esc(r.sceneName)}」に${r.updated ? "Vぶいの画面を入れ直しました" : "Vぶいの画面を追加しました"}。続けて「設定確認」を押してください。`;
     } catch (err) {
       const m = err.message;
       out.innerHTML = m === "need_pw" ? "🔑 OBSにパスワードが設定されています。上の欄に、OBSの「WebSocketサーバー設定」の「サーバーパスワード」を入れて、もう一度押してください。"
         : m === "auth" ? "🔑 パスワードが違うようです。OBSの「WebSocketサーバー設定」→「接続情報を表示」で確認してください。"
-        : m === "connect" || m === "timeout" ? "❌ OBSにつながりませんでした。<br>・OBSを起動しているか<br>・「ツール」→「WebSocketサーバー設定」で「有効にする」にチェックが入っているか<br>・このパソコン（OBSと同じパソコン）で開いているか<br>を確認してください。うまくいかない時は、下の「自分で追加する場合」の方法でも設定できます。"
+        : m === "connect" || m === "timeout" ? "❌ OBSにつながりませんでした。次を見てください。<br>① OBSは開いていますか？<br>② OBSの「ツール」→「WebSocketサーバー設定」で「有効にする」にチェックを入れて、<b>「適用」</b>を押しましたか？<br>③ Chromeで「許可する」の確認が出た時に「ブロック」を押していませんか？（アドレス欄の左のマーク → 「このデバイス上の他のアプリ…」を「許可」に）<br>④ OBSと同じパソコンで開いていますか？<br>それでもだめな時は、下の「自分で追加する場合」の方法でも設定できます。"
         : "❌ 追加できませんでした（" + esc(m) + "）。下の「自分で追加する場合」の方法でも設定できます。";
     }
+    t.disabled = false;
   }
 });
 
@@ -1915,6 +1944,7 @@ document.addEventListener("click", async (e) => {
     if (d.join === "back") return overlay("join", joinPick(joinFeature));
     if (d.join === "listener" || d.join === "vtuber") { t.style.borderColor = "var(--accent)"; closeOv("join"); setTimeout(() => { t.style.borderColor = ""; }, 400); return openLP(d.join === "listener" ? "for-listener.html" : "for-vtuber.html"); }
     if (d.join === "go-listener") return listenerLogin();
+    if (d.join === "login") return plainLogin();
     if (d.join === "go-vtuber") return vtuberLogin();
   }
   if (d.nick === "save") return saveNick();
