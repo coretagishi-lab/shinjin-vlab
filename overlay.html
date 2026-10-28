@@ -233,6 +233,22 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
     document.querySelectorAll("#stack .cm").forEach((el) => { el.classList.add("out"); setTimeout(() => el.remove(), 600); });
   }
   setInterval(ocWatch, 10000);
+
+  // Vぶいが演出画面を新しくしたら、自動で読み込み直す（OBSを再起動しなくてOK）
+  //  5分ごとに自分のページを見に行って、中身が変わっていたら、演出が出ていない時に読み込み直す
+  let selfText = null;
+  async function selfCheck() {
+    try {
+      const t = await (await fetch(location.pathname + "?v=" + Date.now(), { cache: "no-store" })).text();
+      if (selfText === null) { selfText = t; return; }
+      if (t !== selfText && t.includes("Vぶい 演出画面")) {
+        const busy = () => heroBusy || document.querySelector("#fx .banner") || document.querySelector("#stack .cm");
+        const go = () => { if (busy()) return setTimeout(go, 5000); location.reload(); };
+        go();
+      }
+    } catch {}
+  }
+  selfCheck(); setInterval(selfCheck, 5 * 60000);
 })();
 </script>
 </body>
