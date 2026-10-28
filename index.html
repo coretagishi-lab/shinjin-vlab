@@ -68,7 +68,7 @@ a{color:inherit;text-decoration:none}
 .thumb{display:block;position:relative;aspect-ratio:16/9;width:100%;max-width:100%;border-radius:12px;overflow:hidden;background:var(--chip)}
 .thumb img{width:100%;height:100%;object-fit:cover;display:block}
 .ph + img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.disc-empty{height:100%;overflow-y:auto;padding:calc(env(safe-area-inset-top,0px) + 24px) max(16px,env(safe-area-inset-right,0px)) calc(var(--nav-h) + 24px) max(16px,env(safe-area-inset-left,0px));color:#fff;background:#0F0E15}
+.disc-empty{min-height:100%;padding:calc(env(safe-area-inset-top,0px) + 24px) max(16px,env(safe-area-inset-right,0px)) calc(var(--nav-h) + 24px) max(16px,env(safe-area-inset-left,0px));color:#fff;background:#0F0E15}
 .disc-empty h2{font-family:var(--f-display);font-size:20px;margin:0 0 6px}
 .disc-empty p{color:#B8B4CC;margin:0 0 18px;font-size:13px}
 .nx{display:flex;gap:12px;align-items:center;padding:10px 0;border-top:1px solid #2A2738;cursor:pointer}
@@ -204,6 +204,8 @@ a{color:inherit;text-decoration:none}
 
 /* discover (shorts) */
 #v-discover{padding:0;overflow-y:scroll;scroll-snap-type:y mandatory;padding-bottom:0}
+#v-discover.noslides{scroll-snap-type:none;background:#0F0E15}
+#v-discover.noslides #discList{height:auto}
 .slide{height:calc(100% - var(--nav-h));scroll-snap-align:start;scroll-snap-stop:always;position:relative;overflow:hidden;background:#14111f;color:#fff}
 #v-discover .slide{height:calc(100% - var(--nav-h) - env(safe-area-inset-bottom,0px))}
 .slide .bg{position:absolute;inset:-20%;background-size:cover;background-position:center;filter:blur(38px) saturate(1.2) brightness(.55)}
@@ -1195,9 +1197,10 @@ function renderDiscover() {
   if (!discOrder.length) {
     io?.disconnect();
     const up = ST.filter((s) => s.status === "upcoming" && isUpcomingSoon(s) && byId.has(s.channel_id)).sort((a, b) => Date.parse(a.scheduled_start_at) - Date.parse(b.scheduled_start_at)).slice(0, 12);
-    DP?.stop(); list.innerHTML = `<div class="disc-empty"><h2>いま配信中の新人はいません</h2><p>新人さんの配信は夜に集中します。始まるとここに映像付きで流れます。</p>${up.map((s) => { const c = byId.get(s.channel_id); return `<div class="nx" data-open="${esc(c.id)}"><div class="tb">${img(s.thumbnail_url, c)}</div><div class="tx"><b>${esc(s.title)}</b>${esc(c.title)}<br><span>${md(s.scheduled_start_at)} ${hm(s.scheduled_start_at)}（${rel(s.scheduled_start_at)}）</span></div></div>`; }).join("") || `<p>配信予定もまだありません。</p>`}</div>`;
+    v.classList.add("noslides"); DP?.stop(); list.innerHTML = `<div class="disc-empty"><h2>いま配信中の新人はいません</h2><p>新人さんの配信は夜に集中します。始まるとここに映像付きで流れます。</p>${up.map((s) => { const c = byId.get(s.channel_id); return `<div class="nx" data-open="${esc(c.id)}"><div class="tb">${img(s.thumbnail_url, c)}</div><div class="tx"><b>${esc(s.title)}</b>${esc(c.title)}<br><span>${md(s.scheduled_start_at)} ${hm(s.scheduled_start_at)}（${rel(s.scheduled_start_at)}）</span></div></div>`; }).join("") || `<p>配信予定もまだありません。</p>`}</div>`;
     return;
   }
+  v.classList.remove("noslides");
   list.innerHTML = discOrder.map((c) => {
     const n = nextOf(c.id), L = liveOf(c.id), d = debutDays(c);
     const chatOk = L && L.embeddable !== false && live && L.chat_enabled !== false;
