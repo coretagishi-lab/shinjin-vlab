@@ -16,7 +16,7 @@
 <meta name="description" content="新人だって、ブイブイ言わせたい。見つけてもらえない個人勢の新人VTuberを、毎日自動で集めて紹介する名鑑。配信中・初配信予定・配信回数と合計時間がひと目でわかります。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Chakra+Petch:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Chakra+Petch:wght@500;700&display=swap" media="print" onload="this.media='all'">
 <style>
 /* Layout: one-screen phone app — scrolling main area + fixed bottom tab bar; profile opens as a full-screen sheet with a flippable trading card. */
 :root{
@@ -198,6 +198,16 @@ a{color:inherit;text-decoration:none}
 .crmask{position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 999px rgba(0,0,0,.55);outline:2px solid #fff;outline-offset:-2px;pointer-events:none}
 .crzoom{width:min(300px,100%)}
 .ksl{display:flex;flex-direction:column;gap:10px}
+.boot{display:flex;flex-direction:column;gap:14px;padding-top:6px}
+.boot .sk{aspect-ratio:16/9;border-radius:14px;background:linear-gradient(100deg,var(--chip) 30%,color-mix(in srgb,var(--chip) 55%,var(--bg)) 50%,var(--chip) 70%);background-size:200% 100%;animation:skm 1.2s linear infinite}
+.boot p{margin:0;text-align:center;color:var(--muted);font-size:13px}
+@keyframes skm{to{background-position:-200% 0}}
+.ptr{display:grid;place-items:center;height:0;overflow:hidden;color:var(--muted);font-size:12px;transition:height .2s}
+.ptr i{width:22px;height:22px;border-radius:50%;border:2.5px solid var(--line);border-top-color:var(--accent);display:block;margin-bottom:4px}
+.ptr.spin i{animation:ptrs .7s linear infinite}
+@keyframes ptrs{to{transform:rotate(360deg)}}
+.ptrw{display:flex;flex-direction:column;align-items:center}
+#v-home,#v-dir{overscroll-behavior-y:contain}
 .ksl .ks{margin-top:0}
 .ksl .krow{display:flex;gap:10px;align-items:center}
 .ksl .krow .av{width:40px;height:40px;border-radius:50%;overflow:hidden;position:relative;flex:none}
@@ -378,7 +388,7 @@ a{color:inherit;text-decoration:none}
 .lpgrab{flex:none;height:30px;position:relative;touch-action:none;display:grid;place-items:center;background:var(--surface)}
 .lpgrab i{width:42px;height:5px;border-radius:3px;background:var(--line)}
 .lpgrab .lpx{position:absolute;right:10px;top:2px;width:28px;height:26px;font-size:20px;color:var(--muted)}
-.lpsh iframe{flex:1;width:100%;border:0;background:var(--bg)}
+.lpsh iframe{flex:1 1 0;min-height:0;height:100%;width:100%;border:0;background:var(--bg);display:block}
 @media (min-width:700px){.lpsh{left:50%;right:auto;width:620px;margin-left:-310px}}
 .ov{position:fixed;inset:0;z-index:70;background:rgba(10,8,18,.62);display:flex;align-items:flex-end;justify-content:center;opacity:0;transition:opacity .2s}
 .ov.on{opacity:1}
@@ -621,7 +631,7 @@ body.dark-nav .nav button[aria-current="page"]{color:#fff}
     </div>
     <div id="rescueBar"></div>
     <div class="chips" id="homeChips" role="toolbar" aria-label="表示の切り替え"></div>
-    <div class="feed" id="feed"></div>
+    <div class="feed" id="feed"><div class="boot" aria-live="polite"><div class="sk"></div><div class="sk"></div><div class="sk"></div><p>新人さんの配信を読み込んでいます…</p></div></div>
   </section>
 
   <!-- DISCOVER -->
@@ -717,7 +727,7 @@ function logEvent(kind, channel_id) {
   }).catch(() => {});
 }
 
-async function load() {
+async function load(refresh = false) {
   try {
     const since = new Date(Date.now() - 60 * 864e5).toISOString().slice(0, 10);
     const [c, s, d] = await Promise.all([
@@ -727,7 +737,8 @@ async function load() {
     ]);
     CH = c; ST = s; DAILY = d; live = true;
     const pR = loadRescue(); loadOverlayStatus().then(() => { if (typeof tab !== "undefined" && tab === "home") renderHome(); return pR; }).then(() => heroCheck(), () => {});
-  } catch {
+  } catch (e) {
+    if (refresh && live) throw e; // 引っぱって更新で通信できなかった時は、今の表示をそのまま残す
     const snap = JSON.parse($("#snap").textContent);
     CH = snap.channels || []; ST = snap.streams || []; DAILY = snap.daily || [];
   }
@@ -1049,7 +1060,8 @@ function watchHome() {
     const rr = root.getBoundingClientRect(), navTop = $(".nav")?.getBoundingClientRect().top ?? rr.bottom;
     const top = rr.top, bottom = Math.min(rr.bottom, navTop), h = bottom - top;
     const atTop = root.scrollTop < 8, atBottom = root.scrollTop + root.clientHeight >= root.scrollHeight - 8;
-    const focus = atBottom ? bottom : atTop ? top : top + h * 0.4;
+    // 件数が少なくてスクロールできない時は「いちばん上」と「いちばん下」が同時に成り立つので、上を優先する
+    const focus = atTop ? top : atBottom ? bottom : top + h * 0.4;
     let best = null, bd = Infinity;
     for (const el of ts) {
       const r = el.getBoundingClientRect();
@@ -1186,9 +1198,10 @@ function renderDir() {
     small: (a, b) => (a.subscriber_count ?? 1e9) - (b.subscriber_count ?? 1e9),
     live: (a, b) => (liveOf(b.id) ? 1 : 0) - (liveOf(a.id) ? 1 : 0),
   }[sortMode];
+  if (sortMode === "live") list = list.filter((c) => liveOf(c.id)); // 「配信中」は配信中の子だけ
   list = [...list].sort(by);
-  $("#dirCount").textContent = `${list.length}人 / 全${CH.length}人`;
-  $("#dirGrid").innerHTML = list.length ? list.map(miniCard).join("") : `<div class="empty" style="grid-column:1/-1"><strong>見つかりませんでした</strong>名前の一部だけでも探せます。</div>`;
+  $("#dirCount").textContent = sortMode === "live" ? `いま配信中 ${list.length}人 / 全${CH.length}人` : `${list.length}人 / 全${CH.length}人`;
+  $("#dirGrid").innerHTML = list.length ? list.map((c) => miniCard(c)).join("") : `<div class="empty" style="grid-column:1/-1">${sortMode === "live" ? `<strong>いま配信中の子はいません</strong>配信が始まると、ここに出ます。` : `<strong>見つかりませんでした</strong>名前の一部だけでも探せます。`}</div>`;
 }
 
 /* ---------- DIRECTORY: 同期ランキング / コラボ相手 ---------- */
@@ -1233,8 +1246,10 @@ function renderRank() {
     gain: ["登録者の伸び(30日)", subGain, (v) => `${v > 0 ? "+" : ""}${v.toLocaleString("ja-JP")}<small>人</small>`] };
   const [, get, fmt] = M[rkMetric];
   const list = groups.get(rkCohort).map((c) => ({ c, v: get(c) })).filter((x) => x.v != null).sort((a, b) => b.v - a.v);
+  const inRank = [...groups.values()].reduce((n, a) => n + a.length, 0), noDebut = CH.length - inRank;
   $("#dirRank").innerHTML = `<div class="rk-intro"><b>同じ月にデビューした子同士で比べるランキング</b><br>
-    数字はYouTubeで公開されている情報だけを使っています。毎日コツコツ配信している子が上に来ます。</div>
+    数字はYouTubeで公開されている情報だけを使っています。毎日コツコツ配信している子が上に来ます。<br>
+    <small>ランキングに入っているのは${inRank}人です。まだ初配信をしていない子（${noDebut}人）は、初配信すると入ります。デビューした子がいない月は表示されません。</small></div>
     <div class="rk-sub">${keys.map((k) => `<button class="chip" data-rkc="${k}" aria-pressed="${k === rkCohort}">${cohortLabel(k)}<b>${groups.get(k).length}</b></button>`).join("")}</div>
     <div class="rk-sub">${Object.entries(M).map(([k, [l]]) => `<button class="chip" data-rkm="${k}" aria-pressed="${k === rkMetric}">${l}</button>`).join("")}</div>
     <div class="count">${cohortLabel(rkCohort)}・${list.length}人</div>
@@ -2135,7 +2150,7 @@ function renderMy() {
   const fav = CH.filter((c) => favs.has(c.id)).sort((a, b) => (tops.has(b.id) ? 1 : 0) - (tops.has(a.id) ? 1 : 0));
   const listenerView = `${pushBox()}${kosanList()}
     <div class="sec-h">推しリスト<span>${fav.length}人・★最推し${tops.size}/3</span></div>
-    ${fav.length ? `<div class="grid">${fav.map(miniCard).join("")}</div>` : `<div class="empty"><strong>まだ推しがいません</strong>気になった子のカードで「推しリストに入れる」を押すと、ここに集まります。</div>`}
+    ${fav.length ? `<div class="grid">${fav.map((c) => miniCard(c)).join("")}</div>` : `<div class="empty"><strong>まだ推しがいません</strong>気になった子のカードで「推しリストに入れる」を押すと、ここに集まります。</div>`}
     ${stat}
     ${v === "listener" && !isAdmin() ? `<div class="vtin"><b>🎙 VTuberのかたへ</b><span>YouTubeで本人確認すると、救援やコラボ申請が使えます。</span><button class="shr" data-own="login">本人登録する</button></div>` : ""}`;
   const vtuberView = `${ownerBox()}${collabBox()}${partnersBox()}`;
@@ -2520,7 +2535,44 @@ addEventListener("popstate", () => {
   if (id) { if (curId !== id) openProfile(id, false); } else if (curId) closeProfile(true);
 });
 
+/* ---------- 下に引っぱって更新（ホーム・名鑑。上のヘッダーは動かさない） ---------- */
+function setupPTR(view, refresh) {
+  if (!view || view.querySelector(".ptr")) return;
+  const ptr = document.createElement("div"); ptr.className = "ptr"; ptr.innerHTML = `<div class="ptrw"><i></i><span>引っぱって更新</span></div>`;
+  (view.querySelector(":scope > .top") || view.firstElementChild).after(ptr);
+  const lab = ptr.querySelector("span"), ic = ptr.querySelector("i");
+  let y0 = null, x0 = 0, busy = false, on = false;
+  view.addEventListener("touchstart", (e) => { if (busy || view.scrollTop > 0 || e.touches.length > 1) { y0 = null; return; } y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; on = false; }, { passive: true });
+  view.addEventListener("touchmove", (e) => {
+    if (y0 == null) return;
+    const dy = e.touches[0].clientY - y0, dx = Math.abs(e.touches[0].clientX - x0);
+    if (!on && (dy <= 4 || dx > dy)) { if (dy < -4 || dx > 12) y0 = null; return; } // 横スワイプや上スクロールは邪魔しない
+    if (view.scrollTop > 0) { y0 = null; ptr.style.height = "0px"; return; }
+    on = true; e.preventDefault();
+    const h = Math.min(90, dy * 0.5);
+    ptr.style.transition = "none"; ptr.style.height = h + "px";
+    lab.textContent = h >= 60 ? "はなすと更新" : "引っぱって更新"; ic.style.transform = `rotate(${h * 4}deg)`;
+  }, { passive: false });
+  view.addEventListener("touchend", async () => {
+    if (y0 == null || !on) { y0 = null; return; }
+    y0 = null; on = false; ptr.style.transition = "";
+    const h = parseFloat(ptr.style.height) || 0;
+    if (h < 60) { ptr.style.height = "0px"; return; }
+    busy = true; ptr.classList.add("spin"); ptr.style.height = "56px"; lab.textContent = "更新しています…"; ic.style.transform = "";
+    let ok = true; try { await refresh(); } catch { ok = false; }
+    ptr.classList.remove("spin"); ptr.style.height = "0px"; busy = false;
+    toast(ok ? "最新の情報にしました" : "通信できませんでした。少し待ってからお試しください");
+  });
+}
+async function ptrRefresh() {
+  await load(true);
+  await loadOverlayStatus();
+  discOrder = null;
+  if (tab === "home" && !curId) renderHome(); else if (tab === "dir") setDirSeg(dirSeg);
+}
+
 load().then(() => {
+  setupPTR($("#v-home"), ptrRefresh); setupPTR($("#v-dir"), ptrRefresh);
   const qs0 = new URLSearchParams(location.search), qt = qs0.get("tab") || (qs0.get("go") ? "my" : null); const saved = qt || store.get("tab", "home");
   setTab(["home", "discover", "dir", "sched", "my"].includes(saved) ? saved : "home");
   const id = new URLSearchParams(location.search).get("c");
