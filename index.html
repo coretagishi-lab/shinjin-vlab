@@ -762,7 +762,7 @@ function renderRescue() {
     .sort((a, b) => rank(a) - rank(b) || Date.parse(a.created_at) - Date.parse(b.created_at));
   if (!all.length) { el.innerHTML = ""; return; }
   const list = rescueOpen ? all : all.slice(0, 3), more = all.length - list.length;
-  el.innerHTML = `<div class="sos"><div class="sos-h"><i></i>救援要請中！ いま来てくれる人を待っています</div>${list.map((r) => {
+  el.innerHTML = `<div class="sos"><div class="sos-h"><i></i>🦸 ヒーローどこだ〜！ いま来てくれる人を待っています</div>${list.map((r) => {
     const c = byId.get(r.channel_id), L = liveOf(r.channel_id), left = Math.max(1, Math.round((Date.parse(r.expires_at) - Date.now()) / 6e4));
     return `<button class="sos-c" data-wv="${esc(L.id)}" data-cid="${esc(c.id)}"><span class="av">${img(c.thumbnail_url, c)}</span><span class="bd"><b>${tops.has(c.id) ? `<span class="top">★最推し</span>` : favs.has(c.id) ? `<span class="top" style="background:var(--chip);color:var(--ink)">推し</span>` : ""}${esc(c.title)}</b><span>${r.message ? esc(r.message) + "・" : ""}${L.last_viewers != null ? `いま${L.last_viewers}人・` : ""}あと${left}分</span></span><span class="go">駆けつける</span></button>`;
   }).join("")}${more > 0 ? `<button class="sos-more" data-sosmore="1">ほかに${more}件の救援要請 ▾</button>` : ""}</div>`;
@@ -771,7 +771,7 @@ let rescueOpen = false;
 document.addEventListener("click", (e) => { if (e.target.closest("[data-sosmore]")) { rescueOpen = true; renderRescue(); } });
 setInterval(() => { if (live) loadRescue(); }, 60000);
 
-/* ---------- 推し・最推し・古参の証（アカウントに保存。ログインが必要） ---------- */
+/* ---------- 推し・最推し・応援の記録（アカウントに保存。ログインが必要） ---------- */
 // KOSAN[channel_id] = { since, subs, day, visits:[streamId], rescues:[rescueId] }（OSHIテーブルの写し）
 const KOSAN = {};
 function oshiApply(rows) {
@@ -799,7 +799,7 @@ async function oshiMigrate() {
   await oshiLoad();
 }
 async function oshiToggle(id) {
-  if (!needLogin("推しリストと古参の証")) return;
+  if (!needLogin("推しリストと応援の記録")) return;
   const c = byId.get(id); if (!c) return;
   if (favs.has(id)) {
     const { error } = await AUTH.from("oshi").delete().eq("channel_id", id);
@@ -810,7 +810,7 @@ async function oshiToggle(id) {
     const { error } = await AUTH.from("oshi").insert(row);
     if (error) return toast("うまくいきませんでした。もう一度お試しください");
     favs.add(id); KOSAN[id] = { since: row.since, subs: row.subs_at, day: row.day_at, visits: [], rescues: [] };
-    toast(`🏅 推しリストに入れました！ 古参の証${row.subs_at != null ? `「登録者${row.subs_at.toLocaleString("ja-JP")}人の頃から」` : ""}をゲット`);
+    toast(`🏅 推しリストに入れました！ 応援の記録${row.subs_at != null ? `「登録者${row.subs_at.toLocaleString("ja-JP")}人の頃から」` : ""}をゲット`);
   }
   oshiRefreshUI(id);
 }
@@ -834,10 +834,10 @@ function oshiRefreshUI(id) {
 let kosanSaveT = {};
 function kosanMark(cid, { streamId = null, rescueId = null } = {}) {
   const k = KOSAN[cid];
-  if (!k) { if (rescueId) toast("🆘 救援に来てくれてありがとう！ 推しリストに入れると救援バッジが残ります"); return; }
+  if (!k) { if (rescueId) toast("🆘 救援に来てくれてありがとう！ 推しリストに入れるとヒーローバッジが残ります"); return; }
   let changed = false;
   if (streamId && !k.visits.includes(streamId)) { k.visits.push(streamId); k.visits = k.visits.slice(-200); changed = true; }
-  if (rescueId && !k.rescues.includes(rescueId)) { k.rescues.push(rescueId); changed = true; toast("🆘 救援に駆けつけました！ 救援バッジをゲット"); logEvent("rescue_join", cid); }
+  if (rescueId && !k.rescues.includes(rescueId)) { k.rescues.push(rescueId); changed = true; toast("🆘 救援に駆けつけました！ ヒーローバッジをゲット"); logEvent("rescue_join", cid); }
   if (!changed || !SESSION) return;
   clearTimeout(kosanSaveT[cid]);
   kosanSaveT[cid] = setTimeout(() => AUTH.from("oshi").update({ visits: k.visits, rescues: k.rescues }).eq("channel_id", cid).then(() => {}), 500);
@@ -852,10 +852,10 @@ function kosanBox(c) {
   const k = KOSAN[c.id]; if (!k) return "";
   const now = c.subscriber_hidden ? null : c.subscriber_count;
   const grow = k.subs != null && now != null && now > k.subs ? `いまは${now.toLocaleString("ja-JP")}人。${(now - k.subs).toLocaleString("ja-JP")}人ふえました！` : "";
-  return `<div class="ks"><b>🏅 あなたは「${kosanTitle(k)}」の古参です</b>
+  return `<div class="ks"><b>🏅 応援の記録：「${kosanTitle(k)}」応援しています</b>
     <span>${jst(k.since, { year: "numeric", month: "numeric", day: "numeric" })}に出会いました${grow ? "・" + grow : ""}</span>
-    <div class="bd2"><em>👀 配信に${k.visits.length}回</em>${k.rescues.length ? `<em>🆘 救援${k.rescues.length}回</em>` : ""}</div>
-    <a class="shr" href="${kosanShareUrl(c, k)}" target="_blank" rel="noopener">𝕏 古参の証をシェア</a></div>`;
+    <div class="bd2"><em>👀 配信に${k.visits.length}回</em>${k.rescues.length ? `<em>🦸 ヒーロー${k.rescues.length}回</em>` : ""}</div>
+    <a class="shr" href="${kosanShareUrl(c, k)}" target="_blank" rel="noopener">𝕏 応援の記録をシェア</a></div>`;
 }
 document.addEventListener("click", (e) => {
   const b = e.target.closest("[data-top]"); if (!b) return; e.stopPropagation(); e.preventDefault();
@@ -1154,7 +1154,7 @@ function openWatch(vid, push = true) {
   const vbOK = s.status === "live" && vbuiOK(c.id);
   const heroNote = R0 && vbOK ? (SESSION && PROFILE ? `<span class="hero-note" data-heronote="${esc(c.id)}">🦸 配信画面に、あなたのヒーロー登場の演出を出しています…</span>` : `<span class="hero-note">🦸 リスナー登録すると、配信画面にあなたの名前でヒーロー登場の演出が出ます</span>`) : "";
   if (R0 && vbOK && SESSION && PROFILE) heroArrive(c.id, R0.id);
-  $("#wLower").innerHTML = (vbOK ? vbuiCommentBar(c.id) : "") + (R0 ? `<div class="w-sos">🆘 <b>救援要請中</b>${R0.message ? `「${esc(R0.message)}」` : ""}　来てくれてありがとう！ コメントで「救援きたよ」って伝えてあげてね${heroNote}</div>` : "") + (canChat
+  $("#wLower").innerHTML = (vbOK ? vbuiCommentBar(c.id) : "") + (R0 ? `<div class="w-sos">🦸 <b>ヒーローどこだ〜！</b>${R0.message ? `「${esc(R0.message)}」` : ""}　来てくれてありがとう！ コメントで「救援きたよ」って伝えてあげてね${heroNote}</div>` : "") + (canChat
     ? `<div class="w-chat${isIOS ? " crop" : ""}"><iframe src="https://www.youtube.com/live_chat?v=${encodeURIComponent(vid)}&embed_domain=${encodeURIComponent(location.hostname)}" title="チャット"></iframe></div>${isIOS ? `<a class="w-cmt" href="${ytWatch(vid)}" target="_blank" rel="noopener" data-watch="${esc(c.id)}">💬 コメントする（YouTubeアプリで開く）</a>` : ""}`
     : chatOff ? `<div class="w-off">この配信はチャットがオフになっています。<br>映像と音声だけ楽しめます。</div>` : `<div class="w-note"><b>アーカイブを再生中</b><br>配信中の枠では、ここにチャットが出て、そのままコメントできます。</div>`);
   const w = $("#watch"); w.hidden = false; requestAnimationFrame(() => w.classList.add("open"));
@@ -1346,7 +1346,7 @@ function vtuberLogin() {
 
 /* 登録の案内シート（リスナー／VTuberを選ぶ → それぞれの説明 → 登録） */
 const JOIN_FEAT = {
-  listener: ["推しリストと★最推し（3人まで）", "古参の証「登録者○人の頃から」が残る・𝕏でシェア", "推しの救援要請をスマホに通知"],
+  listener: ["推しリストと★最推し（3人まで）", "応援の記録「登録者○人の頃から」が残る・𝕏でシェア", "推しの救援要請をスマホに通知"],
   vtuber: ["本人登録バッジ・配信中の一覧でいちばん上に", "人が少ない時に🆘救援を呼べる（1日1回）", "同期とコラボ申請・同期ランキング"],
 };
 function joinPick(feature, inline) {
@@ -1362,7 +1362,7 @@ function joinRole(role) {
   if (role === "listener") return `<div class="jn"><button class="jx" data-join="close" aria-label="閉じる">×</button>
     <button class="jb" data-join="back">‹ 戻る</button>
     <div class="jh"><span class="jk">🎧 リスナー登録</span><b>まだ誰も知らない推しを、いちばん最初に。</b></div>
-    <div class="jl"><p>早く・人が少ない時に応援した人ほど、<b>古参の証</b>が残ります。</p>
+    <div class="jl"><p>早く・人が少ない時に応援した人ほど、<b>応援の記録</b>が残ります。</p>
       <ul><li>🏅 推しリストに入れた瞬間の登録者数が記録される</li><li>★ 最推しは3人まで。救援がいちばん上に出る</li><li>🆘 救援に駆けつけるとバッジが付く</li><li>🔔 推しの救援をスマホに通知</li></ul></div>
     <button class="gbtn" data-join="go-listener">${G_ICON}Googleで登録する（無料）</button>
     <small class="js">名前とメールアドレスだけ使います。YouTubeの権限は使いません。<a href="for-listener.html">くわしく見る</a>・<a href="privacy.html">プライバシーポリシー</a></small></div>`;
@@ -1384,7 +1384,7 @@ function closeOv(id) { const el = document.getElementById(id); if (!el) return; 
 function openJoin(feature) { joinFeature = feature; overlay("join", joinPick(feature)); }
 function openNick() {
   const nm = (SESSION?.user?.user_metadata?.full_name || SESSION?.user?.user_metadata?.name || "").slice(0, 20);
-  overlay("nick", `<div class="jn"><div class="jh"><span class="jk">🎉 あと少し！</span><b>ニックネームを決めよう</b><span class="jf">古参の証やマイページに表示されます（あとで変えられます）</span></div>
+  overlay("nick", `<div class="jn"><div class="jh"><span class="jk">🎉 あと少し！</span><b>ニックネームを決めよう</b><span class="jf">応援の記録やマイページに表示されます（あとで変えられます）</span></div>
     <input type="text" id="nickIn" maxlength="20" value="${esc(nm)}" placeholder="ニックネーム（20文字まで）" autocomplete="off">
     <button class="gbtn" data-nick="save">はじめる</button></div>`);
 }
@@ -2127,9 +2127,9 @@ document.addEventListener("click", (e) => {
 function kosanList() {
   const ids = Object.keys(KOSAN).filter((id) => byId.has(id)).sort((a, b) => Date.parse(KOSAN[a].since) - Date.parse(KOSAN[b].since));
   const res = ids.reduce((n, id) => n + KOSAN[id].rescues.length, 0);
-  return `<div class="sec-h">古参の証<span>${ids.length}人${res ? `・🆘救援${res}回` : ""}</span></div>` + (ids.length
+  return `<div class="sec-h">応援の記録<span>${ids.length}人${res ? `・🆘救援${res}回` : ""}</span></div>` + (ids.length
     ? `<div class="ksl">${ids.map((id) => { const c = byId.get(id), k = KOSAN[id]; return `<div class="ks"><div class="krow"><button class="av" data-open="${esc(id)}">${img(c.thumbnail_url, c)}</button><div style="min-width:0"><b style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tops.has(id) ? "★ " : ""}${esc(c.title)}</b><span>${kosanTitle(k)}の古参・配信に${k.visits.length}回${k.rescues.length ? `・🆘${k.rescues.length}回` : ""}</span></div></div><a class="shr" href="${kosanShareUrl(c, k)}" target="_blank" rel="noopener">𝕏 シェア</a></div>`; }).join("")}</div>`
-    : `<div class="empty" style="padding:20px 8px"><strong>まだ古参の証はありません</strong>気になった子のカードで「推しリストに入れる」を押すと、その時の登録者数で「登録者○人の頃から」の証が残ります。</div>`);
+    : `<div class="empty" style="padding:20px 8px"><strong>まだ応援の記録はありません</strong>気になった子のカードで「推しリストに入れる」を押すと、その時の登録者数で「登録者○人の頃から」の証が残ります。</div>`);
 }
 const footLinks = `<p class="note"><a href="for-listener.html">Vぶいの楽しみ方</a>　<a href="for-vtuber.html">VTuberのかたへ</a>　<a href="guide-vtuber.html">使い方ガイド</a><br><a href="privacy.html">プライバシーポリシー</a>　<a href="terms.html">利用規約</a>　<a href="https://x.com/vv__buibui" target="_blank" rel="noopener">お問い合わせ（公式X）</a></p>`;
 function renderMy() {
