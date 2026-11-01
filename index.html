@@ -348,6 +348,11 @@ a{color:inherit;text-decoration:none}
 .obswarn{margin:0;background:#fff4d6;color:#6b4a00;border-radius:10px;padding:8px 10px;font-size:13px;line-height:1.6}
 .jlogin{text-align:center;font-size:13px;color:var(--muted);padding-top:4px}
 .jlogin .lnk2{font-size:13px;color:var(--ink);font-weight:700;margin-left:2px}
+.w-noemb{position:absolute;inset:0;z-index:5;display:grid;place-items:center;background:#000;color:#fff;text-decoration:none;overflow:hidden}
+.w-noemb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.45}
+.w-noemb span{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:0 16px}
+.w-noemb b{background:#e5333d;border-radius:999px;padding:10px 20px;font-size:16px}
+.w-noemb small{font-size:12px;line-height:1.6;opacity:.95}
 .olook{display:flex;flex-direction:column;gap:6px;border-top:1px dashed var(--line);padding-top:10px;margin-top:4px}
 .olook h5{margin:0;font-size:14px}
 .oseg{display:flex;flex-wrap:wrap;gap:6px}
@@ -581,6 +586,8 @@ body.dark-nav .nav button[aria-current="page"]{color:#fff}
 .btn.topbtn[aria-pressed="true"]{background:var(--card-gold);color:#2a1b00;border-color:var(--card-gold)}
 .sos-c .top{font-size:10.5px;font-weight:700;background:var(--card-gold);color:#2a1b00;border-radius:4px;padding:0 5px;margin-right:4px}
 .sos-more{align-self:center;font-size:12.5px;font-weight:700;color:var(--live);background:none;border:0;padding:4px 8px}
+.regm{display:inline-grid;place-items:center;width:14px;height:14px;border-radius:50%;background:#2fbf71;color:#fff;font-size:9px;font-weight:900;margin-left:4px;vertical-align:1px}
+.regb{display:inline-block;background:#2fbf71;color:#fff;font-size:10px;font-weight:700;border-radius:999px;padding:1px 7px;margin-left:6px;vertical-align:2px;letter-spacing:0}
 .mini .tp{position:absolute;right:6px;top:6px;background:var(--card-gold);color:#2a1b00;font-size:11px;font-weight:700;border-radius:4px;padding:0 5px}
 .views{margin-top:12px;text-align:center;font-size:12.5px;color:var(--muted)}
 .views b{font-family:var(--f-num);color:var(--ink);font-size:15px}
@@ -717,7 +724,8 @@ async function load() {
     CH = snap.channels || []; ST = snap.streams || []; DAILY = snap.daily || [];
   }
   CH.forEach((c, i) => { c.no = i + 1; c.subscriber_count = c.subscriber_count == null ? null : Number(c.subscriber_count); c.stream_count = Number(c.stream_count || 0); c.total_stream_sec = Number(c.total_stream_sec || 0); c.viewers_month = Number(c.viewers_month || 0); byId.set(c.id, c); });
-  ST = ST.filter((s) => byId.has(s.channel_id) && s.embeddable !== false);
+  // 埋め込みOFF（他のサイトで再生できない）配信も一覧には出す。タップするとYouTubeで開く。発掘タブ（その場で再生）だけは出さない
+  ST = ST.filter((s) => byId.has(s.channel_id));
 }
 
 /* ---------- 救援通知（新人が1日1回だけ呼べるSOS） ---------- */
@@ -899,7 +907,7 @@ function vidCard(s) {
   else { const dur = s.actual_end_at ? (Date.parse(s.actual_end_at) - Date.parse(s.actual_start_at)) / 1000 : 0; badge = dur ? `<span class="bdg time">${Math.floor(dur / 3600)}:${String(Math.floor(dur % 3600 / 60)).padStart(2, "0")}:${String(Math.floor(dur % 60)).padStart(2, "0")}</span>` : ""; sub = `${rel(s.actual_start_at)}${s.peak_viewers ? `・最大${s.peak_viewers}人` : ""}`; }
   const first = s.status !== "ended" && isFirstUpcoming(s) ? `<span class="bdg first">初配信</span>` : "";
   return `<article class="vid">
-    <div class="thumb" role="link" tabindex="0" data-url="${ytWatch(s.id)}" data-cid="${esc(c.id)}" data-vid="${esc(s.id)}"${s.embeddable !== false ? ' data-canembed="1"' : ""}${s.status === "live" && s.embeddable !== false ? ' data-emb="1"' : ""}>${img(s.thumbnail_url, c)}${d ? `<span class="bdg debut">デビュー${d}日目</span>` : ""}${first}${badge}${s.status === "live" && vbuiOK(c.id) ? `<span class="bdg vbc"><b>VV</b>Vぶいでコメント可</span>` : ""}<button class="snd" hidden aria-label="音のオンオフ">🔇 タップで音を出す</button></div>
+    <div class="thumb" role="link" tabindex="0" data-url="${ytWatch(s.id)}" data-cid="${esc(c.id)}" data-vid="${esc(s.id)}"${s.embeddable !== false || s.status === "live" ? ' data-canembed="1"' : ""}${s.status === "live" && s.embeddable !== false ? ' data-emb="1"' : ""}>${img(s.thumbnail_url, c)}${d ? `<span class="bdg debut">デビュー${d}日目</span>` : ""}${first}${badge}${s.status === "live" && vbuiOK(c.id) ? `<span class="bdg vbc"><b>VV</b>Vぶいでコメント可</span>` : ""}<button class="snd" hidden aria-label="音のオンオフ">🔇 タップで音を出す</button></div>
     <div class="meta"><button class="av" data-open="${esc(c.id)}" aria-label="${esc(c.title)}のカードを見る">${img(c.thumbnail_url, c)}</button>
       <div><div class="t">${esc(s.title)}</div><div class="s"><button data-open="${esc(c.id)}">${esc(c.title)}</button>・${sub}</div></div></div>
   </article>`;
@@ -1106,7 +1114,9 @@ let watchVid = null;
 function openWatch(vid, push = true) {
   const s = ST.find((x) => x.id === vid); const c = s && byId.get(s.channel_id);
   if (!s || !c) return;
-  if (s.embeddable === false) return openExt(ytWatch(vid));
+  const noEmb = s.embeddable === false;
+  if (noEmb && s.status !== "live") return openExt(ytWatch(vid)); // アーカイブはYouTubeで
+
   watchVid = vid;
   $("#wTitle").textContent = s.title;
   $("#wPlayer").classList.toggle("vert", !!s.is_vertical);
@@ -1129,7 +1139,12 @@ function openWatch(vid, push = true) {
     : chatOff ? `<div class="w-off">この配信はチャットがオフになっています。<br>映像と音声だけ楽しめます。</div>` : `<div class="w-note"><b>アーカイブを再生中</b><br>配信中の枠では、ここにチャットが出て、そのままコメントできます。</div>`);
   const w = $("#watch"); w.hidden = false; requestAnimationFrame(() => w.classList.add("open"));
   HP?.stop(); DP?.stop();
-  if (!WP) WP = new Player("watch"); WP.exitFs(); WP.vert = !!s.is_vertical; WP.host($("#wPlayer")); WP.play($("#wPlayer"), vid, s.status === "live"); WP.ctl();
+  $("#wPlayer").querySelector(".w-noemb")?.remove();
+  if (noEmb) {
+    // 配信者がYouTubeで「埋め込み」をOFFにしている配信：映像はYouTubeで見てもらい、コメント・救援・推すはVぶいで
+    WP?.stop();
+    $("#wPlayer").insertAdjacentHTML("beforeend", `<a class="w-noemb" href="${ytWatch(vid)}" target="_blank" rel="noopener" data-watch="${esc(c.id)}">${s.thumbnail_url ? `<img src="${esc(s.thumbnail_url)}" alt="">` : ""}<span><b>▶ YouTubeで見る</b><small>この配信は、YouTubeでだけ再生できる設定です。<br>コメント・救援・推すは、このままVぶいで使えます</small></span></a>`);
+  } else { if (!WP) WP = new Player("watch"); WP.exitFs(); WP.vert = !!s.is_vertical; WP.host($("#wPlayer")); WP.play($("#wPlayer"), vid, s.status === "live"); WP.ctl(); }
   if (push) try { history.pushState({ w: vid }, "", `?w=${encodeURIComponent(vid)}`); } catch {}
 }
 function closeWatch(fromPop) {
@@ -1146,7 +1161,7 @@ document.addEventListener("click", (e) => { const b = e.target.closest("[data-wo
 function miniCard(c, noLive) {
   const lv = !noLive && liveOf(c.id) ? `<span class="lv">LIVE</span>` : "";
   return `<button class="mini" data-open="${esc(c.id)}"><div class="in"><div class="art">${img(c.thumbnail_url, c)}<span class="n">${noStr(c)}</span>${lv}${tops.has(c.id) ? `<span class="tp">★最推し</span>` : ""}</div>
-    <div class="tx"><div class="nm">${esc(c.title)}</div><div class="s"><span>登録 ${fmtSubs(c)}</span><span>${c.stream_count}回・${hours(c.total_stream_sec)}h</span></div></div></div></button>`;
+    <div class="tx"><div class="nm">${esc(c.title)}${c.registered ? `<span class="regm" title="本人登録">✓</span>` : ""}</div><div class="s"><span>登録 ${fmtSubs(c)}</span><span>${c.stream_count}回・${hours(c.total_stream_sec)}h</span></div></div></div></button>`;
 }
 
 /* ---------- DIRECTORY ---------- */
@@ -2126,7 +2141,7 @@ function renderDiscover() {
   if (!discOrder) {
     const arr = [...CH];
     arr.sort((a, b) => a.viewers_month - b.viewers_month || Math.random() - .5);
-    discOrder = arr.filter((c) => liveOf(c.id));
+    discOrder = arr.filter((c) => liveOf(c.id) && liveOf(c.id).embeddable !== false);
   }
   const v = $("#v-discover");
   let list = $("#discList"); if (!list) { list = document.createElement("div"); list.id = "discList"; v.prepend(list); }
@@ -2151,7 +2166,7 @@ function slideHTML(c) {
         <div class="nm">${esc(c.title)}</div>
         <div class="st"><span><b>${fmtSubs(c)}</b>登録者</span><span><b>${c.stream_count}</b>回配信</span><span><b>${hours(c.total_stream_sec)}</b>時間</span></div>
         ${n ? `<div class="next">次の配信 ${md(n.scheduled_start_at)} ${hm(n.scheduled_start_at)}（${rel(n.scheduled_start_at)}）</div>` : ""}
-        <a class="go" href="${L ? ytWatch(L.id) : ytChan(c.id)}" target="_blank" rel="noopener" data-watch="${esc(c.id)}"${L && L.embeddable !== false && live ? ` data-wv="${esc(L.id)}" data-cid="${esc(c.id)}"` : ""}>${L ? "配信を見る・コメントする" : "チャンネルを見る"}</a></div>
+        <a class="go" href="${L ? ytWatch(L.id) : ytChan(c.id)}" target="_blank" rel="noopener" data-watch="${esc(c.id)}"${L && live ? ` data-wv="${esc(L.id)}" data-cid="${esc(c.id)}"` : ""}>${L ? "配信を見る・コメントする" : "チャンネルを見る"}</a></div>
       <div class="rail">
         <button data-fav="${esc(c.id)}" aria-pressed="${favs.has(c.id)}"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></span>推す</button>
         <button data-open="${esc(c.id)}"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 14h8M8 17h5"/></svg></span>カード</button>
@@ -2309,7 +2324,7 @@ function renderProfile() {
       <div class="face front"><div class="inner">
         <div class="hd"><span class="grade">NORMAL</span><span class="no">${noStr(c)}</span>${L ? `<span class="lv">LIVE</span>` : ""}</div>
         <div class="art">${img(c.thumbnail_url, c)}<span class="shine"></span></div>
-        <div class="nmrow"><div class="nm">${esc(c.title)}</div><div class="sub">${d ? `DEBUT DAY ${d}` : "COMING SOON"}${c.handle ? `・${esc(c.handle)}` : ""}</div></div>
+        <div class="nmrow"><div class="nm">${esc(c.title)}${c.registered ? `<span class="regb">✓ 本人登録</span>` : ""}</div><div class="sub">${d ? `DEBUT DAY ${d}` : "COMING SOON"}${c.handle ? `・${esc(c.handle)}` : ""}</div></div>
         <div class="stats"><div><b>${fmtSubs(c)}</b><span>登録者</span></div><div><b>${c.stream_count}</b><span>配信回数</span></div><div><b>${hours(c.total_stream_sec)}</b><span>合計時間</span></div></div>
         <div class="ft"><span>今月 ${c.viewers_month}人が見た</span><span class="tap">TAP ▸</span></div>
       </div></div>
@@ -2322,7 +2337,7 @@ function renderProfile() {
     </div></div>
     <div class="flipnote">タップか横スワイプでめくれます</div>
     <div class="cta">
-      <a class="btn red" href="${L ? ytWatch(L.id) : n ? ytWatch(n.id) : ytChan(c.id)}" target="_blank" rel="noopener" data-watch="${esc(c.id)}"${(L || n) && (L || n).embeddable !== false && live ? ` data-wv="${esc((L || n).id)}" data-cid="${esc(c.id)}"` : ""}><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>${L ? "配信を見る" : n ? "配信予約を見る" : "チャンネルへ"}</a>
+      <a class="btn red" href="${L ? ytWatch(L.id) : n ? ytWatch(n.id) : ytChan(c.id)}" target="_blank" rel="noopener" data-watch="${esc(c.id)}"${(L || n) && (L || n.embeddable !== false) && live ? ` data-wv="${esc((L || n).id)}" data-cid="${esc(c.id)}"` : ""}><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>${L ? "配信を見る" : n ? "配信予約を見る" : "チャンネルへ"}</a>
       <a class="btn plain" href="${ytChan(c.id)}?sub_confirmation=1" target="_blank" rel="noopener" data-sub="${esc(c.id)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>チャンネル登録</a>
       <button class="btn plain wide" data-fav="${esc(c.id)}" aria-pressed="${favs.has(c.id)}">${favs.has(c.id) ? "推しリストに入っています" : "推しリストに入れる"}</button>
       ${favs.has(c.id) ? `<button class="btn plain wide topbtn" data-top="${esc(c.id)}" aria-pressed="${tops.has(c.id)}">${tops.has(c.id) ? "★ 最推しです（救援を優先してお知らせ）" : `☆ 最推しにする（あと${3 - tops.size}人）`}</button>` : ""}
@@ -2446,7 +2461,7 @@ load().then(() => {
   if (wq) openWatch(wq, false);
   authInit();
   setInterval(() => { if (tab === "home" && !curId && !HP?.target) renderHome(); }, 60000);
-  setInterval(async () => { if (!live) return; try { const s = await rest("streams?select=id,channel_id,title,thumbnail_url,status,scheduled_start_at,actual_start_at,actual_end_at,peak_viewers,last_viewers,is_first_stream,embeddable,is_vertical,chat_enabled&status=neq.none&order=updated_at.desc&limit=3000"); ST = s.filter((x) => byId.has(x.channel_id) && x.embeddable !== false); if (tab !== "discover") discOrder = null; } catch {} }, 5 * 60000);
+  setInterval(async () => { if (!live) return; try { const s = await rest("streams?select=id,channel_id,title,thumbnail_url,status,scheduled_start_at,actual_start_at,actual_end_at,peak_viewers,last_viewers,is_first_stream,embeddable,is_vertical,chat_enabled&status=neq.none&order=updated_at.desc&limit=3000"); ST = s.filter((x) => byId.has(x.channel_id)); if (tab !== "discover") discOrder = null; } catch {} }, 5 * 60000);
   // 1分ごとに「最近変わった配信」だけ取りに行く（配信が始まったら1〜2分でホームに出す。全部取り直すのは5分ごと）
   setInterval(async () => {
     if (!live || document.hidden) return;
@@ -2458,7 +2473,7 @@ load().then(() => {
       for (const x of s) {
         const was = m.get(x.id)?.status === "live", now = x.status === "live";
         if (was !== now) liveChanged = true;
-        if (x.status === "none" || x.embeddable === false || !byId.has(x.channel_id)) m.delete(x.id); else m.set(x.id, x);
+        if (x.status === "none" || !byId.has(x.channel_id)) m.delete(x.id); else m.set(x.id, x);
       }
       ST = [...m.values()];
       if (liveChanged) { await loadOverlayStatus(); if (tab === "home" && !curId && !watchVid) renderHome(); }
