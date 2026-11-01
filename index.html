@@ -184,11 +184,19 @@ a{color:inherit;text-decoration:none}
 .sos-c .go{flex:none;background:var(--live);color:#fff;font-weight:700;font-size:12.5px;border-radius:999px;padding:7px 12px}
 .ks{margin-top:12px;border-radius:14px;padding:12px 14px;background:linear-gradient(135deg,color-mix(in srgb,var(--card-gold) 30%,var(--surface)),var(--surface));border:1.5px solid color-mix(in srgb,var(--card-gold) 60%,transparent);display:flex;flex-direction:column;gap:6px}
 .ks b{font-size:14.5px}
-.ks span{font-size:12.5px;color:var(--muted)}
+.ks{color:#2a1b00;background:linear-gradient(135deg,#ffefc2,#fff9ea)!important;border-color:#e9c46a!important}
+.ks span{font-size:12.5px;color:inherit;opacity:.85}
 .ks .bd2{display:flex;gap:6px;flex-wrap:wrap}
-.ks .bd2 em{font-style:normal;font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 9px;background:var(--surface);border:1px solid var(--line)}
+.ks .bd2 em{font-style:normal;font-size:12px;font-weight:700;border-radius:999px;padding:3px 10px;background:rgba(255,255,255,.8);color:#2a1b00;border:1px solid rgba(0,0,0,.12)}
 .ks button.shr{border:0;cursor:pointer;font:inherit;font-weight:700;font-size:12.5px}
 .ks .shr{align-self:flex-start;background:#000;color:#fff;font-weight:700;font-size:12.5px;border-radius:999px;padding:7px 14px;text-decoration:none}
+.pnote{font-size:11.5px}
+.ks.pbx{background:var(--surface)!important;border-color:var(--line)!important;color:var(--ink)}
+.cropbox{align-items:center}
+.crst{position:relative;overflow:hidden;border-radius:14px;background:#111;touch-action:none;cursor:grab;user-select:none}
+.crst img{position:absolute;left:0;top:0;transform-origin:0 0;max-width:none;pointer-events:none}
+.crmask{position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 999px rgba(0,0,0,.55);outline:2px solid #fff;outline-offset:-2px;pointer-events:none}
+.crzoom{width:min(300px,100%)}
 .ksl{display:flex;flex-direction:column;gap:10px}
 .ksl .ks{margin-top:0}
 .ksl .krow{display:flex;gap:10px;align-items:center}
@@ -1363,8 +1371,7 @@ function openNick() {
   const nm = (SESSION?.user?.user_metadata?.full_name || SESSION?.user?.user_metadata?.name || "").slice(0, 20);
   overlay("nick", `<div class="jn"><div class="jh"><span class="jk">🎉 あと少し！</span><b>ニックネームを決めよう</b><span class="jf">古参の証やマイページに表示されます（あとで変えられます）</span></div>
     <input type="text" id="nickIn" maxlength="20" value="${esc(nm)}" placeholder="ニックネーム（20文字まで）" autocomplete="off">
-    <button class="gbtn" data-nick="save">はじめる</button>
-    <button class="jb" data-nick="cancel" style="align-self:center">登録をやめる（ログアウト）</button></div>`);
+    <button class="gbtn" data-nick="save">はじめる</button></div>`);
 }
 async function saveNick() {
   const v = ($("#nickIn")?.value || "").trim();
@@ -1526,12 +1533,51 @@ function rerenderSettings() {
   el.scrollTop = st;
 }
 // 画像を正方形256pxのJPEGに縮めてアップロード
+// 画像を選んだら、丸に入れる場所をドラッグ（とピンチ／スライダーで拡大）で選んでもらう
+function cropIcon(file) {
+  return new Promise((resolve, reject) => {
+    const im = new Image();
+    im.onerror = () => reject(new Error("not_image"));
+    im.onload = () => {
+      const S = Math.min(300, window.innerWidth - 64), W = im.naturalWidth, H = im.naturalHeight, base = S / Math.min(W, H);
+      let z = 1, ox = (S - W * base) / 2, oy = (S - H * base) / 2;
+      overlay("crop", `<div class="jn cropbox"><div class="jh"><b>丸の中に入れる場所を選んでね</b><span class="jf">ドラッグで動かす・指2本かスライダーで拡大</span></div>
+        <div class="crst" style="width:${S}px;height:${S}px"><img src="${im.src}" alt="" draggable="false"><i class="crmask"></i></div>
+        <input type="range" class="crzoom" min="1" max="4" step="0.01" value="1" aria-label="拡大">
+        <div class="cbtn2"><button class="gbtn" data-crop="ok">この範囲で決定</button><button class="sbtn" data-crop="no">やめる</button></div></div>`);
+      const box = document.getElementById("crop"), st = box.querySelector(".crst"), img = st.querySelector("img"), zr = box.querySelector(".crzoom");
+      const clamp = () => { const sc = base * z; ox = Math.min(0, Math.max(S - W * sc, ox)); oy = Math.min(0, Math.max(S - H * sc, oy)); };
+      const draw = () => { clamp(); const sc = base * z; img.style.width = W * sc + "px"; img.style.height = H * sc + "px"; img.style.transform = `translate(${ox}px,${oy}px)`; };
+      const zoomTo = (nz, cx = S / 2, cy = S / 2) => { nz = Math.min(4, Math.max(1, nz)); const k = nz / z; ox = cx - (cx - ox) * k; oy = cy - (cy - oy) * k; z = nz; zr.value = z; draw(); };
+      const pts = new Map(); let pinch0 = null;
+      st.addEventListener("pointerdown", (e) => { st.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch0 = { d: Math.hypot(a.x - b.x, a.y - b.y), z }; } });
+      st.addEventListener("pointermove", (e) => {
+        const p0 = pts.get(e.pointerId); if (!p0) return;
+        if (pts.size === 1) { ox += e.clientX - p0.x; oy += e.clientY - p0.y; draw(); }
+        pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (pts.size === 2 && pinch0) { const [a, b] = [...pts.values()], r = st.getBoundingClientRect(); zoomTo(pinch0.z * Math.hypot(a.x - b.x, a.y - b.y) / pinch0.d, (a.x + b.x) / 2 - r.left, (a.y + b.y) / 2 - r.top); }
+      });
+      const up = (e) => { pts.delete(e.pointerId); if (pts.size < 2) pinch0 = null; };
+      st.addEventListener("pointerup", up); st.addEventListener("pointercancel", up);
+      st.addEventListener("wheel", (e) => { e.preventDefault(); const r = st.getBoundingClientRect(); zoomTo(z * (e.deltaY < 0 ? 1.08 : 1 / 1.08), e.clientX - r.left, e.clientY - r.top); }, { passive: false });
+      zr.addEventListener("input", () => zoomTo(Number(zr.value)));
+      box.querySelector('[data-crop="no"]').onclick = () => { closeOv("crop"); resolve(null); };
+      box.addEventListener("click", (e) => { if (e.target === box) resolve(null); });
+      box.querySelector('[data-crop="ok"]').onclick = () => {
+        const sc = base * z, cv = document.createElement("canvas"); cv.width = cv.height = 256;
+        cv.getContext("2d").drawImage(im, -ox / sc, -oy / sc, S / sc, S / sc, 0, 0, 256, 256);
+        closeOv("crop"); cv.toBlob((b) => resolve(b), "image/jpeg", 0.86);
+      };
+      draw();
+    };
+    im.src = URL.createObjectURL(file);
+  });
+}
 async function uploadIcon(file, name) {
   if (!file || !/^image\//.test(file.type)) throw new Error("not_image");
-  const bmp = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = URL.createObjectURL(file); });
-  const s = Math.min(bmp.naturalWidth, bmp.naturalHeight), cv = document.createElement("canvas"); cv.width = cv.height = 256;
-  cv.getContext("2d").drawImage(bmp, (bmp.naturalWidth - s) / 2, (bmp.naturalHeight - s) / 2, s, s, 0, 0, 256, 256);
-  const blob = await new Promise((r) => cv.toBlob(r, "image/jpeg", 0.86));
+  const blob = await cropIcon(file);
+  if (!blob) return null; // やめた
+  toast("画像をアップロードしています…");
   const path = `${SESSION.user.id}/${name}-${Date.now()}.jpg`;
   const { error } = await AUTH.storage.from("avatars").upload(path, blob, { contentType: "image/jpeg", upsert: true });
   if (error) throw error;
@@ -1540,14 +1586,15 @@ async function uploadIcon(file, name) {
 document.addEventListener("change", async (e) => {
   const f = e.target.closest('input[type=file][data-set]'); if (!f) return;
   const file = f.files?.[0]; if (!file) return;
-  toast("画像をアップロードしています…");
   try {
     if (f.dataset.set === "myicon") {
-      const url = await uploadIcon(file, "me");
+      const url = await uploadIcon(file, "me"); f.value = "";
+      if (!url) return;
       const { error } = await AUTH.from("profiles").update({ avatar_url: url, updated_at: new Date().toISOString() }).eq("user_id", SESSION.user.id);
       if (error) throw error; PROFILE.avatar_url = url; toast("アイコンを変えました"); renderMy(); closeOv("settings"); return;
     } else if (f.dataset.set === "chicon") {
-      ICON_PEND[f.dataset.ch] = await uploadIcon(file, "ch-" + f.dataset.ch); toast("「保存する」を押すと反映されます");
+      const u = await uploadIcon(file, "ch-" + f.dataset.ch); f.value = ""; if (!u) return;
+      ICON_PEND[f.dataset.ch] = u; toast("「保存する」を押すと反映されます");
     }
   } catch { toast("アップロードできませんでした。別の画像でお試しください"); }
   rerenderSettings();
@@ -1676,12 +1723,12 @@ async function pushInit() {
   if (tab === "my") renderMy();
 }
 function pushBox() {
-  const box = (b, s, x = "") => `<div class="ks" style="border-color:var(--line);background:var(--surface)"><b>${b}</b><span>${s}</span>${x}</div>`;
+  const box = (b, s, x = "") => `<div class="ks pbx"><b>${b}</b><span>${s}</span>${x}</div>`;
   if (!pushOK) return isIOS && !isStandalone ? box("🔔 推しの救援を通知で受け取る", "iPhoneは、Vぶいを<b>ホーム画面に追加</b>すると通知が使えます。Safariで開いて「共有」→「ホーム画面に追加」→ ホーム画面のVぶいから開いて、ここでオンにしてください。") : box("🔔 通知", "このブラウザは通知に対応していません。");
   if (Notification.permission === "denied") return box("🔔 通知がブロックされています", "ブラウザ（またはスマホ）の設定で、Vぶいの通知を「許可」にしてから、もう一度開いてください。");
   const vt = MINE.length ? "・コラボ申請" : "";
-  if (!pushSub) return box("🔔 推しの救援を通知で受け取る", `推しリストの子が救援要請を出したら、スマホに通知が届きます${vt ? "（コラボ申請も届きます）" : ""}。★最推しは必ず、ほかの推しは1日3件までお知らせします。`, `<button class="shr" data-push="on" ${pushBusy ? "disabled" : ""}>${pushBusy ? "設定中…" : "通知をオンにする"}</button>`);
-  return `<div class="ks"><b>🔔 通知オン</b><span>推し${favs.size}人の救援${vt}をお知らせします（★最推し${tops.size}人は必ず、ほかは1日3件まで）。</span><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="shr" data-push="test">テスト通知を送る</button><button class="shr gray" data-push="off">通知をオフ</button></div></div>`;
+  if (!pushSub) return box("🔔 推しが救援を呼んだら、通知でお知らせします！", `<small class="pnote">1日3回まで。★最推しの救援は優先して届きます${vt ? "。コラボ申請も届きます" : ""}</small>`, `<button class="shr" data-push="on" ${pushBusy ? "disabled" : ""}>${pushBusy ? "設定中…" : "通知をオンにする"}</button>`);
+  return `<div class="ks"><b>🔔 通知オン：推しが救援を呼んだらお知らせします</b><span><small class="pnote">1日3回まで。★最推しの救援は優先して届きます${vt ? "。コラボ申請も届きます" : ""}</small></span><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="shr" data-push="test">テスト通知を送る</button><button class="shr gray" data-push="off">通知をオフ</button></div></div>`;
 }
 document.addEventListener("click", async (e) => {
   const b = e.target.closest("[data-push]"); if (!b) return;
