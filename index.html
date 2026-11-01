@@ -1733,6 +1733,14 @@ function ocDiagram(kind) {
 }
 function ocQuestion(ch, cur) {
   const step = OC_STEP.get(ch) || "q1";
+  if (step === "mix") return `<div class="ocq">
+    <p class="ocqt">Vぶいから来たコメントの出し方<small>あとから何回でも変えられます</small></p>
+    <div class="ocpicks">
+      <div class="ocpick${cur === "yes" ? " on" : ""}">${ocDiagram("yes")}<p><b>まぜて出す（わんコメを使う）</b><br>わんコメのコメント欄に、<b>YouTubeのコメントと一緒に</b>並びます。</p><button class="${cur === "yes" ? "gbtn" : "sbtn"}" data-set="occhoice" data-v="yes" data-ch="${esc(ch)}">まぜて出す</button></div>
+      <div class="ocpick${cur === "no" ? " on" : ""}">${ocDiagram("no")}<p><b>別々に出す</b><br>Vぶいから来たコメントだけを、<b>画面のすみっこ</b>に出します。</p><button class="${cur === "no" ? "gbtn" : "sbtn"}" data-set="occhoice" data-v="no" data-ch="${esc(ch)}">別々に出す</button></div>
+    </div>
+    <button class="lnk2" data-set="ocstep" data-v="q2" data-ch="${esc(ch)}">わんコメをまだ入れていない人はこちら ›</button>
+  </div>`;
   if (step === "q2") return `<div class="ocq">
     <p class="ocqt">Q2. わんコメを入れて、使ってみますか？<small>あとから入れることもできます。いま決めなくても大丈夫！</small></p>
     <div class="ocpicks">
@@ -1761,6 +1769,17 @@ function ocQuestion(ch, cur) {
   </div>`;
 }
 const OC_STEP = new Map(), JUST_DONE = new Set();
+// わんコメのコメント欄をOBSに出す手順（わんコメを入れたばかりの人向け。使い慣れている人は飛ばせる）
+function ocObsGuide(open) {
+  return `<details class="obsman"${open ? " open" : ""}><summary>わんコメのコメントが、まだOBSに出ていない人だけ（初めての人向け）</summary>
+    <ol class="obsteps">
+      <li>わんコメの右上の<b>「…」（点3つ）→「テンプレート」</b>を開いて、好きな見た目を選ぶ</li>
+      <li>そのテンプレートの<b>URLをコピー</b>する</li>
+      <li>OBSの<b>「ソース」の＋ →「ブラウザ」</b>→ 名前はそのままで「OK」→ URLの欄に貼り付けて「OK」</li>
+      <li>OBSの画面にコメント欄が出たら、ドラッグで好きな場所・大きさに動かす</li>
+    </ol>
+    <p class="note2">くわしくは <a href="https://onecomme.com/docs/guide/get-comment" target="_blank" rel="noopener">わんコメの公式ガイド</a> に画像つきで載っています。</p></details>`;
+}
 // わんコメの許可ホストの手順（わんコメを使う人だけ）
 function ocApiStep() {
   return `わんコメの右上の<b>「…」（点3つ）→「設定」→「API」</b>のタブを開いて、<b>「許可ホスト」</b>の欄に下の文字を入れる（コピーして貼り付けでOK。自動で保存されます）
@@ -1774,7 +1793,8 @@ function obsBlock(m) {
   const isNew = store.get("ocNew:" + m.id, false);
   // やることを「1. わんコメ」「2. OBS」「3. 確認」のかたまりに分ける
   const partOC = oc === "yes" ? `<div class="opart"><h5><i>1</i>わんコメの準備${isNew ? "" : "（いつものわんコメに1つ足すだけ）"}</h5>
-      <ol class="obsteps"><li>わんコメを起動しておく</li><li>${ocApiStep()}</li></ol></div>` : "";
+      <ol class="obsteps"><li>わんコメを起動しておく</li><li>${ocApiStep()}</li></ol>
+      ${ocObsGuide(isNew)}</div>` : "";
   const n0 = oc === "yes" ? 1 : 0;
   const partOBS = `<div class="opart"><h5><i>${n0 + 1}</i>OBSとVぶいをつなぐ</h5>
       ${isMobileUA ? `<p class="obswarn">📱 いまスマホで見ています。ここからは、<b>OBSが入っているパソコン</b>でVぶい（vvbuibui.com）を開いてやってください。</p>` : ""}
@@ -1782,7 +1802,7 @@ function obsBlock(m) {
         <li><b>OBSが入っているパソコンで、Vぶいを開く</b>（Chromeがおすすめ）。OBSも起動しておく</li>
         <li>OBSの上のメニュー<b>「ツール」→「WebSocketサーバー設定」</b>を開いて、<b>「WebSocketサーバーを有効にする」にチェック →「適用」</b></li>
         <li>同じ画面の<b>「接続情報を表示」</b>を押して、<b>「サーバーパスワード」の横の「コピー」</b>を押す → 下の欄に貼り付け</li>
-        <li>OBSの画面は<b>「OK」で閉じる</b>（開いたままだと、OBSが止まることがあります）</li>
+        <li>右下の<b>「OK」</b>を押して、いま開いている<b>「WebSocketサーバー設定」の小さい画面だけ</b>閉じる（OBS本体は閉じません。開いたままだと、OBSが止まることがあります）</li>
         <li><b>「⚡ OBSに自動で追加」</b>を押す。Chromeで「このデバイス上の他のアプリやサービスにアクセス」と出たら<b>「許可する」</b></li>
       </ol>
       <label class="sl">サーバーパスワード（手順3でコピーしたもの）</label>
@@ -1792,10 +1812,11 @@ function obsBlock(m) {
       <p class="note2">下のボタンを押して、<b>OBSの画面</b>に「✅ Vぶいと接続できました」と出たら完了です。${oc === "yes" ? "わんコメのコメント欄にも、テストのコメントが出ます。" : ""}</p>
       <button class="gbtn" data-set="obstest" data-ch="${esc(m.id)}">設定確認</button></div>`;
   const steps = partOC + partOBS + partTest;
-  const ocLine = oc === "yes" ? `<div class="ocsum"><span>💬 <b>いまの出し方：</b>わんコメのコメント欄に、YouTubeとVぶいのコメントをまぜて出す</span><button class="lnk2" data-set="ocask" data-ch="${esc(m.id)}">変える</button></div>`
-    : oc === "no" ? `<div class="ocsum"><span>💬 <b>いまの出し方：</b>Vぶいから来たコメントだけを、画面のすみっこに出す</span><button class="lnk2" data-set="ocask2" data-ch="${esc(m.id)}">わんコメを入れて、YouTubeのコメントもまとめて出す ›</button></div>` : "";
+  const ocLine = oc === "yes" ? `<div class="ocsum"><span>💬 <b>いまの出し方：</b>わんコメのコメント欄に、YouTubeとVぶいのコメントをまぜて出す</span><button class="lnk2" data-set="ocstep" data-v="mix" data-ch="${esc(m.id)}">出し方を変える ›</button></div>`
+    : oc === "no" ? `<div class="ocsum"><span>💬 <b>いまの出し方：</b>Vぶいから来たコメントだけを、画面のすみっこに出す</span><button class="lnk2" data-set="ocstep" data-v="mix" data-ch="${esc(m.id)}">わんコメのコメント欄にまぜて出す ›</button></div>` : "";
   const layoutBtn = `<div class="opart"><h5>📺 配信画面での見え方を確かめる</h5>
       <p class="note2">ボタンを押したら、<b>OBSの画面</b>を見てください。見本のコメント2つと、救援ヒーローが出ます（配信中でなくても大丈夫。リスナーさんには見えません）。</p>
+      ${oc === "yes" ? `<p class="note2">💬 わんコメを使っているので、見本のコメントは<b>わんコメのコメント欄</b>に出ます。OBSに出ない時は、わんコメのコメント欄がまだOBSに入っていないかもしれません。</p>${ocObsGuide(false)}<p class="note2">わんコメを終了している時は、コメントは画面のすみっこに出ます（Macは、ウィンドウの×ではアプリが終わらないので、わんコメを選んで<b>⌘Q</b>で終了）。</p>` : ""}
       <button class="gbtn" data-set="layout" data-ch="${esc(m.id)}">📺 レイアウト確認</button></div>`;
   let body;
   if (!oc || OC_ASK.has(m.id)) body = ocQuestion(m.id, oc);
@@ -1915,7 +1936,7 @@ async function obsTest(ch, out) {
   }
   out.innerHTML = !store.get(obsFlag(ch), false)
     ? "❌ まだOBSにVぶいが入っていないようです。<br>先に<b>「⚡ OBSに自動で追加」</b>を押して、✅が出てから「設定確認」を押してください。"
-    : "❌ OBSから返事がありませんでした。次の3つを見てください。<br>① OBSは開いたままですか？<br>② OBSの画面の下の方にある<b>「ソース」</b>の一覧に<b>「Vぶい（コメント・演出）」</b>がありますか？ その横の👁（目のマーク）が開いていますか？<br>③ もう一度<b>「⚡ OBSに自動で追加」→「設定確認」</b>の順に押してみてください。";
+    : "❌ OBSから返事がありませんでした。次の3つを見てください。<br>① OBSは開いたままですか？<br>② OBSの画面の下の方にある<b>「ソース」</b>の一覧に<b>「Vぶい（コメント・演出）」</b>がありますか？ その横の👁（目のマーク）が開いていますか？<br>③ それでも出ない時は、<b>OBSをいったん終了して起動し直してから</b>（わんコメも同じように）、もう一度「設定確認」を押してください。";
 }
 document.addEventListener("click", async (e) => {
   const t = e.target.closest("[data-set]"); if (!t) return;
