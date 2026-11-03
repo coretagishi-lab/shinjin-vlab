@@ -219,7 +219,7 @@ function prep(d) {
 /* ---------- 各ページ ---------- */
 const TABS = [
   ["grow", "伸びる子の共通点"], ["length", "配信の長さ・回数"], ["time", "時間帯・曜日"], ["genre", "ゲーム・ジャンル"],
-  ["title", "タイトル・告知"], ["first", "デビュー直後"], ["vv", "Vぶいの効果"], ["list", "VTuber一覧"], ["next", "これから集めるデータ"],
+  ["title", "タイトル・告知"], ["first", "デビュー直後"], ["fans", "リスナーの動き"], ["vv", "Vぶいの効果"], ["list", "VTuber一覧"], ["next", "データの集め方"],
 ];
 let tab = "grow";
 try { tab = localStorage.getItem("hqTab") || "grow"; } catch {}
@@ -419,29 +419,78 @@ function pageList() {
     <div class="tw"><table><tr>${cols.map(([k, l]) => `<th data-ls="${k}">${l}${lsort === k ? " ▼" : ""}</th>`).join("")}</tr>
     ${rows.slice(0, 300).map((c) => `<tr><td class="nm"><img src="${esc(c.custom_icon_url || c.thumbnail_url || "")}" alt="" loading="lazy">${esc(c.title)}${c.registered ? " ✓" : ""}</td><td class="n">${c.subscriber_hidden ? "非公開" : fmt(c.subscriber_count)}</td><td class="n">${fmt(c.growth)}</td><td class="n ${c.week > 0 ? "up" : ""}">${c.week != null ? (c.week > 0 ? "＋" : "") + fmt(c.week) : "—"}</td><td class="n">${fmt(c.perWeek, 1)}</td><td class="n">${fmt(c.avgMin)}</td><td class="n">${fmt(c.weekHours, 1)}</td><td class="n">${fmt(c.maxGap)}</td><td class="n">${fmt(c.days)}</td></tr>`).join("")}</table></div></section>`;
 }
-function pageNext() {
-  return `<section class="card"><h2>これから集めるデータ（準備中）</h2>
-    <p class="lead">いまのデータは「配信の時間・長さ・再生数・登録者」まで。リスナー1人ひとりの動きは、YouTubeのチャット（コメント）を記録すると分かるようになります。</p>
-    <div class="soon"><b>YouTubeのチャットを記録すると分かること</b><ul>
-      <li>リスナーが配信に入ってから、最初にスパチャ（投げ銭）するまで何分か（※YouTubeは「入った時間」を教えてくれないので、「最初にコメントした時間」から数えます）</li>
-      <li>1回の配信でのスパチャの合計・平均・何人が投げたか</li>
-      <li>1人のリスナーが何人のVTuberを見て回っているか（コメントした枠の数で数えます）</li>
-      <li>1日に何分くらい見ているか（最初と最後のコメントの時間から目安を出します）</li>
-      <li>初見さん（その子に初めてコメントした人）がどれくらい来たか・その後も来てくれたか</li>
-      <li>何のゲーム・何時の配信で、スパチャや初見さんが増えるか</li>
-    </ul></div>
-    <div class="soon"><b>Vぶいに入った後の動き</b><ul>
-      <li>Vぶいにログインしたリスナーの、その後の滞在時間・見に行った配信の数</li>
-      <li>Vぶいに入る前と後で、スパチャの金額が増えたか（※リスナーがVぶいでYouTubeアカウントとつないだ場合だけ分かります）</li>
-    </ul></div>
-    <p class="note">YouTubeのチャットを読むのは、YouTubeの1日の利用枠をたくさん使います（読むたびに5、1日の枠は10,000）。いまの枠のまま全部の配信を記録すると、配信を見つける仕組みが止まってしまうので、Googleに利用枠を増やす申請をするか、記録する配信をしぼる必要があります。</p>
+/* ---------- リスナーの動き（Vぶいの中の視聴＋本人登録した子のYouTubeチャット） ---------- */
+const DAY = 864e5;
+function pageFans() {
+  const L = D.listen || {}, W = L.watch || [], CH = L.chat || [], LK = L.linked || [];
+  const name = (id) => A.C.find((c) => c.id === id)?.title || id;
+  // ① Vぶいの中：1人1日あたりの視聴分数・見て回った人数
+  const sd = new Map();
+  for (const w of W) { const k = (w.u || w.ss) + "|" + new Date((w.t + 9 * 3600) * 1000).toISOString().slice(0, 10); const o = sd.get(k) || { sec: 0, ch: new Set(), u: !!w.u }; o.sec += w.sec; if (w.c) o.ch.add(w.c); if (w.u) o.u = true; sd.set(k, o); }
+  const days = [...sd.values()];
+  const mIn = (a) => med(a.map((o) => o.sec / 60)), cIn = (a) => med(a.map((o) => o.ch.size));
+  const lg = days.filter((o) => o.u), gu = days.filter((o) => !o.u);
+  const byPlace = ["feed", "disc", "watch"].map((pl) => ({ label: { feed: "ホームの自動再生", disc: "発掘", watch: "視聴画面" }[pl], value: W.filter((w) => w.p === pl).reduce((a, w) => a + w.sec, 0) / 3600, n: W.filter((w) => w.p === pl).length }));
+  // ログイン前と後（同じ端末で、ログインする前とした後）
+  const ses = new Map(); for (const w of W) { const o = ses.get(w.ss) || []; o.push(w); ses.set(w.ss, o); }
+  const ba = []; for (const rows of ses.values()) { const t1 = Math.min(...rows.filter((r) => r.u).map((r) => r.t)); if (!isFinite(t1)) continue; const pre = rows.filter((r) => !r.u && r.t < t1), post = rows.filter((r) => r.u); if (!pre.length) continue; const span = (a) => Math.max(1, (Math.max(...a.map((r) => r.t)) - Math.min(...a.map((r) => r.t))) / 86400 + 1); ba.push({ pre: pre.reduce((a, r) => a + r.sec, 0) / 60 / span(pre), post: post.reduce((a, r) => a + r.sec, 0) / 60 / span(post) }); }
+  // ② YouTubeチャット（本人登録した子の配信だけ）
+  const stStart = new Map(A.S.map((s) => [s.id, s.st / 1000]));
+  const toSc = CH.filter((r) => r.fs).map((r) => (r.fs - r.f) / 60), fromStart = CH.filter((r) => r.fs && stStart.get(r.s)).map((r) => (r.fs - stStart.get(r.s)) / 60).filter((m) => m >= 0 && m <= 1440);
+  const scB = [["コメントと同時（1分以内）", (m) => m <= 1], ["1〜5分", (m) => m > 1 && m <= 5], ["5〜15分", (m) => m > 5 && m <= 15], ["15〜30分", (m) => m > 15 && m <= 30], ["30分〜1時間", (m) => m > 30 && m <= 60], ["1時間より後", (m) => m > 60]].map(([label, f]) => ({ label, value: toSc.filter(f).length, n: null }));
+  const streams = new Map(); for (const r of CH) { const o = streams.get(r.s) || { c: r.c, people: 0, sc: 0, scp: 0, jpy: 0 }; o.people++; o.sc += r.sn; if (r.sn) o.scp++; o.jpy += r.jpy; streams.set(r.s, o); }
+  const sts = [...streams.values()];
+  // 見て回っている人数（本人登録した子どうしの中で）
+  const au = new Map(); for (const r of CH) { const o = au.get(r.a) || new Set(); o.add(r.c); au.set(r.a, o); }
+  const hop = [...au.values()].map((x) => x.size);
+  const stay = CH.map((r) => (r.l - r.f) / 60);
+  // 初見さん（その子に初めてコメントした人）と、また来てくれた割合
+  const firstOf = new Map(); for (const r of [...CH].sort((a, b) => a.f - b.f)) { const k = r.c + "|" + r.a; if (!firstOf.has(k)) firstOf.set(k, r.s); }
+  const again = [...firstOf.entries()].filter(([k, s0]) => CH.some((r) => r.c + "|" + r.a === k && r.s !== s0)).length;
+  // ③ Vぶいとつないだリスナーの、Vぶいに入る前と後のスパチャ
+  const yt = new Map(LK.map((l) => [l.yt, l]));
+  const lkRows = CH.filter((r) => yt.has(r.a));
+  const preJ = lkRows.filter((r) => r.f < yt.get(r.a).joined), postJ = lkRows.filter((r) => r.f >= yt.get(r.a).joined);
+  const per = (a) => a.length ? a.reduce((x, r) => x + r.jpy, 0) / a.length : null;
+  const usage = (L.usage || []).filter((u) => u.purpose === "chat");
+  return `<section class="card"><h2>Vぶいの中でのリスナーの動き</h2>
+    <p class="lead">Vぶいで動画が再生されていた時間を数えています（YouTubeの枠は使いません）。1人が1日に見た分の「真ん中の値」です。</p>
+    <div class="sum"><div><b>${fmt(mIn(days), 1)}分</b><span>1日に見る時間（全員）</span></div><div><b>${fmt(mIn(lg), 1)}分</b><span>ログインしている人</span></div><div><b>${fmt(mIn(gu), 1)}分</b><span>ログインしていない人</span></div><div><b>${fmt(cIn(days), 1)}人</b><span>1日に見て回るVTuberの数</span></div><div><b>${fmt(days.length)}</b><span>記録された「1人×1日」</span></div></div>
+    <h3>どこで見られているか（合計時間）</h3>${hbars(byPlace.filter((r) => r.n), { unit: "時間", digits: 1 })}
+    <h3>ログインする前と後（同じ端末）</h3>
+    ${ba.length ? `<div class="cmp" style="grid-template-columns:1fr auto auto"><div class="h">1日に見る時間</div><div class="h n">ログイン前</div><div class="h n">ログイン後</div><div>真ん中の値（${ba.length}人）</div><div class="n">${fmt(med(ba.map((x) => x.pre)), 1)}分</div><div class="n ${med(ba.map((x) => x.post)) > med(ba.map((x) => x.pre)) ? "up" : ""}">${fmt(med(ba.map((x) => x.post)), 1)}分</div></div>` : `<p class="note">まだデータがありません（11/3から記録を始めました）</p>`}
+  </section>
+  <section class="card"><h2>YouTubeのチャットから分かること</h2>
+    <p class="lead">本人登録した子の配信だけ、YouTubeのチャットを記録しています（本文は保存せず、誰が・いつ・スパチャかどうか・金額だけ）。1日に使うYouTubeの枠は1,000までにしてあります。</p>
+    ${CH.length ? `<div class="sum"><div><b>${fmt(streams.size)}回</b><span>記録できた配信</span></div><div><b>${fmt(med(sts.map((x) => x.people)))}人</b><span>1回の配信でコメントした人</span></div><div><b>${fmt(med(sts.map((x) => x.jpy)))}円</b><span>1回の配信のスパチャ合計</span></div><div><b>${fmt(med(sts.map((x) => x.scp)))}人</b><span>1回の配信でスパチャした人</span></div><div><b>${fmt(med(toSc), 0)}分</b><span>初コメントから最初のスパチャまで</span></div><div><b>${fmt(med(fromStart), 0)}分</b><span>配信開始から、その人の最初のスパチャまで</span></div><div><b>${fmt(med(stay), 0)}分</b><span>最初と最後のコメントの間（いた時間の目安）</span></div><div><b>${fmt(avg(hop), 2)}人</b><span>1人のリスナーがコメントしたVTuberの数</span></div><div><b>${firstOf.size ? fmt(again / firstOf.size * 100, 0) : "—"}%</b><span>初見さんが次の配信にも来た割合</span></div></div>
+    <h3>初コメントから最初のスパチャまでの時間</h3>${hbars(scB, { unit: "人", digits: 0 })}
+    <p class="note">YouTubeは「配信に入った時間」を教えてくれないので、「最初にコメントした時間」から数えています。</p>` : `<p class="note">まだ記録がありません。本人登録した子が配信すると、自動で記録が始まります。</p>`}
+    <p class="note">ここ数日のチャット記録に使った枠：${usage.length ? usage.map((u) => `${esc(String(u.day).slice(5).replace("-", "/"))} ${fmt(u.units)}`).join("、") : "まだなし"}（1日の上限 1,000）</p>
+  </section>
+  <section class="card"><h2>Vぶいに入ると、スパチャは増える？</h2>
+    <p class="lead">設定でYouTubeとつないだリスナー（いま${fmt(LK.length)}人）について、Vぶいに入る前と後の「1回の配信あたりのスパチャ」を比べます。</p>
+    ${lkRows.length ? `<div class="cmp" style="grid-template-columns:1fr auto auto"><div class="h">　</div><div class="h n">Vぶいに入る前</div><div class="h n">入った後</div><div>1回の配信あたりのスパチャ（平均）</div><div class="n">${fmt(per(preJ))}円</div><div class="n ${per(postJ) > per(preJ) ? "up" : ""}">${fmt(per(postJ))}円</div><div>記録された配信の数</div><div class="n">${fmt(preJ.length)}</div><div class="n">${fmt(postJ.length)}</div></div>` : `<p class="note">まだデータがありません。つないだリスナーが、本人登録した子の配信でコメントすると出てきます。</p>`}
   </section>`;
 }
-
+function pageNext() {
+  return `<section class="card"><h2>データの集め方</h2>
+    <p class="lead">YouTubeの1日の利用枠（10,000）は「人を増やす」ことを優先して、分析にはなるべく使わない方針です。</p>
+    <div class="soon"><b>YouTubeの枠を使わないもの</b><ul>
+      <li>Vぶいの中で再生された時間・見て回ったVTuberの数・ログイン前後の変化（11/3から記録）</li>
+      <li>名鑑の配信の記録・登録者の毎日の数（もともと集めているデータ）</li></ul></div>
+    <div class="soon"><b>少しだけ使うもの</b><ul>
+      <li>アーカイブの再生数・高評価・コメント数：1日に数十くらい（毎日4:23）</li>
+      <li>リスナーとYouTubeアカウントをつなぐ：1人1回だけ</li>
+      <li>本人登録した子の配信のチャット：1日1,000まで（110秒ごとに読む。上限に来たらその日は止める）</li></ul></div>
+    <div class="soon"><b>ふわにお願いすること</b><ul>
+      <li>週1回、「いま伸びている子」の上位10人の配信を見て、YouTubeが付けている「ゲーム名」、サムネとタイトルの傾向、配信の始まり方や初見さんへの声かけの工夫を、連携ボードに書いてもらう</li></ul></div>
+    <p class="note">YouTubeの画面を機械で読み取る方法は、YouTubeの利用規約で禁止されていて、APIキーが止められるおそれがあるので使いません。</p>
+  </section>`;
+}
 function render() {
   try { localStorage.setItem("hqTab", tab); } catch {}
   $("#tabs").innerHTML = TABS.map(([k, l]) => `<button data-tab="${k}" aria-pressed="${tab === k}">${l}</button>`).join("");
-  const P = { grow: pageGrow, length: pageLength, time: pageTime, genre: pageGenre, title: pageTitle, first: pageFirst, vv: pageVV, list: pageList, next: pageNext }[tab] || pageGrow;
+  const P = { fans: pageFans, grow: pageGrow, length: pageLength, time: pageTime, genre: pageGenre, title: pageTitle, first: pageFirst, vv: pageVV, list: pageList, next: pageNext }[tab] || pageGrow;
   $("#view").innerHTML = (tab === "grow" ? summary() : "") + P();
 }
 document.addEventListener("click", (e) => {
