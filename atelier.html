@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Vぶい アクセサリー工房</title>
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700;900&display=swap">
+<style>
+/* 左：絵に揺らす場所をぬる　右：2D（頭の見本つき）と3Dで確かめる　下：保存 */
+:root{
+  --bg:#17131D; --panel:#211B2A; --panel2:#2B2336; --ink:#EFEAF4; --muted:#A79EB4; --line:#3B3248;
+  --accent:#FF6FA3; --accent-ink:#2A0F1B; --sway:#FF6FA3; --pivot:#FFD25E;
+  --f:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--ink)}
+body{margin:0;font:14.5px/1.7 var(--f)}
+.wrap{max-width:1240px;margin:0 auto;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));padding-block:16px 60px}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+h1{margin:0;font-size:21px;font-weight:900}
+h1 small{display:block;font-size:12px;font-weight:400;color:var(--muted)}
+header a{color:var(--ink);font-size:13px;font-weight:700;text-decoration:none;border:1.5px solid var(--line);border-radius:999px;padding:5px 14px}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-top:14px}
+@media (max-width:860px){.grid{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;min-width:0}
+.card h2{margin:0 0 8px;font-size:15px;font-weight:900;display:flex;align-items:center;gap:8px}
+.card h2 i{font-style:normal;background:var(--accent);color:var(--accent-ink);border-radius:999px;width:22px;height:22px;display:inline-grid;place-items:center;font-size:12px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0}
+.btn{border:1.5px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:999px;padding:7px 13px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.btn[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.main{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn:disabled{opacity:.45;cursor:default}
+label.sl{display:grid;grid-template-columns:8.5em 1fr 3.2em;gap:8px;align-items:center;font-size:13px}
+label.sl input{width:100%;accent-color:var(--accent)}
+label.sl output{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.ck{display:flex;gap:6px;align-items:center;font-size:13px;cursor:pointer}
+.note{font-size:12px;color:var(--muted);margin:4px 0}
+.drop{border:2px dashed var(--line);border-radius:14px;padding:14px;text-align:center;color:var(--muted);font-size:13px;cursor:pointer}
+.drop.on{border-color:var(--accent);color:var(--ink)}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap}
+.thumbs button{width:72px;height:72px;border-radius:12px;border:2px solid var(--line);background:var(--panel2) center/contain no-repeat;cursor:pointer}
+.thumbs button[aria-pressed="true"]{border-color:var(--accent)}
+.ed{position:relative;width:100%;background:repeating-conic-gradient(#2a2333 0 25%,#231d2c 0 50%) 0 0/18px 18px;border-radius:12px;overflow:hidden;touch-action:none}
+.ed canvas{display:block;width:100%;height:auto}
+.ed canvas+canvas{position:absolute;inset:0;height:100%}
+.vw{position:relative;width:100%;aspect-ratio:1/1;max-width:100%;border-radius:12px;overflow:hidden;background:radial-gradient(110% 90% at 50% 25%,var(--panel2),var(--panel));touch-action:none}
+.vw canvas{position:absolute;inset:0;width:100%!important;height:100%!important}
+.vw .tag{position:absolute;left:10px;top:8px;font-size:12px;font-weight:700;color:var(--muted);pointer-events:none}
+.views{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:520px){.views{grid-template-columns:1fr}}
+.sw{display:flex;gap:6px;flex-wrap:wrap}
+.sw button{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);cursor:pointer;padding:0;font-size:10px;color:var(--ink)}
+.sw button[aria-pressed="true"]{border-color:var(--ink);box-shadow:0 0 0 2px var(--bg) inset}
+.groups{display:flex;gap:6px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.groups span{background:var(--panel2);border-radius:999px;padding:2px 10px}
+details{margin-top:6px}
+summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--muted)}
+.out{display:flex;flex-wrap:wrap;gap:8px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Vぶい アクセサリー工房<small>1枚の絵から「揺れる2D」と「3D」を作る道具（試作）</small></h1>
+    <a href="./">Vぶいへ戻る</a>
+  </header>
+
+  <div class="grid">
+    <div class="card">
+      <h2><i>1</i>絵を入れる</h2>
+      <label class="drop" id="drop" for="file">ここに画像をドラッグ、またはタップして選ぶ（PNG・JPG・WebP）<input type="file" id="file" accept="image/*" hidden></label>
+      <div class="row"><span class="note">見本：</span><button class="btn" data-sample="ribbon">黒ゴシックリボン</button><button class="btn" data-sample="headphones">猫耳ヘッドホン</button></div>
+      <label class="sl" for="bgthr">背景の消し方 <input type="range" id="bgthr" min="5" max="95" value="55"><output id="bgthrO"></output></label>
+      <p class="note" id="bgnote"></p>
+      <div id="pickWrap" hidden><p class="note">絵がいくつか見つかりました。使うものを選んでください。</p><div class="thumbs" id="thumbs"></div></div>
+
+      <h2 style="margin-top:14px"><i>2</i>揺らしたい場所をぬる</h2>
+      <div class="row">
+        <button class="btn" data-tool="paint" aria-pressed="true">🖌 ぬる</button>
+        <button class="btn" data-tool="erase">消す</button>
+        <button class="btn" data-tool="pivot">📌 付け根を決める</button>
+        <button class="btn" data-tool="color">🎨 色を替える部分を選ぶ</button>
+        <button class="btn" id="clearPaint">ぬりを全部消す</button>
+      </div>
+      <label class="sl" for="brush">筆の太さ <input type="range" id="brush" min="4" max="90" value="28"><output id="brushO"></output></label>
+      <div class="ed" id="ed"><canvas id="edImg"></canvas><canvas id="edPaint"></canvas></div>
+      <div class="groups" id="groups"></div>
+      <p class="note">ピンクにぬった場所が揺れます。離れた場所は別々に揺れます。📌の付け根（黄色い点）を中心にぶら下がるように揺れます。付け根を決めないときは、ぬった場所のいちばん上が付け根になります。</p>
+    </div>
+
+    <div class="card">
+      <h2><i>3</i>動きと付け方を確かめる</h2>
+      <div class="views">
+        <div class="vw" id="v2"><span class="tag">2D（頭の見本つき）</span></div>
+        <div class="vw" id="v3"><span class="tag">3D（ドラッグで回す）</span></div>
+      </div>
+      <div class="row">
+        <label class="ck" for="auto"><input type="checkbox" id="auto" checked>頭を自動でゆらす</label>
+        <label class="ck" for="headOn"><input type="checkbox" id="headOn" checked>頭の見本</label>
+        <label class="ck" for="wire"><input type="checkbox" id="wire">曲げている網</label>
+        <label class="ck" for="spin"><input type="checkbox" id="spin">3Dをくるくる</label>
+      </div>
+      <label class="sl" for="sway">揺れの強さ <input type="range" id="sway" min="0" max="200" value="100"><output id="swayO"></output></label>
+      <label class="sl" for="soft">揺れのやわらかさ <input type="range" id="soft" min="0" max="100" value="50"><output id="softO"></output></label>
+      <details open><summary>付ける位置・角度（2Dと3D共通）</summary>
+        <label class="sl" for="rot">傾き <input type="range" id="rot" min="-60" max="60" value="0"><output id="rotO"></output></label>
+        <label class="sl" for="scl">大きさ <input type="range" id="scl" min="30" max="160" value="100"><output id="sclO"></output></label>
+        <label class="sl" for="px">左右の位置 <input type="range" id="px" min="-60" max="60" value="0"><output id="pxO"></output></label>
+        <label class="sl" for="py">上下の位置 <input type="range" id="py" min="-60" max="60" value="25"><output id="pyO"></output></label>
+      </details>
+      <details open><summary>3Dの形</summary>
+        <label class="sl" for="thick">厚み <input type="range" id="thick" min="0" max="100" value="45"><output id="thickO"></output></label>
+        <label class="sl" for="round">ふくらみの丸さ <input type="range" id="round" min="5" max="100" value="40"><output id="roundO"></output></label>
+        <label class="sl" for="seal">縁の閉じ具合 <input type="range" id="seal" min="0" max="60" value="12"><output id="sealO"></output></label>
+        <label class="sl" for="tiltX">前後の傾き <input type="range" id="tiltX" min="-60" max="60" value="0"><output id="tiltXO"></output></label>
+        <label class="sl" for="tiltY">左右のひねり <input type="range" id="tiltY" min="-60" max="60" value="0"><output id="tiltYO"></output></label>
+        <label class="sl" for="gap">頭との距離 <input type="range" id="gap" min="-40" max="60" value="10"><output id="gapO"></output></label>
+        <p class="note">「縁の閉じ具合」を上げると、表と裏の合わせ目の隙間が閉じます。頭の見本の球に当てて、浮きや食い込みがないか見てください。</p>
+      </details>
+      <h2 style="margin-top:12px"><i>4</i>色</h2>
+      <div class="sw" id="sw"></div>
+      <p class="note" id="colorNote">「🎨 色を替える部分を選ぶ」を押して、絵の中の替えたい色をタップしてください。</p>
+      <label class="sl" for="tol">色の範囲 <input type="range" id="tol" min="2" max="40" value="14"><output id="tolO"></output></label>
+
+      <h2 style="margin-top:12px"><i>5</i>保存</h2>
+      <div class="out">
+        <button class="btn main" id="savePng">静止画（PNG）</button>
+        <button class="btn" id="saveAll">7色まとめて（ZIP）</button>
+        <button class="btn" id="saveGlb">3D（.glb）</button>
+        <button class="btn" id="saveJson">設定（.json）</button>
+      </div>
+      <p class="note">静止画はVTube Studioの「アイテム」にそのまま入れられます。設定には揺らす場所・付け根・角度が入っていて、あとでクローゼット機能で使う予定です。</p>
+    </div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+(() => {
+const $ = (s) => document.querySelector(s), $$ = (s) => [...document.querySelectorAll(s)];
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const MAXW = 1100;      // 作業する画像の大きさの上限
+const N = 120;          // 網の細かさ（長い辺のマス数）
+const sm = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+const val = (id) => Number($("#" + id).value);
+// スライダーの数字表示
+const UNITS = { bgthr: "", brush: "", sway: "%", soft: "", rot: "°", scl: "%", px: "", py: "", thick: "", round: "", seal: "", tiltX: "°", tiltY: "°", gap: "", tol: "" };
+Object.keys(UNITS).forEach((k) => { const i = $("#" + k), o = $("#" + k + "O"); const f = () => (o.textContent = i.value + UNITS[k]); i.addEventListener("input", f); f(); });
+
+/* ---------- 1. 画像を読みこんで背景を消す ---------- */
+let SRC = null;        // 元の画像（ImageData）
+let COMPS = [];        // 見つかった絵（向き違いなど）
+let ITEM = null;       // 選んだ1つの絵 {w,h,data(ImageData), alpha(Uint8Array)}
+let sampleKey = null;
+function loadImage(url, key) {
+  sampleKey = key || null;
+  const img = new Image(); img.crossOrigin = "anonymous";
+  img.onload = () => {
+    const s = Math.min(1, MAXW * 1.6 / Math.max(img.width, img.height));
+    const c = document.createElement("canvas"); c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+    const x = c.getContext("2d"); x.drawImage(img, 0, 0, c.width, c.height);
+    SRC = x.getImageData(0, 0, c.width, c.height);
+    cutout();
+  };
+  img.src = url;
+}
+function cutout() {
+  const { width: W, height: H, data: d } = SRC; const n = W * H, A = new Uint8Array(n);
+  let semi = 0; for (let i = 0; i < n; i++) if (d[i * 4 + 3] < 250) semi++;
+  const thr = val("bgthr") / 100;
+  if (semi > n * 0.05) {
+    // 透明の背景がある絵：うすい部分（もや）を消す
+    const t = 40 + thr * 180; for (let i = 0; i < n; i++) A[i] = d[i * 4 + 3] > t ? 1 : 0;
+    $("#bgnote").textContent = "透明の背景がある絵として、うすい部分を消しました。";
+  } else {
+    // 白っぽい背景の絵：外側からつながっている白をぬき取る
+    const t = 255 - (8 + thr * 60); const bright = (i) => Math.min(d[i * 4], d[i * 4 + 1], d[i * 4 + 2]) >= t;
+    A.fill(1); const q = []; const push = (i) => { if (A[i] && bright(i)) { A[i] = 0; q.push(i); } };
+    for (let x = 0; x < W; x++) { push(x); push((H - 1) * W + x); } for (let y = 0; y < H; y++) { push(y * W); push(y * W + W - 1); }
+    while (q.length) { const i = q.pop(), x = i % W, y = (i / W) | 0; if (x > 0) push(i - 1); if (x < W - 1) push(i + 1); if (y > 0) push(i - W); if (y < H - 1) push(i + W); }
+    $("#bgnote").textContent = "白い背景の絵として、外側の白を消しました。";
+  }
+  // 小さなゴミを消して、絵ごとに分ける
+  const L = new Int32Array(n); let nl = 0; const sizes = [], boxes = [];
+  for (let i = 0; i < n; i++) if (A[i] && !L[i]) {
+    nl++; let cnt = 0, x0 = W, x1 = 0, y0 = H, y1 = 0; const st = [i]; L[i] = nl;
+    while (st.length) { const j = st.pop(), x = j % W, y = (j / W) | 0; cnt++; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+      for (const k of [j - 1, j + 1, j - W, j + W]) if (k >= 0 && k < n && A[k] && !L[k] && Math.abs((k % W) - x) <= 1) { L[k] = nl; st.push(k); } }
+    sizes[nl] = cnt; boxes[nl] = [x0, y0, x1, y1];
+  }
+  const big = Math.max(0, ...sizes.filter(Boolean));
+  COMPS = [];
+  for (let l = 1; l <= nl; l++) if (sizes[l] > big * 0.15) COMPS.push({ l, box: boxes[l], size: sizes[l] });
+  // 近くの小さな破片（鈴など）は、いちばん近い大きな絵に入れる
+  const keep = new Set(COMPS.map((c) => c.l));
+  for (let l = 1; l <= nl; l++) if (!keep.has(l) && sizes[l] > 30) {
+    const b = boxes[l], cx = (b[0] + b[2]) / 2, cy = (b[1] + b[3]) / 2;
+    const host = COMPS.find((c) => cx >= c.box[0] - 20 && cx <= c.box[2] + 20 && cy >= c.box[1] - 20 && cy <= c.box[3] + 20);
+    if (host) host.extra = (host.extra || []).concat(l);
+  }
+  // 囲む四角が重なっている絵は1つにまとめる（リボンの尾など、細くつながっている部分）
+  for (let merged = true; merged;) { merged = false;
+    for (let i = 0; i < COMPS.length && !merged; i++) for (let j = i + 1; j < COMPS.length && !merged; j++) { const a = COMPS[i].box, b = COMPS[j].box;
+      if (a[0] <= b[2] && b[0] <= a[2] && a[1] <= b[3] && b[1] <= a[3]) { COMPS[i].box = [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[2], b[2]), Math.max(a[3], b[3])]; COMPS[i].extra = [...(COMPS[i].extra || []), COMPS[j].l, ...(COMPS[j].extra || [])]; COMPS.splice(j, 1); merged = true; } } }
+  COMPS.sort((a, b) => a.box[0] - b.box[0]);
+  COMPS.forEach((c) => { const ids = new Set([c.l, ...(c.extra || [])]); c.mask = (i) => ids.has(L[i]); });
+  const tw = $("#thumbs"); tw.innerHTML = "";
+  $("#pickWrap").hidden = COMPS.length < 2;
+  COMPS.forEach((c, i) => { const b = document.createElement("button"); b.setAttribute("aria-label", (i + 1) + "つめの絵"); b.style.backgroundImage = `url(${crop(c, 120).url})`; b.onclick = () => pick(i); tw.appendChild(b); });
+  pick(0);
+}
+function crop(c, maxSide) {
+  const { width: W, data: d } = SRC, [x0, y0, x1, y1] = c.box, pad = Math.round(Math.max(x1 - x0, y1 - y0) * 0.03) + 2;
+  const bx = Math.max(0, x0 - pad), by = Math.max(0, y0 - pad), bw = Math.min(SRC.width, x1 + pad + 1) - bx, bh = Math.min(SRC.height, y1 + pad + 1) - by;
+  const s = Math.min(1, (maxSide || MAXW) / Math.max(bw, bh));
+  const full = new ImageData(bw, bh);
+  for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) { const si = (by + y) * W + bx + x, di = y * bw + x; const on = c.mask(si); full.data[di * 4] = d[si * 4]; full.data[di * 4 + 1] = d[si * 4 + 1]; full.data[di * 4 + 2] = d[si * 4 + 2]; full.data[di * 4 + 3] = on ? 255 : 0; }
+  const c1 = document.createElement("canvas"); c1.width = bw; c1.height = bh; c1.getContext("2d").putImageData(full, 0, 0);
+  const c2 = document.createElement("canvas"); c2.width = Math.round(bw * s); c2.height = Math.round(bh * s); const x2 = c2.getContext("2d"); x2.imageSmoothingQuality = "high"; x2.drawImage(c1, 0, 0, c2.width, c2.height);
+  return { canvas: c2, url: c2.toDataURL() };
+}
+let pickIdx = 0;
+function pick(i) {
+  pickIdx = i; $$("#thumbs button").forEach((b, k) => b.setAttribute("aria-pressed", k === i));
+  const { canvas } = crop(COMPS[i]);
+  const x = canvas.getContext("2d"), data = x.getImageData(0, 0, canvas.width, canvas.height);
+  ITEM = { w: canvas.width, h: canvas.height, canvas, data };
+  // 編集用のキャンバス
+  const ei = $("#edImg"), ep = $("#edPaint"); ei.width = ep.width = ITEM.w; ei.height = ep.height = ITEM.h;
+  ei.getContext("2d").clearRect(0, 0, ITEM.w, ITEM.h); ei.getContext("2d").drawImage(canvas, 0, 0);
+  PAINT = new Uint8Array(ITEM.w * ITEM.h); PIVOTS = []; COLOR = { mode: 0 }; colorIdx = 0;
+  $("#colorNote").textContent = "「🎨 色を替える部分を選ぶ」を押して、絵の中の替えたい色をタップしてください。";
+  applySample(); paintRedraw(); applyColor(); rebuild(); renderSwatches();
+}
+
+/* ---------- 2. 揺らす場所をぬる ---------- */
+let PAINT = null, PIVOTS = [], tool = "paint";
+$$("[data-tool]").forEach((b) => b.addEventListener("click", () => { tool = b.dataset.tool; $$("[data-tool]").forEach((x) => x.setAttribute("aria-pressed", x === b)); }));
+$("#clearPaint").addEventListener("click", () => { PAINT.fill(0); PIVOTS = []; paintRedraw(); rebuild(); });
+function edPt(e) { const r = $("#edPaint").getBoundingClientRect(); return [(e.clientX - r.left) / r.width * ITEM.w, (e.clientY - r.top) / r.height * ITEM.h]; }
+function dab(x, y, on) {
+  const r = val("brush") * ITEM.w / 900, W = ITEM.w, H = ITEM.h;
+  for (let j = Math.max(0, Math.floor(y - r)); j <= Math.min(H - 1, Math.ceil(y + r)); j++) for (let i = Math.max(0, Math.floor(x - r)); i <= Math.min(W - 1, Math.ceil(x + r)); i++)
+    if ((i - x) ** 2 + (j - y) ** 2 <= r * r) PAINT[j * W + i] = on && ITEM.data.data[(j * W + i) * 4 + 3] > 0 ? 1 : 0;
+}
+let painting = false, last = null, rebuildT = 0;
+const ep = $("#edPaint");
+ep.addEventListener("pointerdown", (e) => {
+  if (!ITEM) return; const [x, y] = edPt(e);
+  if (tool === "pivot") { const near = PIVOTS.findIndex((p) => Math.hypot(p[0] - x, p[1] - y) < ITEM.w * 0.03); if (near >= 0) PIVOTS.splice(near, 1); else PIVOTS.push([x, y]); paintRedraw(); rebuild(); return; }
+  if (tool === "color") { pickColor(x, y); return; }
+  painting = true; ep.setPointerCapture(e.pointerId); last = [x, y]; dab(x, y, tool === "paint"); paintRedraw();
+});
+ep.addEventListener("pointermove", (e) => {
+  if (!painting) return; const [x, y] = edPt(e); const steps = Math.ceil(Math.hypot(x - last[0], y - last[1]) / 4) || 1;
+  for (let s = 1; s <= steps; s++) dab(last[0] + (x - last[0]) * s / steps, last[1] + (y - last[1]) * s / steps, tool === "paint");
+  last = [x, y]; paintRedraw(); clearTimeout(rebuildT); rebuildT = setTimeout(rebuild, 120);
+});
+const endPaint = () => { if (painting) { painting = false; rebuild(); } };
+ep.addEventListener("pointerup", endPaint); ep.addEventListener("pointercancel", endPaint);
+function paintRedraw() {
+  const x = ep.getContext("2d"), img = x.createImageData(ITEM.w, ITEM.h);
+  for (let i = 0; i < PAINT.length; i++) if (PAINT[i]) { img.data[i * 4] = 255; img.data[i * 4 + 1] = 111; img.data[i * 4 + 2] = 163; img.data[i * 4 + 3] = 120; }
+  x.putImageData(img, 0, 0);
+  const r = Math.max(5, ITEM.w * 0.012);
+  PIVOTS.forEach(([px, py]) => { x.beginPath(); x.arc(px, py, r, 0, 7); x.fillStyle = "#FFD25E"; x.fill(); x.lineWidth = r * 0.35; x.strokeStyle = "#2A0F1B"; x.stroke(); });
+}
+// 見本の絵には、揺らす場所を最初からぬっておく
+const SAMPLES = {
+  ribbon: { url: "atelier/sample-ribbon.webp", pick: 0, rects: [[0, 0.43, 0.493, 1], [0.507, 0.43, 1, 1]], circles: [], pivots: [[0.47, 0.41], [0.53, 0.41]], py: 25, scl: 70 },
+  headphones: { url: "atelier/sample-headphones.webp", pick: 0, rects: [], circles: [[0.098, 0.47, 0.045], [0.06, 0.40, 0.05], [0.17, 0.40, 0.045], [0.07, 0.50, 0.045], [0.15, 0.51, 0.04], [0.905, 0.46, 0.045], [0.825, 0.40, 0.05], [0.935, 0.39, 0.045], [0.85, 0.50, 0.045], [0.93, 0.50, 0.04]], pivots: [[0.115, 0.39], [0.875, 0.385]], py: 2, scl: 125 },
+};
+function applySample() {
+  const s = SAMPLES[sampleKey]; if (!s || pickIdx !== s.pick) return;
+  const W = ITEM.w, H = ITEM.h;
+  for (const [a, b, c, d] of s.rects) for (let y = Math.floor(b * H); y < d * H; y++) for (let x = Math.floor(a * W); x < c * W; x++) if (ITEM.data.data[(y * W + x) * 4 + 3]) PAINT[y * W + x] = 1;
+  for (const [cx, cy, r] of s.circles) { const R = r * W; for (let y = Math.max(0, Math.floor(cy * H - R)); y < Math.min(H, cy * H + R); y++) for (let x = Math.max(0, Math.floor(cx * W - R)); x < Math.min(W, cx * W + R); x++) if ((x - cx * W) ** 2 + (y - cy * H) ** 2 < R * R && ITEM.data.data[(y * W + x) * 4 + 3]) PAINT[y * W + x] = 1; }
+  PIVOTS = s.pivots.map(([x, y]) => [x * W, y * H]);
+  $("#py").value = s.py; $("#scl").value = s.scl; ["py", "scl"].forEach((k) => $("#" + k).dispatchEvent(new Event("input")));
+}
+
+/* ---------- 色替え ---------- */
+let COLOR = { mode: 0 }, colorIdx = 0;
+const HUES = [["元の色", null], ["赤", 0.0], ["オレンジ", 0.07], ["黄", 0.14], ["緑", 0.36], ["水色", 0.52], ["青", 0.62], ["紫", 0.77]];
+function rgb2hsv(r, g, b) { const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn; let h = 0; if (d) { if (mx === r) h = ((g - b) / d) % 6; else if (mx === g) h = (b - r) / d + 2; else h = (r - g) / d + 4; h /= 6; if (h < 0) h += 1; } return [h, mx ? d / mx : 0, mx]; }
+function pickColor(x, y) {
+  const i = (Math.floor(y) * ITEM.w + Math.floor(x)) * 4, d = ITEM.data.data; if (!d[i + 3]) return;
+  const [h, s, v] = rgb2hsv(d[i] / 255, d[i + 1] / 255, d[i + 2] / 255);
+  COLOR = s < 0.18 ? { mode: v < 0.5 ? 2 : 3, h, s, v } : { mode: 1, h, s, v };
+  $("#colorNote").textContent = COLOR.mode === 1 ? "選んだ色に近い部分の色を替えます。下の色を押してください。" : COLOR.mode === 2 ? "黒っぽい部分の色を替えます。下の色を押してください。" : "白っぽい部分にうすく色を付けます。下の色を押してください。";
+  if (!colorIdx) colorIdx = 1; renderSwatches(); applyColor();
+}
+function renderSwatches() {
+  const w = $("#sw"); w.innerHTML = "";
+  HUES.forEach(([n, h], i) => { const b = document.createElement("button"); b.type = "button"; b.title = n; b.setAttribute("aria-label", n); b.setAttribute("aria-pressed", i === colorIdx);
+    b.style.background = h == null ? "conic-gradient(#888,#ccc,#888)" : `hsl(${h * 360},70%,55%)`; b.onclick = () => { colorIdx = i; renderSwatches(); applyColor(); }; w.appendChild(b); });
+}
+$("#tol").addEventListener("input", () => applyColor());
+function colorFn() {
+  const h2 = HUES[colorIdx][1]; if (h2 == null || !COLOR.mode) return null;
+  const tol = val("tol") / 100;
+  return (r, g, b) => {
+    const [h, s, v] = rgb2hsv(r, g, b);
+    if (COLOR.mode === 1) { let dh = Math.abs(h - COLOR.h); dh = Math.min(dh, 1 - dh); if (dh > tol || s < 0.12) return null; return hsv2rgb(h2 + (h - COLOR.h), Math.min(1, s * 1.05), v); }
+    if (COLOR.mode === 2) { if (v > 0.3 + tol || s > 0.2) return null; return hsv2rgb(h2, 0.75, 0.25 + v * 2.2); }
+    if (s > 0.15 || v < 0.7 - tol) return null; return hsv2rgb(h2, 0.28, v);
+  };
+}
+function hsv2rgb(h, s, v) { h = ((h % 1) + 1) % 1; const i = Math.floor(h * 6), f = h * 6 - i, p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s); return [[v, t, p], [q, v, p], [p, v, t], [p, q, v], [t, p, v], [v, p, q]][i % 6]; }
+// 色を替えた絵を作る（保存にも使う）
+function coloredCanvas(idx) {
+  const keep = colorIdx; if (idx != null) colorIdx = idx; const fn = colorFn(); colorIdx = keep;
+  const c = document.createElement("canvas"); c.width = ITEM.w; c.height = ITEM.h; const x = c.getContext("2d");
+  if (!fn) { x.drawImage(ITEM.canvas, 0, 0); return c; }
+  const img = new ImageData(new Uint8ClampedArray(ITEM.data.data), ITEM.w, ITEM.h), d = img.data;
+  for (let i = 0; i < d.length; i += 4) if (d[i + 3]) { const o = fn(d[i] / 255, d[i + 1] / 255, d[i + 2] / 255); if (o) { d[i] = o[0] * 255; d[i + 1] = o[1] * 255; d[i + 2] = o[2] * 255; } }
+  x.putImageData(img, 0, 0); return c;
+}
+let texCanvas = null;
+function applyColor() { if (!ITEM) return; texCanvas = coloredCanvas(); if (TEX) { TEX.image = texCanvas; TEX.needsUpdate = true; } }
+
+/* ---------- 網（メッシュ）と、揺れる場所のグループ ---------- */
+let M = null; // {GX,GY,base2,base3f,base3b,groups:[{pivot:[x,y],w:Float32Array}],idx}
+function rebuild() {
+  if (!ITEM) return;
+  const W = ITEM.w, H = ITEM.h, asp = H / W;
+  const GX = W >= H ? N : Math.max(8, Math.round(N * W / H)), GY = W >= H ? Math.max(8, Math.round(N * H / W)) : N;
+  const al = ITEM.data.data;
+  const at = (u, v) => { const x = Math.min(W - 1, Math.round(u * (W - 1))), y = Math.min(H - 1, Math.round(v * (H - 1))); return y * W + x; };
+  // ふくらみ：形の内側の、縁からの距離（ざっくり計算）
+  const DW = Math.min(256, W), DH = Math.round(DW * asp), D = new Float32Array(DW * DH);
+  for (let y = 0; y < DH; y++) for (let x = 0; x < DW; x++) D[y * DW + x] = al[at(x / (DW - 1), y / (DH - 1)) * 4 + 3] ? 1e6 : 0;
+  for (let y = 0; y < DH; y++) for (let x = 0; x < DW; x++) { const i = y * DW + x; if (!D[i]) continue; let m = D[i]; if (x) m = Math.min(m, D[i - 1] + 1); if (y) m = Math.min(m, D[i - DW] + 1); if (x && y) m = Math.min(m, D[i - DW - 1] + 1.414); if (y && x < DW - 1) m = Math.min(m, D[i - DW + 1] + 1.414); D[i] = m; }
+  for (let y = DH - 1; y >= 0; y--) for (let x = DW - 1; x >= 0; x--) { const i = y * DW + x; if (!D[i]) continue; let m = D[i]; if (x < DW - 1) m = Math.min(m, D[i + 1] + 1); if (y < DH - 1) m = Math.min(m, D[i + DW] + 1); if (x < DW - 1 && y < DH - 1) m = Math.min(m, D[i + DW + 1] + 1.414); if (y < DH - 1 && x) m = Math.min(m, D[i + DW - 1] + 1.414); D[i] = m; }
+  const R = Math.max(2, DW * val("round") / 400);
+  const nv = GX * GY, mask = new Uint8Array(nv), hgt = new Float32Array(nv), pg = new Uint8Array(nv);
+  for (let j = 0; j < GY; j++) for (let i = 0; i < GX; i++) {
+    const u = i / (GX - 1), v = j / (GY - 1), k = j * GX + i;
+    let on = 0; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const uu = Math.min(1, Math.max(0, u + dx / (GX - 1))), vv = Math.min(1, Math.max(0, v + dy / (GY - 1))); if (al[at(uu, vv) * 4 + 3]) on = 1; }
+    mask[k] = on;
+    const dd = D[Math.min(DH - 1, Math.round(v * (DH - 1))) * DW + Math.min(DW - 1, Math.round(u * (DW - 1)))];
+    hgt[k] = Math.sqrt(Math.min(dd / R, 1));
+    // ぬった場所（まわりを少し見て判定）
+    let p = 0; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const uu = Math.min(1, Math.max(0, u + dx / (GX - 1) * 0.5)), vv = Math.min(1, Math.max(0, v + dy / (GY - 1) * 0.5)); if (PAINT[at(uu, vv)]) p = 1; }
+    pg[k] = p;
+  }
+  // 縁の閉じ具合：縁に近いところは厚みを0にして、表と裏をくっつける
+  const seal = val("seal") / 100; for (let k = 0; k < nv; k++) hgt[k] = mask[k] ? Math.max(0, (hgt[k] - seal) / (1 - seal)) : 0;
+  // ぬった場所をグループに分ける（レースの穴などで切れないよう、少しつなげてから）
+  { const pd = new Uint8Array(pg); for (let j = 0; j < GY; j++) for (let i = 0; i < GX; i++) if (pg[j * GX + i]) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const ni = i + dx, nj = j + dy; if (ni >= 0 && nj >= 0 && ni < GX && nj < GY && mask[nj * GX + ni]) pd[nj * GX + ni] = 1; } pg.set(pd); }
+  const lab = new Int32Array(nv); const groups = [];
+  for (let k = 0; k < nv; k++) if (pg[k] && !lab[k]) {
+    const id = groups.length + 1, cells = [], st = [k]; lab[k] = id;
+    while (st.length) { const c = st.pop(); cells.push(c); const ci = c % GX, cj = (c / GX) | 0; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const ni = ci + dx, nj = cj + dy; if (ni < 0 || nj < 0 || ni >= GX || nj >= GY) continue; const nk = nj * GX + ni; if (pg[nk] && !lab[nk]) { lab[nk] = id; st.push(nk); } } }
+    if (cells.length < 3) continue;
+    // 付け根：グループの中か近くにある📌、なければいちばん上
+    const minj = Math.min(...cells.map((c) => (c / GX) | 0));
+    const top = cells.filter((c) => ((c / GX) | 0) === minj); let pv = [top.reduce((a, c) => a + (c % GX), 0) / top.length / (GX - 1), minj / (GY - 1)];
+    const ci0 = cells.map((c) => [(c % GX) / (GX - 1), ((c / GX) | 0) / (GY - 1)]);
+    let best = null, bd = 1e9; for (const [x, y] of PIVOTS) { const u = x / W, v = y / H; const d = Math.min(...ci0.map(([a, b]) => Math.hypot(a - u, (b - v) * asp))); if (d < 0.06 && d < bd) { bd = d; best = [u, v]; } }
+    if (best) pv = best;
+    const far = Math.max(...ci0.map(([a, b]) => Math.hypot(a - pv[0], (b - pv[1]) * asp))) || 0.01;
+    // ぬった場所の境目をぼかす（ここで継ぎ目が裂けないようにする）
+    let f = new Float32Array(nv); cells.forEach((c) => (f[c] = 1));
+    for (let it = 0; it < 2; it++) { const g = new Float32Array(nv); for (let j = 0; j < GY; j++) for (let i = 0; i < GX; i++) { let s = 0, n2 = 0; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const ni = i + dx, nj = j + dy; if (ni < 0 || nj < 0 || ni >= GX || nj >= GY) continue; s += f[nj * GX + ni]; n2++; } g[j * GX + i] = s / n2; } f = g; }
+    const w = new Float32Array(nv);
+    for (let j = 0; j < GY; j++) for (let i = 0; i < GX; i++) { const k2 = j * GX + i; if (!f[k2]) continue; const d = Math.hypot(i / (GX - 1) - pv[0], (j / (GY - 1) - pv[1]) * asp); w[k2] = f[k2] * Math.pow(sm(0, far, d), 0.9); }
+    groups.push({ pivot: pv, w, size: cells.length / nv, th: 0, om: 0, fw: 0, fo: 0 });
+  }
+  const idxF = [], idxB = [];
+  for (let j = 0; j < GY - 1; j++) for (let i = 0; i < GX - 1; i++) { const a = j * GX + i, b = a + 1, c = a + GX, d = c + 1; if (mask[a] || mask[b] || mask[c] || mask[d]) { idxF.push(a, c, b, b, c, d); idxB.push(a, b, c, b, d, c); } }
+  M = { GX, GY, asp, hgt, mask, groups, idxF, idxB };
+  $("#groups").innerHTML = groups.length ? groups.map((g, i) => `<span>揺れる場所${i + 1}</span>`).join("") : `<span>まだ揺れる場所はありません</span>`;
+  buildMeshes();
+}
+
+/* ---------- 3. 見え方（2Dと3D） ---------- */
+let TEX = null; const R2 = mkStage($("#v2"), false), R3 = mkStage($("#v3"), true);
+function mkStage(el, is3d) {
+  const r = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: false }); r.setPixelRatio(Math.min(devicePixelRatio, 2)); el.appendChild(r.domElement);
+  const sc = new THREE.Scene(), cam = is3d ? new THREE.PerspectiveCamera(30, 1, 0.1, 30) : new THREE.OrthographicCamera(-1, 1, 1, -1, -10, 10);
+  if (is3d) { cam.position.set(0, 0.15, 4.2); sc.add(new THREE.HemisphereLight(0xffffff, 0x443355, 0.9)); const dl = new THREE.DirectionalLight(0xffffff, 0.7); dl.position.set(-1, 2, 3); sc.add(dl); }
+  const world = new THREE.Group(); sc.add(world);   // 頭ごと動く
+  const head = new THREE.Group(); world.add(head);
+  if (is3d) { const s = new THREE.Mesh(new THREE.SphereGeometry(0.62, 40, 30), new THREE.MeshStandardMaterial({ color: 0x8a7f99, roughness: 0.9 })); s.position.y = -0.25; head.add(s); }
+  else { const s = new THREE.Mesh(new THREE.CircleGeometry(0.62, 64), new THREE.MeshBasicMaterial({ color: 0x5a4f68 })); s.position.set(0, -0.25, -1); head.add(s); const sh = new THREE.Mesh(new THREE.CircleGeometry(1.0, 64, 0, Math.PI), new THREE.MeshBasicMaterial({ color: 0x4a4157 })); sh.position.set(0, -1.45, -1.1); head.add(sh); }
+  const item = new THREE.Group(); world.add(item);
+  const fit = () => { const w = el.clientWidth; r.setSize(w, w, false); };
+  addEventListener("resize", fit); fit();
+  return { r, sc, cam, world, head, item, is3d, meshes: [] };
+}
+function shader(lit, back) {
+  return new THREE.ShaderMaterial({
+    uniforms: { map: { value: TEX }, lit: { value: lit ? 1 : 0 }, back: { value: back ? 1 : 0 } },
+    vertexShader: `varying vec2 vUv; varying vec3 vN; void main(){ vUv=uv; vN=normalize(normalMatrix*normal); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+    fragmentShader: `uniform sampler2D map; uniform float lit, back; varying vec2 vUv; varying vec3 vN;
+      void main(){ vec4 c=texture2D(map,vUv); if(c.a<0.5) discard;
+        if(lit>0.5){ vec3 n=normalize(vN); if(back>0.5) n=-n; float d=max(dot(n,normalize(vec3(-0.4,0.6,0.8))),0.0); float rim=pow(1.0-abs(n.z),2.0); c.rgb=c.rgb*(0.6+0.5*d)+vec3(0.16,0.12,0.2)*rim; }
+        gl_FragColor=vec4(c.rgb,1.0); }`,
+    side: THREE.DoubleSide,
+  });
+}
+function geom(sign, depth) {
+  const { GX, GY, asp, hgt } = M, nv = GX * GY, pos = new Float32Array(nv * 3), uv = new Float32Array(nv * 2), base = new Float32Array(nv * 3);
+  for (let j = 0; j < GY; j++) for (let i = 0; i < GX; i++) { const k = j * GX + i, u = i / (GX - 1), v = j / (GY - 1); base[k * 3] = u - 0.5; base[k * 3 + 1] = (0.5 - v) * asp; base[k * 3 + 2] = sign * depth * hgt[k]; uv[k * 2] = u; uv[k * 2 + 1] = 1 - v; }
+  pos.set(base); const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.BufferAttribute(uv, 2)); g.setIndex(sign > 0 ? M.idxF : M.idxB); g.computeVertexNormals(); g.userData.base = base; return g;
+}
+function buildMeshes() {
+  if (!texCanvas) applyColor();
+  if (!TEX) { TEX = new THREE.CanvasTexture(texCanvas); TEX.anisotropy = 4; } else { TEX.image = texCanvas; TEX.needsUpdate = true; }
+  for (const S of [R2, R3]) {
+    S.meshes.forEach((m) => { S.item.remove(m); m.geometry.dispose(); }); S.meshes = [];
+    const depth = S.is3d ? val("thick") / 100 * 0.22 : 0;
+    const gf = geom(1, depth), mf = new THREE.Mesh(gf, shader(S.is3d, false)); S.item.add(mf); S.meshes.push(mf);
+    if (S.is3d) { const gb = geom(-1, depth); const mb = new THREE.Mesh(gb, shader(true, true)); S.item.add(mb); S.meshes.push(mb); }
+    const wf = new THREE.Mesh(gf, new THREE.MeshBasicMaterial({ color: 0xff9ac0, wireframe: true, transparent: true, opacity: 0.3 })); wf.userData.wire = true; S.item.add(wf); S.meshes.push(wf);
+  }
+}
+["thick", "round", "seal"].forEach((k) => $("#" + k).addEventListener("change", rebuild));
+$("#bgthr").addEventListener("change", () => SRC && cutout());
+
+// 揺れ（ばね）と変形
+const headSt = { x: 0, y: 0, rot: 0, vx: 0, vy: 0, ax: 0, ay: 0 };
+function physics(dt) {
+  const amt = val("sway") / 100, soft = val("soft") / 100;
+  for (const g of M.groups) {
+    const k = (70 - 50 * soft) * (1 + (0.02 / Math.max(0.005, g.size))) ** 0.25, c = 4 + 6 * (1 - soft);
+    const acc = -k * (g.th + headSt.rot * 0.85) - c * g.om - headSt.ax * 0.014 * amt;
+    g.om += acc * dt; g.th += g.om * dt;
+    const a2 = -k * 0.8 * g.fw - c * g.fo - headSt.ax * 0.006 * amt; g.fo += a2 * dt; g.fw += g.fo * dt;
+  }
+}
+function deform(S) {
+  const { GX, GY, asp, groups } = M;
+  for (const m of S.meshes) {
+    if (m.userData.wire) continue; const g = m.geometry, p = g.attributes.position.array, b = g.userData.base;
+    for (let k = 0; k < GX * GY; k++) {
+      let x = b[k * 3], y = b[k * 3 + 1], z = b[k * 3 + 2];
+      for (const gr of groups) { const w = gr.w[k]; if (!w) continue; const px = gr.pivot[0] - 0.5, py = (0.5 - gr.pivot[1]) * asp; const th = gr.th * w, c = Math.cos(th), s = Math.sin(th); const dx = x - px, dy = y - py; x = px + dx * c - dy * s; y = py + dx * s + dy * c;
+        if (S.is3d) { const f = gr.fw * w, cf = Math.cos(f), sf = Math.sin(f); const ry = y - py; y = py + ry * cf - z * sf; z = ry * sf + z * cf; } }
+      p[k * 3] = x; p[k * 3 + 1] = y; p[k * 3 + 2] = z;
+    }
+    g.attributes.position.needsUpdate = true; if (S.is3d) g.computeVertexNormals();
+  }
+}
+// 3Dはドラッグで回す
+let yaw = 0.6, pitch = 0.15, d3 = null; const v3 = $("#v3");
+v3.addEventListener("pointerdown", (e) => { d3 = { x: e.clientX, y: e.clientY, yaw, pitch }; v3.setPointerCapture(e.pointerId); });
+v3.addEventListener("pointermove", (e) => { if (!d3) return; yaw = d3.yaw + (e.clientX - d3.x) / 120; pitch = Math.max(-1.2, Math.min(1.2, d3.pitch + (e.clientY - d3.y) / 160)); });
+const e3 = () => (d3 = null); v3.addEventListener("pointerup", e3); v3.addEventListener("pointercancel", e3);
+// 2Dはドラッグで頭を動かす
+let d2 = null; const v2 = $("#v2");
+v2.addEventListener("pointerdown", (e) => { const r = v2.getBoundingClientRect(); d2 = [(e.clientX - r.left) / r.width - 0.5, (e.clientY - r.top) / r.height - 0.5]; v2.setPointerCapture(e.pointerId); });
+v2.addEventListener("pointermove", (e) => { if (!d2) return; const r = v2.getBoundingClientRect(); d2 = [(e.clientX - r.left) / r.width - 0.5, (e.clientY - r.top) / r.height - 0.5]; });
+const e2 = () => (d2 = null); v2.addEventListener("pointerup", e2); v2.addEventListener("pointercancel", e2);
+let t0 = performance.now(), T = 0;
+function loop(now) {
+  const dt = Math.min(0.033, (now - t0) / 1000); t0 = now; T += dt;
+  if (M) {
+    let tx = 0, ty = 0, tr = 0;
+    if (d2) { tx = d2[0] * 1.2; ty = -d2[1] * 0.8; tr = -d2[0] * 0.6; }
+    else if ($("#auto").checked && !reduce) { tx = Math.sin(T * 1.3) * 0.16 + Math.sin(T * 3.3) * 0.04; ty = Math.abs(Math.sin(T * 2.1)) * 0.05; tr = Math.sin(T * 1.3 + 0.6) * 0.22; }
+    const nx = headSt.x + (tx - headSt.x) * Math.min(1, dt * 10), ny = headSt.y + (ty - headSt.y) * Math.min(1, dt * 10);
+    const vx = (nx - headSt.x) / dt; headSt.ax = (vx - headSt.vx) / dt; headSt.vx = vx; headSt.x = nx; headSt.y = ny; headSt.rot += (tr - headSt.rot) * Math.min(1, dt * 8);
+    physics(dt); deform(R2); deform(R3);
+    const rot = val("rot") * Math.PI / 180, sc = val("scl") / 100 * 1.25, ox = val("px") / 100, oy = val("py") / 100;
+    for (const S of [R2, R3]) {
+      S.item.scale.setScalar(sc); S.item.position.set(ox, oy, S.is3d ? val("gap") / 100 * 0.6 : 0); S.item.rotation.set(S.is3d ? val("tiltX") * Math.PI / 180 : 0, S.is3d ? val("tiltY") * Math.PI / 180 : 0, rot);
+      S.head.visible = $("#headOn").checked; S.meshes.forEach((m) => { if (m.userData.wire) m.visible = $("#wire").checked; });
+    }
+    R2.world.position.set(headSt.x * 0.6, headSt.y * 0.6, 0); R2.world.rotation.z = headSt.rot;
+    if ($("#spin").checked && !d3 && !reduce) yaw += dt * 0.6;
+    R3.world.rotation.set(pitch, yaw, headSt.rot * 0.7);
+  }
+  R2.r.render(R2.sc, R2.cam); R3.r.render(R3.sc, R3.cam);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* ---------- 入力 ---------- */
+$("#file").addEventListener("change", (e) => { const f = e.target.files[0]; if (f) loadImage(URL.createObjectURL(f)); });
+const drop = $("#drop");
+["dragenter", "dragover"].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add("on"); }));
+["dragleave", "drop"].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove("on"); }));
+drop.addEventListener("drop", (e) => { const f = e.dataTransfer.files[0]; if (f) loadImage(URL.createObjectURL(f)); });
+$$("[data-sample]").forEach((b) => b.addEventListener("click", () => loadImage(SAMPLES[b.dataset.sample].url, b.dataset.sample)));
+
+/* ---------- 5. 保存 ---------- */
+const NAME = () => "vbui-item";
+function dl(blob, name) { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000); }
+const toBlob = (c) => new Promise((res) => c.toBlob(res, "image/png"));
+$("#savePng").addEventListener("click", async () => { if (ITEM) dl(await toBlob(coloredCanvas()), `${NAME()}-${HUES[colorIdx][0]}.png`); });
+$("#saveAll").addEventListener("click", async () => {
+  if (!ITEM) return; if (!COLOR.mode) { $("#colorNote").textContent = "先に「🎨 色を替える部分を選ぶ」で、替えたい色をタップしてください。"; return; }
+  const z = new JSZip(); for (let i = 0; i < HUES.length; i++) z.file(`${NAME()}-${HUES[i][0]}.png`, await toBlob(coloredCanvas(i)));
+  z.file(`${NAME()}-settings.json`, JSON.stringify(settings(), null, 2)); dl(await z.generateAsync({ type: "blob" }), `${NAME()}-7colors.zip`);
+});
+function settings() {
+  return { version: 1, size: { w: ITEM.w, h: ITEM.h }, sway: M.groups.map((g, i) => ({ id: i + 1, pivot: g.pivot.map((x) => +x.toFixed(4)) })), paint: rle(PAINT), pivots: PIVOTS.map(([x, y]) => [+(x / ITEM.w).toFixed(4), +(y / ITEM.h).toFixed(4)]),
+    attach: { rotate: val("rot"), scale: val("scl"), x: val("px"), y: val("py") }, motion: { sway: val("sway"), softness: val("soft") },
+    shape3d: { thickness: val("thick"), roundness: val("round"), seal: val("seal"), tiltX: val("tiltX"), tiltY: val("tiltY"), gap: val("gap") }, color: { mode: COLOR.mode, hue: COLOR.h ?? null, tolerance: val("tol"), choice: HUES[colorIdx][0] } };
+}
+function rle(a) { const o = []; let v = a[0], n = 0; for (const x of a) { if (x === v) n++; else { o.push(n); v = x; n = 1; } } o.push(n); return { start: a[0], runs: o }; }
+$("#saveJson").addEventListener("click", () => { if (ITEM) dl(new Blob([JSON.stringify(settings(), null, 2)], { type: "application/json" }), `${NAME()}-settings.json`); });
+$("#saveGlb").addEventListener("click", () => {
+  if (!M) return;
+  const depth = val("thick") / 100 * 0.22, tex = new THREE.CanvasTexture(coloredCanvas()); tex.flipY = true;
+  const mat = new THREE.MeshStandardMaterial({ map: tex, alphaTest: 0.5, transparent: false, side: THREE.DoubleSide, roughness: 0.75, metalness: 0 });
+  const grp = new THREE.Group(); grp.name = "vbui_item";
+  const f = geom(1, depth), b = geom(-1, depth); grp.add(new THREE.Mesh(f, mat), new THREE.Mesh(b, mat));
+  grp.scale.setScalar(0.15); // 15cmくらいの大きさにする
+  new THREE.GLTFExporter().parse(grp, (out) => dl(new Blob([out], { type: "model/gltf-binary" }), `${NAME()}.glb`), { binary: true });
+});
+
+loadImage(SAMPLES.headphones.url, "headphones");
+})();
+</script>
+</body>
+</html>
