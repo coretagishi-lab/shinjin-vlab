@@ -28,7 +28,7 @@ footer{margin-top:40px;color:var(--muted);font-size:13px;display:flex;gap:16px;f
 <main>
 <header><a href="./"><img src="logo.png" alt="Vぶい"></a></header>
 <h1>プライバシーポリシー</h1>
-<p class="date">制定日：2026年10月28日／改定日：2026年11月3日</p>
+<p class="date">制定日：2026年10月28日／改定日：2026年11月3日（安全管理を追記）</p>
 
 <p>Vぶい（以下「本サービス」）の運営者（以下「運営者」）は、本サービスをご利用いただく方（以下「利用者」）の情報を、以下のとおり取り扱います。</p>
 
@@ -89,8 +89,26 @@ Vぶいからコメントを送ったときに、接続元のIPアドレスを�
 <li>ログイン情報を含むすべての情報の削除、または名鑑への掲載の停止を希望される場合は、下記のお問い合わせ先までご連絡ください。確認のうえ、すみやかに削除します。</li>
 </ul>
 
-<h2>8. 安全管理</h2>
-<p>運営者は、取得した情報の漏えい、紛失、改ざんを防ぐため、アクセス制限など適切な安全管理を行います。</p>
+<h2>8. 安全管理（データの保護のしくみ）</h2>
+<p>Googleユーザーデータ（メールアドレス、名前、プロフィール画像、YouTubeチャンネルのID・名前・アイコン・公開統計）を含む、取得したすべての情報を、次の方法で保護しています。</p>
+<ul>
+<li><b>通信の暗号化</b>：本サービスとの通信、本サービスとGoogle・データベースとの通信は、すべてHTTPS（TLS 1.2以上）で暗号化しています。</li>
+<li><b>保存時の暗号化</b>：情報は、データベースサービス（Supabase）上に、保存時の暗号化（AES-256）がされた状態で保存しています。</li>
+<li><b>アクセスの制限</b>：データベースには行単位のアクセス制御（Row Level Security）をかけ、利用者は自分の情報しか読み書きできません。管理用の鍵はサーバーの中だけにあり、ブラウザやアプリには置きません。運営の管理画面を見られるのは、運営者のアカウント（2つ）だけです。</li>
+<li><b>アクセストークンを保存しない</b>：Googleから受け取るアクセス用の情報（アクセストークン・リフレッシュトークン）は、チャンネルの確認に1回使うだけで、保存しません。</li>
+<li><b>必要なものだけを取得</b>：YouTubeの権限は表示のみ（<code>youtube.readonly</code>）で、チャンネルの確認以外には使いません。</li>
+<li><b>削除</b>：本人登録の解除、またはお問い合わせにより、関連する情報を削除します。漏えいなどの事故が起きた場合は、すみやかに影響を受ける方にお知らせし、必要な措置をとります。</li>
+</ul>
+<div class="box" lang="en">
+<p><b>Data protection (English summary)</b></p>
+<ul style="margin:0">
+<li>Encryption in transit: all traffic between users, this service, Google APIs and our database uses HTTPS (TLS 1.2+).</li>
+<li>Encryption at rest: data is stored in Supabase (PostgreSQL) with AES-256 encryption at rest.</li>
+<li>Access control: Row Level Security ensures each user can only access their own data. Service-role keys exist only on the server and are never exposed to clients. Only the two operator accounts can access the admin dashboard.</li>
+<li>No token storage: Google OAuth access and refresh tokens are used once to verify channel ownership and are never stored.</li>
+<li>Minimal scope: only <code>youtube.readonly</code> is requested, used solely to identify the user's own YouTube channel.</li>
+<li>Deletion and incident response: data is deleted when the user unregisters or on request; affected users will be notified promptly in the event of a breach.</li>
+</ul></div>
 
 <h2>9. このポリシーの変更</h2>
 <p>内容を変更する場合は、このページでお知らせします。</p>
