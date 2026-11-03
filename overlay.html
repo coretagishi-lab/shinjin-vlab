@@ -118,7 +118,7 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
 
   // ---- この画面に直接コメントを出す（わんコメを使っていない人向け／設定で「いつも出す」の人） ----
   function showComment(c, { cls = "", text, ms = 15000 } = {}) {
-    const el = document.createElement("div"); el.className = "cm " + cls;
+    const el = document.createElement("div"); el.className = "cm " + cls; if (c.id) el.dataset.id = c.id;
     el.innerHTML = `${c.avatar_url ? `<img src="${esc(c.avatar_url)}" alt="">` : `<span class="av">${esc([...(c.nickname || "V")][0])}</span>`}<div><b>${esc(c.nickname)}<i>Vぶい</i></b>${esc(text ?? c.body)}</div>`;
     const st = $("#stack"); st.appendChild(el);
     while (st.children.length > 5) st.firstChild.remove();
@@ -224,6 +224,8 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
       cl.channel("ovl:" + KEY, { config: { broadcast: { self: false } } })
         .on("broadcast", { event: "items" }, (m) => handleItems(m.payload?.items))
         .on("broadcast", { event: "settings" }, (m) => handleSettings(m.payload?.settings, m.payload?.settings_at))
+        // 配信者が出入り禁止にした人のコメントは、画面からすぐ消す
+        .on("broadcast", { event: "remove" }, (m) => { (m.payload?.ids || []).forEach((id) => { seen.add(id); document.querySelectorAll(`.cm[data-id="${Number(id)}"]`).forEach((el) => el.remove()); }); })
         .subscribe((status) => { const was = rtOK; rtOK = status === "SUBSCRIBED"; if (was && !rtOK) kick(); });
     } catch { rtOK = false; }
   }
