@@ -462,6 +462,21 @@ button.me{width:100%;text-align:left;font:inherit;color:inherit}
 .sbox .gen button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .gin{display:flex;gap:8px}.gin input{flex:1;min-width:0}.gin button{flex:none;background:var(--ink);color:var(--bg);border-radius:10px;padding:0 14px;font-weight:700}
 .note2{font-size:11.5px;color:var(--muted);line-height:1.6}
+/* 荒らし対策（コメント管理・NGワード） */
+.sbox.mod{background:transparent}
+.ngd summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--muted);padding:4px 0}
+.ngd[open] summary{color:var(--ink)}
+.ngd textarea{margin:6px 0;min-height:96px;resize:vertical}
+.mdl{display:flex;flex-direction:column;gap:8px}
+.mdr{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--bg)}
+.mdr.off{opacity:.62}
+.mdr .tx{flex:1;min-width:0;font-size:13px;line-height:1.5;word-break:break-word}
+.mdr .tx b{font-size:12.5px}
+.mdr .tx time{font-size:11px;color:var(--muted);margin-left:6px}
+.mdr .tg{display:inline-block;font-size:10.5px;font-weight:700;border-radius:6px;padding:1px 6px;margin-left:6px;background:var(--chip);color:var(--muted)}
+.mdr .bn{flex:none;border:0;border-radius:999px;padding:7px 11px;font:inherit;font-size:12px;font-weight:700;background:var(--chip);color:var(--ink);cursor:pointer}
+.mdr .bn.cf{background:#D93A3A;color:#fff}
+.mdh{font-size:13px;font-weight:700;margin:6px 0 0}
 .lnk2{align-self:flex-start;font-size:12px;color:var(--muted);text-decoration:underline;padding:2px 0}
 .smsg{margin:0;font-weight:700;color:var(--ok)}
 .sfoot{display:flex;gap:16px;flex-wrap:wrap;font-size:12px}.sfoot a{color:var(--muted)}
@@ -715,6 +730,10 @@ const favs = new Set(), tops = new Set(); // ログインすると推しリス�
 const seen = new Set(store.get("seen", []));
 
 let CH = [], ST = [], DAILY = [], byId = new Map(), live = false;
+// 荒らし対策：この端末の目印（出入り禁止の判定に使う）と、出入り禁止になっているチャンネル
+const DEVICE = (() => { let d = store.get("dev"); if (!d || !/^[A-Za-z0-9_-]{16,64}$/.test(d)) { const a = new Uint8Array(16); crypto.getRandomValues(a); d = [...a].map((b) => b.toString(16).padStart(2, "0")).join(""); store.set("dev", d); } return d; })();
+let BANNED = new Set(store.get("bannedCh", []));
+const notBanned = (s) => !BANNED.has(s.channel_id);
 
 async function rest(path) {
   const r = await fetch(`${SB_URL}/rest/v1/${path}`, { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } });
@@ -748,9 +767,17 @@ async function load(refresh = false) {
   }
   CH.forEach((c, i) => { c.no = i + 1; c.subscriber_count = c.subscriber_count == null ? null : Number(c.subscriber_count); c.stream_count = Number(c.stream_count || 0); c.total_stream_sec = Number(c.total_stream_sec || 0); c.viewers_month = Number(c.viewers_month || 0); byId.set(c.id, c); });
   // 埋め込みOFF（他のサイトで再生できない）配信も一覧には出す。タップするとYouTubeで開く。発掘タブ（その場で再生）だけは出さない
-  ST = ST.filter((s) => byId.has(s.channel_id));
+  ST = ST.filter((s) => byId.has(s.channel_id) && notBanned(s));
 }
 
+async function loadBanned() {
+  try {
+    const r = await overlayApi({ action: "banned", device: DEVICE }, !!SESSION); if (!r?.ok) return;
+    const nb = new Set(r.channels || []); const changed = nb.size !== BANNED.size || [...nb].some((c) => !BANNED.has(c));
+    BANNED = nb; store.set("bannedCh", [...nb]);
+    if (changed) { ST = ST.filter(notBanned); if (typeof refreshCurrent === "function" && !watchVid) refreshCurrent(); }
+  } catch {}
+}
 /* ---------- 救援通知（新人が1日1回だけ呼べるSOS） ---------- */
 let RESCUE = [];
 async function loadRescue() {
@@ -1140,6 +1167,7 @@ let watchVid = null;
 function openWatch(vid, push = true) {
   const s = ST.find((x) => x.id === vid); const c = s && byId.get(s.channel_id);
   if (!s || !c) return;
+  if (BANNED.has(c.id)) return toast("この配信は見られません");
   const noEmb = s.embeddable === false;
   if (noEmb && s.status !== "live") return openExt(ytWatch(vid)); // アーカイブはYouTubeで
 
@@ -1152,7 +1180,7 @@ function openWatch(vid, push = true) {
     <a class="wb sub" href="${ytChan(c.id)}?sub_confirmation=1" target="_blank" rel="noopener" data-sub="${esc(c.id)}">＋ 登録</a>
     <button class="wb" data-fav="${esc(c.id)}" aria-pressed="${favs.has(c.id)}">♡ 推す</button>
     <button class="wb" data-wopen="${esc(c.id)}">カード</button>
-    <a class="wb" href="${ytWatch(vid)}" target="_blank" rel="noopener">YouTubeで開く</a></div>`;
+    <a class="wb" href="${ytWatch(vid)}" target="_blank" rel="noopener">YouTubeで開く</a>${MINE.some((m) => m.id === c.id) ? `<button class="wb" data-set="modopen" data-ch="${esc(c.id)}">🛡 コメント管理</button>` : ""}</div>`;
   if (s.status === "live") { const R = rescueOf(c.id); kosanMark(c.id, { streamId: s.id, rescueId: R ? R.id : null }); }
   const R0 = s.status === "live" && rescueOf(c.id);
   const canChat = (s.status === "live" || s.status === "upcoming") && s.chat_enabled !== false;
@@ -1448,7 +1476,7 @@ async function authInit() {
   } catch (e) { ownMsg = "通信に失敗しました。"; }
   authBusy = false; authReady = true;
   if (SESSION && !PROFILE) openNick();
-  pushInit(); navBadge(); heroCheck();
+  pushInit(); navBadge(); heroCheck(); loadBanned();
   if (tab === "my") renderMy(); else if (curId) renderProfile(); else if (typeof refreshCurrent === "function") refreshCurrent();
 }
 
@@ -1472,6 +1500,63 @@ function ownerBox() {
       ${sosBlock(m)}</div>`;
   }).join("");
 }
+
+/* ---------- 荒らし対策：Vぶいコメントの管理（出入り禁止・NGワード） ---------- */
+// YouTubeのコメントは対象外。Vぶいから送られて配信画面（OBS）に出るコメントだけ
+let MOD = {}, modCh = null, modT = 0, modCf = 0;
+async function loadMods() { await Promise.all(MINE.map(async (m) => { try { const r = await overlayApi({ action: "mod_get", channel_id: m.id }); if (r.ok) MOD[m.id] = r; } catch {} })); }
+function modBlock(m) {
+  const md = MOD[m.id], ng = md ? md.ng_words : null;
+  return `<section class="sbox mod">
+    <h4>🛡 Vぶいコメントの管理${MINE.length > 1 ? `<small class="note2">（${esc(m.custom_title || m.title)}）</small>` : ""}</h4>
+    <small class="note2">Vぶいから届いて配信画面に映るコメントを見て、困った人を出入り禁止にできます。YouTubeのコメントには影響しません。配信中は、スマホでVぶいの自分の配信を開いて「🛡 コメント管理」からも使えます。</small>
+    <div><button class="sbtn gray" data-set="modopen" data-ch="${esc(m.id)}">コメント一覧・出入り禁止</button></div>
+    <details class="ngd"><summary>NGワード${ng && ng.length ? `（${ng.length}個）` : ""}</summary>
+      <textarea data-ng="${esc(m.id)}" placeholder="1行に1つ書いてください" ${ng ? "" : "disabled"}>${esc((ng || []).join("\n"))}</textarea>
+      <small class="note2">この言葉が入ったコメントは配信画面に出しません。送った本人には普通に送れたように見えます。ひらがな・カタカナ、全角・半角、間の記号やスペースの違いは同じとみなします。</small>
+      <div><button class="sbtn" data-set="ngsave" data-ch="${esc(m.id)}">NGワードを保存</button></div>
+    </details>
+  </section>`;
+}
+const ago = (t) => { const m = Math.max(0, Math.round((Date.now() - Date.parse(t)) / 60000)); return m < 1 ? "いま" : m < 60 ? m + "分前" : Math.floor(m / 60) + "時間前"; };
+function modHTML(ch) {
+  const md = MOD[ch]; const c = byId.get(ch) || MINE.find((m) => m.id === ch) || {};
+  const list = !md ? `<p class="note2">読み込み中…</p>` : md.comments.length ? md.comments.map((x) => `<div class="mdr${x.hidden ? " off" : ""}"><div class="tx"><b>${esc(x.nickname)}</b><time>${ago(x.created_at)}</time>${x.hide_reason === "ng" ? `<span class="tg">NGワードで非表示</span>` : x.banned ? `<span class="tg">出入り禁止中</span>` : ""}<br>${esc(x.body)}</div>${x.mine || x.banned ? "" : `<button class="bn" data-mod="ban" data-id="${x.id}">出入り禁止</button>`}</div>`).join("") : `<p class="note2">まだVぶいからのコメントはありません（最近6時間）</p>`;
+  const bans = md && md.bans.length ? `<p class="mdh">出入り禁止にした人（${md.bans.length}人）</p><div class="mdl">${md.bans.map((b) => `<div class="mdr"><div class="tx"><b>${esc(b.nickname || "（名前なし）")}</b><time>${ago(b.created_at)}</time>${b.body_sample ? `<br><span class="note2">「${esc(b.body_sample)}」</span>` : ""}</div><button class="bn" data-mod="unban" data-id="${b.id}">解除</button></div>`).join("")}</div>` : "";
+  return `<div class="jn"><button class="jx" data-mod="close" aria-label="閉じる">×</button>
+    <div class="jh"><span class="jk">🛡 コメント管理</span><b>${esc(c.custom_title || c.title || "")}</b></div>
+    <small class="note2">「出入り禁止」にすると、その人のコメントは配信画面から消え、このチャンネルにはもうコメントできなくなり、Vぶいでこのチャンネルの配信も見られなくなります。別のメールアドレスで登録し直しても、同じスマホや同じ回線からなら止まります。</small>
+    <p class="mdh">Vぶいからのコメント（最近6時間・新しい順）</p><div class="mdl">${list}</div>${bans}</div>`;
+}
+async function modRefresh() {
+  if (!modCh) return;
+  try { const r = await overlayApi({ action: "mod_get", channel_id: modCh }); if (r.ok) MOD[modCh] = r; } catch {}
+  const el = document.getElementById("mod"); if (el && !el.hidden && !modCf) el.querySelector(".ovp").innerHTML = modHTML(modCh);
+}
+function openMod(ch) {
+  modCh = ch; modCf = 0; overlay("mod", modHTML(ch)); modRefresh();
+  clearInterval(modT); modT = setInterval(() => { const el = document.getElementById("mod"); if (!el || el.hidden) { clearInterval(modT); modCh = null; return; } modRefresh(); }, 10000);
+}
+document.addEventListener("input", (e) => { if (e.target.matches?.("textarea[data-ng]")) e.target.dataset.dirty = "1"; });
+document.addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-mod]"); if (!b) return;
+  const a = b.dataset.mod;
+  if (a === "close") { clearInterval(modT); modCh = null; return closeOv("mod"); }
+  if (a === "ban") {
+    // 押しまちがい防止：1回目で確認、4秒以内にもう一度押したら実行
+    if (!b.classList.contains("cf")) { document.querySelectorAll("#mod .bn.cf").forEach((x) => { x.classList.remove("cf"); x.textContent = "出入り禁止"; }); b.classList.add("cf"); b.textContent = "本当に？もう一度押す"; modCf = 1; clearTimeout(b._t); b._t = setTimeout(() => { b.classList.remove("cf"); b.textContent = "出入り禁止"; modCf = 0; }, 4000); return; }
+    b.disabled = true; modCf = 0;
+    const r = await overlayApi({ action: "ban", channel_id: modCh, comment_id: Number(b.dataset.id) }).catch(() => ({}));
+    toast(r.ok ? "出入り禁止にしました。その人のコメントは配信画面から消えます" : "できませんでした。もう一度お試しください");
+    return modRefresh();
+  }
+  if (a === "unban") {
+    b.disabled = true;
+    const r = await overlayApi({ action: "unban", channel_id: modCh, ban_id: Number(b.dataset.id) }).catch(() => ({}));
+    toast(r.ok ? "出入り禁止を解除しました" : "できませんでした");
+    return modRefresh();
+  }
+});
 
 /* ---------- 設定（歯車）：どちらで登録したかで中身を分ける ---------- */
 const GENRES = ["雑談", "ゲーム", "歌", "ASMR", "お絵描き", "企画", "ホラー", "FPS", "マイクラ"];
@@ -1532,7 +1617,7 @@ function settingsHTML() {
   return `<div class="jn"><button class="jx" data-set="close" aria-label="閉じる">×</button>
     <div class="jh"><span class="jk">⚙ 設定</span><b>${vt ? "VTuberの設定" : "リスナーの設定"}</b></div>
     ${setMsg ? `<p class="smsg">${esc(setMsg)}</p>` : ""}
-    ${vt ? chs + addCh + accountSettings() : accountSettings()}
+    ${vt ? chs + addCh + MINE.map(modBlock).join("") + accountSettings() : accountSettings()}
     <div class="sfoot"><a href="guide-vtuber.html">使い方ガイド</a><a href="privacy.html">プライバシー</a><a href="terms.html">利用規約</a></div>
     <div class="sfoot end"><button data-set="switch">アカウントを切り替える</button><button data-set="logout">ログアウト</button></div></div>`;
 }
@@ -1540,15 +1625,17 @@ function openSettings(focusCh) {
   if (!needLogin("設定")) return;
   GED = {}; ICON_PEND = {}; MINE.forEach((m) => { GED[m.id] = [...(m.collab_genres || [])]; });
   overlay("settings", settingsHTML());
-  if (MINE.length) Promise.all([loadKeys(), loadOverlayStatus()]).then(() => rerenderSettings());
+  if (MINE.length) Promise.all([loadKeys(), loadOverlayStatus(), loadMods()]).then(() => rerenderSettings());
   if (focusCh) setTimeout(() => document.querySelector(`#settings [data-chset="${CSS.escape(focusCh)}"]`)?.scrollIntoView({ block: "start" }), 60);
 }
 function rerenderSettings() {
   const el = $("#settings .ovp"); if (!el) return;
   const st = el.scrollTop, vals = {};
   el.querySelectorAll("[data-chset]").forEach((s) => { vals[s.dataset.chset] = { title: s.querySelector('[data-f="title"]').value, bio: s.querySelector('[data-f="bio"]').value, x: s.querySelector('[data-f="x"]').value, collab: s.querySelector('[data-f="collab"]').checked }; });
-  const nk = $("#setNick")?.value;
+  const nk = $("#setNick")?.value, ngv = {};
+  el.querySelectorAll("textarea[data-ng]").forEach((t) => { ngv[t.dataset.ng] = { open: t.closest("details").open, v: t.dataset.dirty ? t.value : null }; });
   el.innerHTML = settingsHTML();
+  el.querySelectorAll("textarea[data-ng]").forEach((t) => { const o = ngv[t.dataset.ng]; if (!o) return; t.closest("details").open = o.open; if (o.v != null && !t.disabled) { t.value = o.v; t.dataset.dirty = "1"; } });
   el.querySelectorAll("[data-chset]").forEach((s) => { const v = vals[s.dataset.chset]; if (!v) return; s.querySelector('[data-f="bio"]').value = v.bio; s.querySelector('[data-f="title"]').value = v.title; s.querySelector('[data-f="x"]').value = v.x; s.querySelector('[data-f="collab"]').checked = v.collab; });
   if (nk != null && $("#setNick")) $("#setNick").value = nk;
   el.scrollTop = st;
@@ -1625,6 +1712,17 @@ document.addEventListener("click", async (e) => {
   const d = t.dataset, ch = d.ch;
   if (d.set === "open") { e.preventDefault(); return openSettings(ch); }
   if (d.set === "close") return closeOv("settings");
+  if (d.set === "modopen") return openMod(ch);
+  if (d.set === "ngsave") {
+    const ta = document.querySelector(`textarea[data-ng="${CSS.escape(ch)}"]`); if (!ta) return;
+    const words = ta.value.split(/\n|、|,/).map((w) => w.trim()).filter(Boolean);
+    t.disabled = true;
+    const r = await overlayApi({ action: "ng_set", channel_id: ch, words }).catch(() => ({}));
+    t.disabled = false;
+    if (r.ok) { MOD[ch] = { ...(MOD[ch] || { comments: [], bans: [] }), ng_words: r.ng_words }; ta.value = r.ng_words.join("\n"); toast(`NGワードを保存しました（${r.ng_words.length}個）`); }
+    else toast("保存できませんでした");
+    return;
+  }
   if (d.set === "logout") { closeOv("settings"); return logout(); }
   if (d.set === "switch") { const vt = MINE.length > 0; closeOv("settings"); await logout(true); return vt ? vtuberLogin() : listenerLogin(); }
   if (d.set === "gdel") { e.stopPropagation(); GED[ch] = (GED[ch] || []).filter((g) => g !== d.g); return rerenderSettings(); }
@@ -2075,7 +2173,7 @@ function heroCheck() {
 async function heroArrive(cid, rid, late = false) {
   const k = cid + ":" + rid; if (HERO_DONE.has(k)) return; HERO_DONE.add(k);
   try {
-    const r = await overlayApi({ action: "arrive", channel_id: cid });
+    const r = await overlayApi({ action: "arrive", channel_id: cid, device: DEVICE });
     const el = document.querySelector(`[data-heronote="${CSS.escape(cid)}"]`);
     if (el) el.textContent = r.ok ? (r.already ? "🦸 この救援では、もう登場ずみです" : "🦸 配信画面に、あなたが登場しました！") : "";
     else if (late && r.ok && !r.already) toast("🦸 配信画面に、あなたが登場しました！");
@@ -2092,9 +2190,9 @@ document.addEventListener("submit", async (e) => {
   const inp = f.querySelector("input"), v = inp.value.trim(); if (!v) return;
   const b = f.querySelector("button"); b.disabled = true;
   try {
-    const r = await overlayApi({ action: "comment", channel_id: f.dataset.vbc, body: v });
+    const r = await overlayApi({ action: "comment", channel_id: f.dataset.vbc, body: v, device: DEVICE });
     if (r.ok) { inp.value = ""; toast("送信しました！ 配信画面に映ります"); }
-    else toast({ too_fast: "少し待ってから送ってください", not_connected: "いまは配信画面とつながっていません", not_live: "配信が終わっています", no_profile: "先にニックネームを決めてください" }[r.error] || "送れませんでした");
+    else toast({ too_fast: "少し待ってから送ってください", not_connected: "いまは配信画面とつながっていません", not_live: "配信が終わっています", no_profile: "先にニックネームを決めてください", banned: "この配信にはコメントできません" }[r.error] || "送れませんでした");
   } catch { toast("送れませんでした"); }
   b.disabled = false;
 });
@@ -2592,7 +2690,7 @@ load().then(() => {
   if (wq) openWatch(wq, false);
   authInit();
   setInterval(() => { if (tab === "home" && !curId && !HP?.target) renderHome(); }, 60000);
-  setInterval(async () => { if (!live) return; try { const s = await rest("streams?select=id,channel_id,title,thumbnail_url,status,scheduled_start_at,actual_start_at,actual_end_at,peak_viewers,last_viewers,is_first_stream,embeddable,is_vertical,chat_enabled&status=neq.none&order=updated_at.desc&limit=3000"); ST = s.filter((x) => byId.has(x.channel_id)); if (tab !== "discover") discOrder = null; } catch {} }, 5 * 60000);
+  setInterval(async () => { if (!live) return; try { const s = await rest("streams?select=id,channel_id,title,thumbnail_url,status,scheduled_start_at,actual_start_at,actual_end_at,peak_viewers,last_viewers,is_first_stream,embeddable,is_vertical,chat_enabled&status=neq.none&order=updated_at.desc&limit=3000"); ST = s.filter((x) => byId.has(x.channel_id) && notBanned(x)); if (tab !== "discover") discOrder = null; } catch {} }, 5 * 60000);
   // 1分ごとに「最近変わった配信」だけ取りに行く（配信が始まったら1〜2分でホームに出す。全部取り直すのは5分ごと）
   setInterval(async () => {
     if (!live || document.hidden) return;
@@ -2604,7 +2702,7 @@ load().then(() => {
       for (const x of s) {
         const was = m.get(x.id)?.status === "live", now = x.status === "live";
         if (was !== now) liveChanged = true;
-        if (x.status === "none" || !byId.has(x.channel_id)) m.delete(x.id); else m.set(x.id, x);
+        if (x.status === "none" || !byId.has(x.channel_id) || BANNED.has(x.channel_id)) m.delete(x.id); else m.set(x.id, x);
       }
       ST = [...m.values()];
       if (liveChanged) { await loadOverlayStatus(); if (tab === "home" && !curId && !watchVid) renderHome(); }
