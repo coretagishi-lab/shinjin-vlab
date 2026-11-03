@@ -1646,7 +1646,10 @@ function accountSettings() {
     <small class="note2">${esc(SESSION?.user?.email || "")} でログイン中</small>
   </section>${setAsVtuber() ? "" : ytBox()}`;
 }
+// Googleの審査が通るまでは、リスナー向けの「YouTubeとつなぐ」は運営だけに出す（審査前の権限を本番で使わないため）
+const YT_LINK_OPEN = false;
 function ytBox() {
+  if (!YT_LINK_OPEN && !isAdmin()) return "";
   const on = !!PROFILE?.yt_channel_id;
   return `<section class="sbox">
     <h4>▶ YouTubeアカウント</h4>
