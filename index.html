@@ -1618,7 +1618,7 @@ function settingsHTML() {
     <div class="jh"><span class="jk">⚙ 設定</span><b>${vt ? "VTuberの設定" : "リスナーの設定"}</b></div>
     ${setMsg ? `<p class="smsg">${esc(setMsg)}</p>` : ""}
     ${vt ? chs + addCh + MINE.map(modBlock).join("") + accountSettings() : accountSettings()}
-    <div class="sfoot"><a href="guide-vtuber.html">使い方ガイド</a><a href="privacy.html">プライバシー</a><a href="terms.html">利用規約</a></div>
+    <div class="sfoot">${isAdmin() ? `<a href="hq.html">📊 HQ 分析</a>` : ""}<a href="guide-vtuber.html">使い方ガイド</a><a href="privacy.html">プライバシー</a><a href="terms.html">利用規約</a></div>
     <div class="sfoot end"><button data-set="switch">アカウントを切り替える</button><button data-set="logout">ログアウト</button></div></div>`;
 }
 function openSettings(focusCh) {

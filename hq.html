@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Vぶい HQ 分析</title>
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap">
+<style>
+:root{
+  --bg:#F6F3EE; --surface:#FFFFFF; --ink:#22202B; --muted:#6F6A7C; --line:#E4DFD6; --chip:#EFEAE2;
+  --accent:#E2457E; --accent-soft:#FBE3EC; --good:#1F9D6B; --good-soft:#DDF3E9; --bad:#C8513A; --bad-soft:#F8E2DC;
+  --bar:#3A6FD8; --bar2:#E2457E; --bar-soft:#DCE6FA;
+  --f:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#14131A; --surface:#1E1C26; --ink:#EEEAF4; --muted:#A39DB2; --line:#302D3B; --chip:#2A2734;
+  --accent:#FF6E9F; --accent-soft:#3D1F2C; --good:#46C891; --good-soft:#163428; --bad:#F07C63; --bad-soft:#3A1E18;
+  --bar:#6E9BF0; --bar2:#FF6E9F; --bar-soft:#22304D; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#14131A; --surface:#1E1C26; --ink:#EEEAF4; --muted:#A39DB2; --line:#302D3B; --chip:#2A2734;
+  --accent:#FF6E9F; --accent-soft:#3D1F2C; --good:#46C891; --good-soft:#163428; --bad:#F07C63; --bad-soft:#3A1E18;
+  --bar:#6E9BF0; --bar2:#FF6E9F; --bar-soft:#22304D; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.75 var(--f);-webkit-text-size-adjust:100%}
+.wrap{max-width:980px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 60px}
+header{display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap}
+header h1{margin:0;font-size:22px;font-weight:900;letter-spacing:.02em}
+header h1 small{display:block;font-size:12px;font-weight:500;color:var(--muted);letter-spacing:0}
+header a{font-size:13px;font-weight:700;color:var(--ink);text-decoration:none;border:1.5px solid var(--line);border-radius:999px;padding:6px 14px;background:var(--surface)}
+nav.tabs{position:sticky;top:0;z-index:5;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;background:var(--bg);padding-block:10px;margin-top:10px;border-bottom:1px solid var(--line)}
+nav.tabs button{flex:none;border:0;border-radius:999px;padding:8px 14px;font:inherit;font-size:13.5px;font-weight:700;background:var(--chip);color:var(--ink);cursor:pointer}
+nav.tabs button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:16px}
+.sum div{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.sum b{display:block;font-size:24px;font-weight:900;line-height:1.2}
+.sum span{font-size:12px;color:var(--muted)}
+section.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px;margin-top:16px;min-width:0}
+section.card h2{margin:0 0 4px;font-size:18px;font-weight:900;text-wrap:balance}
+section.card h3{margin:16px 0 6px;font-size:15px}
+.lead{margin:0 0 12px;color:var(--muted);font-size:13.5px}
+.ans{background:var(--accent-soft);border-radius:12px;padding:10px 14px;font-weight:700;margin:10px 0}
+.ans.g{background:var(--good-soft)}
+.note{font-size:12px;color:var(--muted);margin-top:8px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.grid2>div{min-width:0}
+/* 横棒グラフ */
+.hb{display:flex;flex-direction:column;gap:6px}
+.hb .r{display:grid;grid-template-columns:minmax(84px,30%) 1fr auto;gap:8px;align-items:center;font-size:13px}
+.hb .l{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hb .t{background:var(--bar-soft);border-radius:6px;height:18px;position:relative;overflow:hidden}
+.hb .t i{position:absolute;left:0;top:0;bottom:0;background:var(--bar);border-radius:6px}
+.hb .t i.hi{background:var(--bar2)}
+.hb .t .base{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink);opacity:.45}
+.hb .v{font-variant-numeric:tabular-nums;font-weight:700;min-width:4.5em;text-align:right}
+.hb .v small{display:block;font-weight:400;color:var(--muted);font-size:10.5px;line-height:1.2}
+@media (max-width:560px){.hb .r{grid-template-columns:1fr auto;row-gap:2px}.hb .l{grid-column:1/-1;white-space:normal}}
+/* 縦棒（時間帯） */
+.vb{display:flex;align-items:flex-end;gap:3px;height:160px;padding-top:6px;overflow-x:auto}
+.vb .c{flex:1 0 18px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:3px}
+.vb .c i{display:block;width:100%;background:var(--bar);border-radius:4px 4px 0 0;min-height:2px}
+.vb .c i.hi{background:var(--bar2)}
+.vb .c span{font-size:10.5px;color:var(--muted);white-space:nowrap}
+.vb .c em{font-style:normal;font-size:10px;font-weight:700}
+table{border-collapse:collapse;width:100%;font-size:13px}
+.tw{overflow-x:auto}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{font-size:12px;color:var(--muted);font-weight:700;cursor:pointer;user-select:none}
+td.n{text-align:right;font-variant-numeric:tabular-nums}
+td.nm{max-width:220px;overflow:hidden;text-overflow:ellipsis}
+td img{width:24px;height:24px;border-radius:50%;vertical-align:middle;margin-right:6px;object-fit:cover}
+.up{color:var(--good);font-weight:700}.dn{color:var(--bad);font-weight:700}
+.seg{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 12px}
+.seg button{border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:5px 12px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.cmp{display:grid;grid-template-columns:1fr auto auto auto;gap:0;font-size:13.5px}
+.cmp>div{padding:8px 6px;border-bottom:1px solid var(--line)}
+.cmp .h{font-size:12px;color:var(--muted);font-weight:700}
+.cmp .n{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.soon{border:1.5px dashed var(--line);border-radius:14px;padding:14px;margin-top:10px}
+.soon li{margin:4px 0}
+.gate{text-align:center;padding:60px 10px}
+.gate a{display:inline-block;margin-top:12px;background:var(--ink);color:var(--bg);border-radius:999px;padding:10px 20px;font-weight:700;text-decoration:none}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Vぶい HQ 分析<small>努力の方向を見つけるための分析（運営だけが見られます）</small></h1>
+    <a href="./">Vぶいへ戻る</a>
+  </header>
+  <div id="gate" class="gate"><p>読み込み中…</p></div>
+  <div id="app" hidden>
+    <nav class="tabs" id="tabs"></nav>
+    <div id="view"></div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+const SB_URL = "https://sgmzyhvhwbqyudayboes.supabase.co";
+const SB_KEY = "sb_publishable_igtK18JrLPQCoKbF0U03Gg_o8fKrApc";
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmt = (n, d = 0) => n == null || !isFinite(n) ? "—" : Number(n).toLocaleString("ja-JP", { maximumFractionDigits: d, minimumFractionDigits: d });
+const med = (a) => { const b = a.filter((x) => x != null && isFinite(x)).sort((x, y) => x - y); if (!b.length) return null; const m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
+const avg = (a) => { const b = a.filter((x) => x != null && isFinite(x)); return b.length ? b.reduce((s, x) => s + x, 0) / b.length : null; };
+const jstHour = (t) => (new Date(t).getUTCHours() + 9) % 24;
+const jstDay = (t) => new Date(Date.parse(t) + 9 * 3600e3).getUTCDay();
+const DAYS = ["日", "月", "火", "水", "木", "金", "土"];
+// 順位どうしの関係の強さ（-1〜+1）。多い子ほど伸びているなら＋
+function rankCorr(xs, ys) {
+  const p = xs.map((x, i) => [x, ys[i]]).filter(([x, y]) => x != null && y != null && isFinite(x) && isFinite(y));
+  if (p.length < 8) return null;
+  const rk = (v) => { const o = v.map((x, i) => [x, i]).sort((a, b) => a[0] - b[0]); const r = new Array(v.length); for (let i = 0; i < o.length;) { let k = i; while (k + 1 < o.length && o[k + 1][0] === o[i][0]) k++; for (let m = i; m <= k; m++) r[o[m][1]] = (i + k) / 2; i = k + 1; } return r; };
+  const a = rk(p.map((q) => q[0])), b = rk(p.map((q) => q[1])), ma = avg(a), mb = avg(b);
+  let s = 0, sa = 0, sbb = 0; for (let i = 0; i < a.length; i++) { s += (a[i] - ma) * (b[i] - mb); sa += (a[i] - ma) ** 2; sbb += (b[i] - mb) ** 2; }
+  return sa && sbb ? s / Math.sqrt(sa * sbb) : null;
+}
+
+/* ---------- グラフ（ぜんぶ日本語の言葉で） ---------- */
+// rows: {label, value, n, hi}  base: 基準線（1倍など）
+function hbars(rows, { unit = "", digits = 1, base = null, max = null, nLabel = "件" } = {}) {
+  if (!rows.length) return `<p class="note">まだデータが足りません</p>`;
+  const mx = max ?? (Math.max(...rows.map((r) => r.value || 0), base || 0) * 1.05 || 1);
+  return `<div class="hb">${rows.map((r) => `<div class="r"><span class="l" title="${esc(r.label)}">${esc(r.label)}</span><span class="t"><i class="${r.hi ? "hi" : ""}" style="width:${Math.max(0, (r.value || 0) / mx * 100)}%"></i>${base != null ? `<span class="base" style="left:${base / mx * 100}%"></span>` : ""}</span><span class="v">${fmt(r.value, digits)}${unit}${r.n != null ? `<small>${fmt(r.n)}${nLabel}</small>` : ""}</span></div>`).join("")}</div>`;
+}
+function vbars(rows, { unit = "", digits = 1 } = {}) {
+  const mx = Math.max(...rows.map((r) => r.value || 0)) || 1;
+  return `<div class="vb">${rows.map((r) => `<div class="c" title="${esc(r.label)}：${fmt(r.value, digits)}${unit}（${fmt(r.n)}件）"><em>${r.value == null ? "" : fmt(r.value, digits)}</em><i class="${r.hi ? "hi" : ""}" style="height:${r.value == null ? 0 : Math.max(2, r.value / mx * 120)}px"></i><span>${esc(r.label)}</span></div>`).join("")}</div>`;
+}
+const hiTop = (rows, k = 1) => { const s = [...rows].filter((r) => r.value != null).sort((a, b) => b.value - a.value).slice(0, k); s.forEach((r) => (r.hi = true)); return rows; };
+
+/* ---------- ジャンル・ゲームの見分け方（タイトルの言葉から） ---------- */
+const GAMES = [
+  ["APEX", /apex|エーペックス|えぺ/i], ["VALORANT", /valorant|ヴァロ|ばろらんと/i], ["マインクラフト", /マイクラ|minecraft|マインクラフト/i],
+  ["ポケモン", /ポケモン|pokemon|ポケポケ/i], ["スプラトゥーン", /スプラ|splatoon/i], ["モンハン", /モンハン|モンスターハンター|monster ?hunter/i],
+  ["フォートナイト", /フォートナイト|fortnite/i], ["原神", /原神|genshin/i], ["崩壊スターレイル", /スターレイル|スタレ/i], ["ストリートファイター6", /スト6|ストリートファイター|sf6/i],
+  ["マリオカート", /マリカ|マリオカート/i], ["スマブラ", /スマブラ/i], ["麻雀（雀魂など）", /雀魂|麻雀|じゃんたま|mahjong/i], ["8番出口", /8番出口/i],
+  ["Among Us", /among ?us|アモアス/i], ["ARK", /\bark\b|アーク/i], ["エルデンリング", /エルデン|elden/i], ["ウマ娘", /ウマ娘/i], ["学園アイドルマスター", /学マス|学園アイドルマスター/i],
+  ["ブルーアーカイブ", /ブルアカ|ブルーアーカイブ/i], ["プロセカ", /プロセカ|プロジェクトセカイ/i], ["ゼルダ", /ゼルダ/i], ["どうぶつの森", /あつ森|どうぶつの森/i],
+  ["桃太郎電鉄", /桃鉄/i], ["ファイナルファンタジー", /ff14|ff7|ff16|ファイナルファンタジー/i], ["ドラゴンクエスト", /ドラクエ|ドラゴンクエスト/i],
+  ["ホラーゲーム", /ホラー|horror|心霊/i], ["Lethal Company", /lethal|リーサル/i], ["Overwatch", /overwatch|オーバーウォッチ/i], ["League of Legends", /\blol\b|league of legends/i],
+  ["Escape from Tarkov", /タルコフ|tarkov/i], ["PUBG", /pubg/i], ["ストグラ・GTA", /ストグラ|gta/i], ["Rust", /\brust\b/i], ["パルワールド", /パルワールド|palworld/i],
+];
+const KINDS = [
+  ["雑談", /雑談|freetalk|free talk|おしゃべり|ざつだん/i], ["歌枠", /歌枠|歌う|うたわく|karaoke|singing|歌ってみ/i], ["ゲーム実況", null],
+  ["ASMR", /asmr|囁き|ささやき|耳かき/i], ["お絵描き", /お絵描き|お絵かき|drawing|イラスト/i], ["朝活", /朝活|おはよう|morning/i], ["作業・勉強", /作業|勉強|study/i],
+  ["凸待ち", /凸待ち/i], ["参加型", /参加型|視聴者参加|リスナー参加/i], ["コラボ", /コラボ|collab|ｺﾗﾎﾞ/i], ["耐久", /耐久/i], ["初配信", /初配信|デビュー配信/i],
+  ["占い・相談", /占い|タロット|相談/i], ["料理", /料理|cooking/i], ["Vtuber紹介・自己紹介", /自己紹介|はじめまして/i],
+];
+const WORDS = [
+  ["「初見歓迎」と書く", /初見歓迎|初見さん歓迎|初見さんいらっしゃい/i], ["「【】」でくくる", /【.+】/], ["「耐久」", /耐久/], ["「コラボ」", /コラボ/i], ["「初配信」", /初配信/],
+  ["「参加型」", /参加型/], ["「雑談」", /雑談/], ["「歌枠」", /歌枠/], ["「ASMR」", /asmr/i], ["絵文字を入れる", /\p{Extended_Pictographic}/u], ["「#」タグを入れる", /#\S/],
+  ["「新人Vtuber」「新人」", /新人/i], ["「Vtuber」と書く", /vtuber/i], ["「凸待ち」", /凸待ち/], ["「〇〇まで」目標つき", /(人|名)(いくまで|まで)|目指して|行くまで/],
+];
+const gameOf = (t) => GAMES.filter(([, re]) => re.test(t || "")).map(([n]) => n);
+const kindOf = (t) => { const k = KINDS.filter(([, re]) => re && re.test(t || "")).map(([n]) => n); if (gameOf(t).length) k.push("ゲーム実況"); return k; };
+
+/* ---------- データの下ごしらえ ---------- */
+let D = null, A = null;
+function prep(d) {
+  const now = Date.now();
+  const ch = new Map(d.channels.map((c) => [c.id, { ...c, streams: [] }]));
+  // 配信：長さと「その子のふだんと比べて何倍見られたか」
+  const S = [];
+  for (const s of d.streams) {
+    const c = ch.get(s.channel_id); if (!c) continue;
+    const st = Date.parse(s.actual_start_at), en = s.actual_end_at ? Date.parse(s.actual_end_at) : null;
+    const dur = en ? (en - st) / 60000 : null;
+    if (dur != null && (dur < 3 || dur > 24 * 60)) continue;
+    const x = { ...s, st, dur, hour: jstHour(s.actual_start_at), dow: jstDay(s.actual_start_at), games: gameOf(s.title), kinds: kindOf(s.title),
+      views: s.view_count != null && s.view_count >= 0 ? s.view_count : null, peak: s.peak_viewers || null,
+      lead: s.scheduled_start_at ? (st - Date.parse(s.scheduled_start_at)) / 60000 : null };
+    S.push(x); c.streams.push(x);
+  }
+  // 「ふだん」＝その子の配信の再生数の真ん中の値。比べるのはその子の中だけ（人気の差を消すため）
+  for (const c of ch.values()) {
+    c.streams.sort((a, b) => a.st - b.st);
+    const ended = c.streams.filter((s) => s.dur != null);
+    const mv = med(ended.map((s) => s.views)), mp = med(ended.map((s) => s.peak));
+    for (const s of ended) { s.rel = mv && s.views != null && ended.filter((x) => x.views != null).length >= 4 ? s.views / mv : null; s.relPeak = mp && s.peak && ended.filter((x) => x.peak).length >= 4 ? s.peak / mp : null; }
+    // 伸びの速さ：初配信からの1か月あたりの登録者の増え方
+    const fs = c.first_stream_at ? Date.parse(c.first_stream_at) : ended[0]?.st;
+    const days = fs ? (now - fs) / 864e5 : null;
+    c.days = days;
+    c.growth = !c.subscriber_hidden && c.subscriber_count != null && days >= 14 ? c.subscriber_count / Math.max(days, 30) * 30 : null;
+    // ふるまい（記録がある期間）
+    if (ended.length >= 3) {
+      const span = Math.max(7, (ended[ended.length - 1].st - ended[0].st) / 864e5 + 1);
+      c.perWeek = ended.length / span * 7;
+      c.avgMin = avg(ended.map((s) => s.dur));
+      c.weekHours = c.perWeek * c.avgMin / 60;
+      c.night = ended.filter((s) => s.hour >= 19 || s.hour < 1).length / ended.length;
+      const hs = ended.map((s) => (s.hour + 18) % 24); const mh = avg(hs);
+      c.hourSpread = Math.sqrt(avg(hs.map((h) => (h - mh) ** 2)));
+      let gap = 0; for (let i = 1; i < ended.length; i++) gap = Math.max(gap, (ended[i].st - ended[i - 1].st) / 864e5);
+      c.maxGap = gap;
+      c.scheduledRate = ended.filter((s) => s.lead != null && s.lead > 5).length / ended.length;
+      c.collabRate = ended.filter((s) => /コラボ/i.test(s.title || "")).length / ended.length;
+      c.gameRate = ended.filter((s) => s.games.length).length / ended.length;
+    }
+  }
+  // 直近7日の登録者の増え方
+  const byCh = new Map();
+  for (const r of d.daily) { if (!byCh.has(r.channel_id)) byCh.set(r.channel_id, []); byCh.get(r.channel_id).push(r); }
+  for (const [id, rows] of byCh) { const c = ch.get(id); if (!c) continue; rows.sort((a, b) => a.day < b.day ? -1 : 1); const last = rows[rows.length - 1], first = rows.find((r) => Date.parse(r.day) >= Date.parse(last.day) - 7 * 864e5) || rows[0]; if (rows.length >= 2 && last.subscriber_count != null && first.subscriber_count != null) { c.week = last.subscriber_count - first.subscriber_count; c.weekDays = Math.round((Date.parse(last.day) - Date.parse(first.day)) / 864e5); } }
+  // Vぶいの記録
+  for (const e of d.events) { const c = ch.get(e.channel_id); if (!c) continue; c.ev = c.ev || {}; c.ev[e.kind] = (c.ev[e.kind] || 0) + 1; }
+  for (const o of d.oshi) { const c = ch.get(o.channel_id); if (c) { c.oshi = (c.oshi || 0) + 1; if (o.is_top) c.top = (c.top || 0) + 1; } }
+  for (const v of d.vbc) { const c = ch.get(v.channel_id); if (c) c.vbc = (c.vbc || 0) + 1; }
+  const C = [...ch.values()];
+  return { C, S, ended: S.filter((s) => s.dur != null) };
+}
+
+/* ---------- 各ページ ---------- */
+const TABS = [
+  ["grow", "伸びる子の共通点"], ["length", "配信の長さ・回数"], ["time", "時間帯・曜日"], ["genre", "ゲーム・ジャンル"],
+  ["title", "タイトル・告知"], ["first", "デビュー直後"], ["vv", "Vぶいの効果"], ["list", "VTuber一覧"], ["next", "これから集めるデータ"],
+];
+let tab = "grow";
+try { tab = localStorage.getItem("hqTab") || "grow"; } catch {}
+
+function summary() {
+  const { C, ended } = A;
+  const withGrowth = C.filter((c) => c.growth != null).length;
+  const first = Math.min(...ended.map((s) => s.st)), withViews = ended.filter((s) => s.views != null).length;
+  return `<div class="sum">
+    <div><b>${fmt(C.length)}人</b><span>名鑑のVTuber</span></div>
+    <div><b>${fmt(ended.length)}回</b><span>長さが分かる配信</span></div>
+    <div><b>${fmt(withViews)}回</b><span>再生数が分かる配信</span></div>
+    <div><b>${fmt(withGrowth)}人</b><span>伸びの速さを計算できた子</span></div>
+    <div><b>${isFinite(first) ? new Date(first).toLocaleDateString("ja-JP") : "—"}〜</b><span>配信の記録の期間</span></div>
+  </div>`;
+}
+
+function pageGrow() {
+  const C = A.C.filter((c) => c.growth != null && c.perWeek != null);
+  if (C.length < 12) return `<section class="card"><h2>伸びる子の共通点</h2><p class="note">まだデータが足りません（${C.length}人）</p></section>`;
+  const sorted = [...C].sort((a, b) => b.growth - a.growth), q = Math.ceil(sorted.length / 4);
+  const top = sorted.slice(0, q), low = sorted.slice(Math.floor(sorted.length / 2));
+  const F = [
+    ["週に何回配信するか", "perWeek", "回", 1], ["1回の長さ", "avgMin", "分", 0], ["週の合計時間", "weekHours", "時間", 1],
+    ["夜（19時〜深夜1時）に配信する割合", "night", "%", 0, 100], ["開始時刻のばらつき（小さいほど毎回同じ時間）", "hourSpread", "時間", 1],
+    ["いちばん長く休んだ日数", "maxGap", "日", 0], ["予約枠を立ててから配信する割合", "scheduledRate", "%", 0, 100],
+    ["コラボ配信の割合", "collabRate", "%", 0, 100], ["ゲーム配信の割合", "gameRate", "%", 0, 100],
+  ];
+  const rows = F.map(([lab, k, u, dg, mul = 1]) => {
+    const t = med(top.map((c) => c[k])), l = med(low.map((c) => c[k]));
+    const r = rankCorr(C.map((c) => c[k]), C.map((c) => c.growth));
+    return { lab, k, u, dg, mul, t: t == null ? null : t * mul, l: l == null ? null : l * mul, r };
+  });
+  const rank = rows.filter((r) => r.r != null).sort((a, b) => Math.abs(b.r) - Math.abs(a.r));
+  const best = rank[0];
+  const say = (r) => `${r.lab}${r.r > 0 ? "が多い（大きい）子ほど" : "が少ない（小さい）子ほど"}伸びている`;
+  return `<section class="card">
+    <h2>伸びる子は、何が違う？</h2>
+    <p class="lead">「初配信からの1か月あたりに増えた登録者」を<b>伸びの速さ</b>として、伸びが速い上位4分の1（${top.length}人）と、下半分（${low.length}人）のふだんの配信のしかたを比べました。数字は「真ん中の子」の値です。</p>
+    ${best ? `<div class="ans">いちばん関係が強いのは「${esc(best.lab)}」。${esc(say(best))}傾向があります。</div>` : ""}
+    <div class="cmp"><div class="h">配信のしかた</div><div class="h n">伸びが速い子</div><div class="h n">下半分の子</div><div class="h n">差</div>
+    ${rows.map((r) => `<div>${esc(r.lab)}</div><div class="n">${fmt(r.t, r.dg)}${r.u}</div><div class="n">${fmt(r.l, r.dg)}${r.u}</div><div class="n ${r.t > r.l ? "up" : r.t < r.l ? "dn" : ""}">${r.t == null || r.l == null ? "—" : (r.t > r.l ? "多い" : r.t < r.l ? "少ない" : "同じ")}</div>`).join("")}</div>
+    <h3>伸びとの関係が強い順</h3>
+    <p class="lead">右に長いほど「それが多い子ほど伸びている」。<b>左（赤）</b>は「それが少ない子ほど伸びている」。0に近いものは、あまり関係がありません。</p>
+    ${hbarsSigned(rank.map((r) => ({ label: r.lab, value: r.r })))}
+    <p class="note">${C.length}人のデータから。関係が強い＝それが原因、とは限りません（もともと人気の子が配信を増やしている、なども含まれます）。目安として見てください。</p>
+  </section>
+  <section class="card">
+    <h2>いま伸びている子（直近7日）</h2>
+    <p class="lead">直近7日で登録者が多く増えた子と、その配信のしかた。マネジメントのお手本さがしに。</p>
+    ${weekTable()}
+  </section>`;
+}
+function hbarsSigned(rows) {
+  if (!rows.length) return `<p class="note">まだデータが足りません</p>`;
+  return `<div class="hb">${rows.map((r) => { const w = Math.abs(r.value) * 50; return `<div class="r"><span class="l" title="${esc(r.label)}">${esc(r.label)}</span><span class="t"><span class="base" style="left:50%"></span><i style="left:${r.value >= 0 ? 50 : 50 - w}%;width:${w}%;background:${r.value >= 0 ? "var(--good)" : "var(--bad)"}"></i></span><span class="v">${r.value > 0 ? "＋" : r.value < 0 ? "−" : ""}${fmt(Math.abs(r.value), 2)}<small>${Math.abs(r.value) >= .4 ? "強い" : Math.abs(r.value) >= .2 ? "ある" : "弱い"}</small></span></div>`; }).join("")}</div>`;
+}
+function weekTable() {
+  const rows = A.C.filter((c) => c.week != null && c.week > 0).sort((a, b) => b.week - a.week).slice(0, 15);
+  if (!rows.length) return `<p class="note">まだデータが足りません（登録者の毎日の記録は10/26からです）</p>`;
+  return `<div class="tw"><table><tr><th>VTuber</th><th>増えた登録者</th><th>いまの登録者</th><th>週の配信</th><th>1回の長さ</th><th>よく始める時間</th></tr>
+  ${rows.map((c) => `<tr><td class="nm"><img src="${esc(c.custom_icon_url || c.thumbnail_url || "")}" alt="" loading="lazy">${esc(c.title)}</td><td class="n up">＋${fmt(c.week)}人</td><td class="n">${fmt(c.subscriber_count)}人</td><td class="n">${fmt(c.perWeek, 1)}回</td><td class="n">${fmt(c.avgMin)}分</td><td class="n">${favHour(c)}</td></tr>`).join("")}</table></div>`;
+}
+const favHour = (c) => { const h = new Array(24).fill(0); c.streams.forEach((s) => h[s.hour]++); const m = h.indexOf(Math.max(...h)); return c.streams.length ? m + "時台" : "—"; };
+
+let metric = "rel";
+try { metric = localStorage.getItem("hqMetric") || "rel"; } catch {}
+const MET = { rel: ["ふだんの何倍見られたか（アーカイブ再生数）", "倍", 2, 1], relPeak: ["ふだんの何倍の人が同時に見ていたか", "倍", 2, 1], views: ["アーカイブ再生数（真ん中の値）", "回", 0, null], peak: ["同時に見ていた人数の最大（真ん中の値）", "人", 0, null] };
+const metSeg = () => `<div class="seg">${Object.entries(MET).map(([k, [l]]) => `<button data-met="${k}" aria-pressed="${metric === k}">${l}</button>`).join("")}</div>`;
+const mval = (list) => med(list.map((s) => s[metric]));
+const mN = (list) => list.filter((s) => s[metric] != null).length;
+function groupRows(groups, list) { return groups.map(([label, f]) => { const g = list.filter(f); return { label, value: mval(g), n: mN(g) }; }).filter((r) => r.n >= 5); }
+const mOpt = () => ({ unit: MET[metric][1], digits: MET[metric][2], base: MET[metric][3], nLabel: "回" });
+const metNote = () => metric === "rel" || metric === "relPeak" ? `<p class="note">「ふだんの何倍」＝その子の配信の中で比べた値です。もともとの人気の差は消してあるので、<b>やり方の違い</b>だけが見えます。縦の線が「ふだん（1倍）」。</p>` : `<p class="note">人気の子の配信が多いグループほど大きく出ます。やり方の差を見るなら「ふだんの何倍」がおすすめです。</p>`;
+
+function pageLength() {
+  const E = A.ended;
+  const L = [["30分まで", (s) => s.dur <= 30], ["30分〜1時間", (s) => s.dur > 30 && s.dur <= 60], ["1時間〜1時間半", (s) => s.dur > 60 && s.dur <= 90], ["1時間半〜2時間", (s) => s.dur > 90 && s.dur <= 120], ["2時間〜3時間", (s) => s.dur > 120 && s.dur <= 180], ["3時間〜5時間", (s) => s.dur > 180 && s.dur <= 300], ["5時間より長い", (s) => s.dur > 300]];
+  const rows = hiTop(groupRows(L, E));
+  const best = [...rows].sort((a, b) => b.value - a.value)[0];
+  // 1回あたりではなく「1分あたり」も：長いほど再生は増えるが、効率は？
+  const per = hiTop(L.map(([label, f]) => { const g = E.filter((s) => f(s) && s.views != null); return { label, value: med(g.map((s) => s.views / s.dur * 60)), n: g.length }; }).filter((r) => r.n >= 5));
+  // 短く何回 vs 長く少なめ（その子のふだんのやり方で分ける）
+  const C = A.C.filter((c) => c.growth != null && c.perWeek != null);
+  const P = [["短く（1時間まで）・週4回以上", (c) => c.avgMin <= 60 && c.perWeek >= 4], ["短く（1時間まで）・週3回まで", (c) => c.avgMin <= 60 && c.perWeek < 4], ["ふつう（1〜2時間）・週4回以上", (c) => c.avgMin > 60 && c.avgMin <= 120 && c.perWeek >= 4], ["ふつう（1〜2時間）・週3回まで", (c) => c.avgMin > 60 && c.avgMin <= 120 && c.perWeek < 4], ["長く（2時間より長い）・週4回以上", (c) => c.avgMin > 120 && c.perWeek >= 4], ["長く（2時間より長い）・週3回まで", (c) => c.avgMin > 120 && c.perWeek < 4]];
+  const pr = hiTop(P.map(([label, f]) => { const g = C.filter(f); return { label, value: med(g.map((c) => c.growth)), n: g.length }; }).filter((r) => r.n >= 3));
+  const F = [["週1回まで", (c) => c.perWeek < 1.5], ["週2〜3回", (c) => c.perWeek >= 1.5 && c.perWeek < 3.5], ["週4〜5回", (c) => c.perWeek >= 3.5 && c.perWeek < 5.5], ["週6〜7回（ほぼ毎日）", (c) => c.perWeek >= 5.5 && c.perWeek < 7.5], ["1日に何回も", (c) => c.perWeek >= 7.5]];
+  const fr = hiTop(F.map(([label, f]) => { const g = C.filter(f); return { label, value: med(g.map((c) => c.growth)), n: g.length }; }).filter((r) => r.n >= 3));
+  const H = [["週5時間まで", (c) => c.weekHours <= 5], ["週5〜10時間", (c) => c.weekHours > 5 && c.weekHours <= 10], ["週10〜20時間", (c) => c.weekHours > 10 && c.weekHours <= 20], ["週20〜30時間", (c) => c.weekHours > 20 && c.weekHours <= 30], ["週30時間より多い", (c) => c.weekHours > 30]];
+  const hr = hiTop(H.map(([label, f]) => { const g = C.filter(f); return { label, value: med(g.map((c) => c.growth)), n: g.length }; }).filter((r) => r.n >= 3));
+  const topOf = (r) => [...r].sort((a, b) => b.value - a.value)[0];
+  return `<section class="card"><h2>ベストな配信の長さは？</h2>${metSeg()}
+    ${best ? `<div class="ans">いちばん見られやすいのは「${esc(best.label)}」の配信。</div>` : ""}
+    ${hbars(rows, mOpt())}${metNote()}
+    <h3>1時間あたりの再生数（長さの「効率」）</h3><p class="lead">長く配信するほど再生数は増えやすいので、1時間あたりにならして比べました。</p>
+    ${hbars(per, { unit: "回", digits: 0, nLabel: "回" })}
+  </section>
+  <section class="card"><h2>短いのを何回？長いのを1回？</h2>
+    <p class="lead">その子のふだんの「1回の長さ」と「週の回数」でグループに分けて、<b>伸びの速さ</b>（1か月あたりに増えた登録者の真ん中の値）を比べました。</p>
+    ${topOf(pr) ? `<div class="ans g">いちばん伸びているのは「${esc(topOf(pr).label)}」のグループ。</div>` : ""}
+    ${hbars(pr, { unit: "人/月", digits: 0, nLabel: "人" })}
+    <div class="grid2"><div><h3>配信の回数（週あたり）</h3>${hbars(fr, { unit: "人/月", digits: 0, nLabel: "人" })}</div>
+    <div><h3>週の合計時間</h3>${hbars(hr, { unit: "人/月", digits: 0, nLabel: "人" })}</div></div>
+    <p class="note">右の小さい数字は、そのグループの人数です。人数が少ないグループはぶれやすいので注意。</p>
+  </section>`;
+}
+function pageTime() {
+  const E = A.ended;
+  const hrs = [];
+  for (let h = 0; h < 24; h++) { const g = E.filter((s) => s.hour === h); hrs.push({ label: h + "時", value: mN(g) >= 5 ? mval(g) : null, n: mN(g) }); }
+  hiTop(hrs, 3);
+  const cnt = []; for (let h = 0; h < 24; h++) cnt.push({ label: h + "時", value: E.filter((s) => s.hour === h).length, n: E.filter((s) => s.hour === h).length });
+  hiTop(cnt, 3);
+  const dw = hiTop(DAYS.map((d, i) => { const g = E.filter((s) => s.dow === i); return { label: d + "曜日", value: mval(g), n: mN(g) }; }));
+  const best = [...hrs].filter((r) => r.value != null).sort((a, b) => b.value - a.value).slice(0, 3).map((r) => r.label);
+  const comp = cnt.slice().sort((a, b) => b.value - a.value).slice(0, 3).map((r) => r.label);
+  return `<section class="card"><h2>何時に始めると見られやすい？</h2>${metSeg()}
+    ${best.length ? `<div class="ans">見られやすいのは ${best.map(esc).join("・")} スタート（日本時間）。</div>` : ""}
+    ${vbars(hrs, { unit: MET[metric][1], digits: MET[metric][2] })}${metNote()}
+    <h3>みんなが配信している時間（ライバルの多さ）</h3>
+    <p class="lead">配信が多い時間はライバルも多い時間。見られやすいのにライバルが少ない時間がねらい目です。いちばん混んでいるのは ${comp.map(esc).join("・")}。</p>
+    ${vbars(cnt, { unit: "回", digits: 0 })}
+  </section>
+  <section class="card"><h2>何曜日が見られやすい？</h2>${hbars(dw, mOpt())}</section>`;
+}
+let gmode = "rel";
+function rankTable(names, getter, list) {
+  return names.map((n) => { const g = list.filter((s) => getter(s).includes(n)); const chs = new Set(g.map((s) => s.channel_id)); const cg = [...chs].map((id) => A.C.find((c) => c.id === id)?.growth); return { n, cnt: g.length, ch: chs.size, rel: med(g.map((s) => s.rel)), views: med(g.map((s) => s.views)), peak: med(g.map((s) => s.peak)), like: med(g.filter((s) => s.views >= 30).map((s) => s.like_count / s.views * 100)), cmt: med(g.filter((s) => s.views >= 30).map((s) => s.comment_count / s.views * 100)), grow: med(cg) }; }).filter((r) => r.cnt >= 5);
+}
+const GM = { rel: ["見られやすさ（その子のふだんの何倍）", "倍", 2], views: ["再生数の多さ", "回", 0], peak: ["同時に見る人の多さ", "人", 0], like: ["高評価の付きやすさ（再生100回あたり）", "件", 1], grow: ["配信している子の伸びの速さ", "人/月", 0], cnt: ["流行り（配信の数）", "回", 0], ch: ["やっている子の数", "人", 0] };
+function pageGenre() {
+  const E = A.ended;
+  const g = rankTable(GAMES.map((x) => x[0]), (s) => s.games, E), k = rankTable(KINDS.map((x) => x[0]), (s) => s.kinds, E);
+  const seg = `<div class="seg">${Object.entries(GM).map(([key, [l]]) => `<button data-gm="${key}" aria-pressed="${gmode === key}">${l}</button>`).join("")}</div>`;
+  const rk = (rows) => hiTop(rows.filter((r) => r[gmode] != null).sort((a, b) => b[gmode] - a[gmode]).slice(0, 20).map((r) => ({ label: r.n, value: r[gmode], n: r.cnt })), 3);
+  return `<section class="card"><h2>何の配信が一番伸びる？</h2>
+    <p class="lead">タイトルの言葉からゲームと配信の種類を見分けて、いろいろな角度でランキングにしました。上のボタンで角度を変えられます。</p>${seg}
+    <div class="grid2"><div><h3>ゲームのランキング</h3>${hbars(rk(g), { unit: GM[gmode][1], digits: GM[gmode][2], base: gmode === "rel" ? 1 : null, nLabel: "回" })}</div>
+    <div><h3>配信の種類のランキング</h3>${hbars(rk(k), { unit: GM[gmode][1], digits: GM[gmode][2], base: gmode === "rel" ? 1 : null, nLabel: "回" })}</div></div>
+    <p class="note">「見られやすさ」はその子の中で比べた値なので、新人さんがやって効果が出やすいものが上に来ます。「流行り」が多いのに「見られやすさ」が低いものは、ライバルが多すぎる可能性。5回以上の配信があるものだけ出しています。ゲーム名はタイトルに書かれていないと数えられません。</p>
+  </section>`;
+}
+function pageTitle() {
+  const E = A.ended;
+  const rows = hiTop(WORDS.map(([label, re]) => { const yes = E.filter((s) => re.test(s.title || "")), no = E.filter((s) => !re.test(s.title || "")); const a = mval(yes), b = mval(no); return { label, value: a, n: mN(yes), b }; }).filter((r) => r.n >= 5).sort((a, b) => b.value - a.value), 3);
+  const lenR = hiTop(groupRows([["20文字まで", (s) => (s.title || "").length <= 20], ["21〜40文字", (s) => (s.title || "").length > 20 && (s.title || "").length <= 40], ["41〜60文字", (s) => (s.title || "").length > 40 && (s.title || "").length <= 60], ["61文字より長い", (s) => (s.title || "").length > 60]], E));
+  const leadR = hiTop(groupRows([["予約枠なし（いきなり配信）", (s) => s.lead == null || s.lead <= 5], ["1時間前までに予約", (s) => s.lead > 5 && s.lead <= 60], ["1〜6時間前に予約", (s) => s.lead > 60 && s.lead <= 360], ["6時間〜1日前に予約", (s) => s.lead > 360 && s.lead <= 1440], ["1日より前に予約", (s) => s.lead > 1440]], E));
+  const vert = hiTop(groupRows([["横型の配信", (s) => !s.is_vertical], ["縦型の配信（ショート向け）", (s) => s.is_vertical]], E));
+  return `<section class="card"><h2>タイトルに何を書くと見られる？</h2>${metSeg()}
+    ${hbars(rows, mOpt())}${metNote()}
+    <h3>タイトルの長さ</h3>${hbars(lenR, mOpt())}
+  </section>
+  <section class="card"><h2>予約枠（事前の告知）は効く？</h2>
+    <p class="lead">YouTubeで予約枠を立ててから配信したか、いきなり配信したかで比べました。</p>${hbars(leadR, mOpt())}
+    <h3>縦型と横型</h3>${hbars(vert, mOpt())}
+  </section>`;
+}
+function pageFirst() {
+  const C = A.C.filter((c) => c.growth != null);
+  // デビューから最初の30日の配信のしかたと、その後の伸び
+  const early = C.map((c) => { const fs = c.first_stream_at ? Date.parse(c.first_stream_at) : null; if (!fs || c.days < 45) return null; const s30 = c.streams.filter((s) => s.st >= fs - 864e5 && s.st < fs + 30 * 864e5 && s.dur != null); if (s30.length < 2) return null; return { c, n: s30.length, hrs: s30.reduce((a, s) => a + s.dur, 0) / 60, avg: avg(s30.map((s) => s.dur)) }; }).filter(Boolean);
+  const N = [["最初の30日で5回まで", (e) => e.n <= 5], ["6〜10回", (e) => e.n > 5 && e.n <= 10], ["11〜20回", (e) => e.n > 10 && e.n <= 20], ["21〜30回", (e) => e.n > 20 && e.n <= 30], ["31回より多い", (e) => e.n > 30]];
+  const nr = hiTop(N.map(([label, f]) => { const g = early.filter(f); return { label, value: med(g.map((e) => e.c.growth)), n: g.length }; }).filter((r) => r.n >= 3));
+  const r1 = rankCorr(early.map((e) => e.n), early.map((e) => e.c.growth)), r2 = rankCorr(early.map((e) => e.hrs), early.map((e) => e.c.growth));
+  const fsS = A.ended.filter((s) => s.is_first_stream && s.views != null);
+  const fr = rankCorr(fsS.map((s) => s.views), fsS.map((s) => A.C.find((c) => c.id === s.channel_id)?.growth));
+  return `<section class="card"><h2>デビュー直後の30日、どれだけやるべき？</h2>
+    <p class="lead">初配信から30日の間に何回配信したかで分けて、その後の伸びの速さを比べました（デビューから45日以上たった子 ${early.length}人）。</p>
+    ${hbars(nr, { unit: "人/月", digits: 0, nLabel: "人" })}
+    <div class="ans g">最初の30日の「回数」と伸びの関係：${corrWord(r1)}。「合計時間」と伸びの関係：${corrWord(r2)}。</div>
+    <h3>初配信の再生数は、その後の伸びを決める？</h3>
+    <p>初配信がよく見られた子ほど、その後も伸びているか：<b>${corrWord(fr)}</b>（${fsS.length}人）</p>
+    <p class="note">配信の記録は2026年4月からなので、それより前にデビューした子は最初の30日が数えられていません。</p>
+  </section>`;
+}
+const corrWord = (r) => r == null ? "まだデータが足りません" : `${Math.abs(r) >= .4 ? "強い" : Math.abs(r) >= .2 ? "ある" : "ほとんどない"}${Math.abs(r) >= .2 ? (r > 0 ? "（多いほど伸びる）" : "（少ないほど伸びる）") : ""}（${r > 0 ? "＋" : "−"}${fmt(Math.abs(r), 2)}）`;
+function pageVV() {
+  const C = A.C;
+  const reg = C.filter((c) => c.registered), not = C.filter((c) => !c.registered);
+  const ev = (k) => C.reduce((a, c) => a + (c.ev?.[k] || 0), 0);
+  const top = C.filter((c) => c.ev || c.oshi || c.vbc).sort((a, b) => ((b.ev?.click_watch || 0) + (b.oshi || 0) * 3) - ((a.ev?.click_watch || 0) + (a.oshi || 0) * 3)).slice(0, 20);
+  return `<section class="card"><h2>Vぶいから、どれだけ人を送れている？</h2>
+    <div class="sum"><div><b>${fmt(ev("impression"))}</b><span>発掘で表示された回数</span></div><div><b>${fmt(ev("click_watch"))}</b><span>配信を見に行った回数</span></div><div><b>${fmt(ev("click_subscribe"))}</b><span>チャンネル登録ボタンを押した回数</span></div><div><b>${fmt(C.reduce((a, c) => a + (c.oshi || 0), 0))}</b><span>推しリストに入った数</span></div><div><b>${fmt(C.reduce((a, c) => a + (c.vbc || 0), 0))}</b><span>Vぶいからのコメント</span></div></div>
+    <h3>Vぶいから人が多く行っている子</h3>
+    ${top.length ? `<div class="tw"><table><tr><th>VTuber</th><th>見に行った</th><th>登録ボタン</th><th>推し</th><th>Vぶいコメント</th><th>直近7日の登録者</th></tr>${top.map((c) => `<tr><td class="nm">${esc(c.title)}</td><td class="n">${fmt(c.ev?.click_watch || 0)}</td><td class="n">${fmt(c.ev?.click_subscribe || 0)}</td><td class="n">${fmt(c.oshi || 0)}</td><td class="n">${fmt(c.vbc || 0)}</td><td class="n">${c.week != null ? (c.week >= 0 ? "＋" : "") + fmt(c.week) + "人" : "—"}</td></tr>`).join("")}</table></div>` : `<p class="note">まだデータがありません</p>`}
+    <h3>本人登録した子としていない子</h3>
+    <div class="cmp" style="grid-template-columns:1fr auto auto"><div class="h">　</div><div class="h n">本人登録した子（${reg.length}人）</div><div class="h n">していない子（${not.length}人）</div>
+      <div>直近7日の登録者の増え方（真ん中の値）</div><div class="n">${fmt(med(reg.map((c) => c.week)))}人</div><div class="n">${fmt(med(not.map((c) => c.week)))}人</div></div>
+    <p class="note">本人登録した子がまだ少ないので、比べられるのは勧誘が進んでからです。</p>
+  </section>`;
+}
+let lsort = "growth";
+function pageList() {
+  const cols = [["title", "VTuber"], ["subscriber_count", "登録者"], ["growth", "伸びの速さ（人/月）"], ["week", "直近7日"], ["perWeek", "週の配信"], ["avgMin", "1回の長さ（分）"], ["weekHours", "週の合計（時間）"], ["maxGap", "最長の休み（日）"], ["days", "デビューから（日）"]];
+  const rows = [...A.C].filter((c) => c.streams.length).sort((a, b) => lsort === "title" ? String(a.title).localeCompare(b.title) : (b[lsort] ?? -1e9) - (a[lsort] ?? -1e9));
+  return `<section class="card"><h2>VTuber一覧</h2><p class="lead">見出しを押すと並べかえられます。</p>
+    <div class="tw"><table><tr>${cols.map(([k, l]) => `<th data-ls="${k}">${l}${lsort === k ? " ▼" : ""}</th>`).join("")}</tr>
+    ${rows.slice(0, 300).map((c) => `<tr><td class="nm"><img src="${esc(c.custom_icon_url || c.thumbnail_url || "")}" alt="" loading="lazy">${esc(c.title)}${c.registered ? " ✓" : ""}</td><td class="n">${c.subscriber_hidden ? "非公開" : fmt(c.subscriber_count)}</td><td class="n">${fmt(c.growth)}</td><td class="n ${c.week > 0 ? "up" : ""}">${c.week != null ? (c.week > 0 ? "＋" : "") + fmt(c.week) : "—"}</td><td class="n">${fmt(c.perWeek, 1)}</td><td class="n">${fmt(c.avgMin)}</td><td class="n">${fmt(c.weekHours, 1)}</td><td class="n">${fmt(c.maxGap)}</td><td class="n">${fmt(c.days)}</td></tr>`).join("")}</table></div></section>`;
+}
+function pageNext() {
+  return `<section class="card"><h2>これから集めるデータ（準備中）</h2>
+    <p class="lead">いまのデータは「配信の時間・長さ・再生数・登録者」まで。リスナー1人ひとりの動きは、YouTubeのチャット（コメント）を記録すると分かるようになります。</p>
+    <div class="soon"><b>YouTubeのチャットを記録すると分かること</b><ul>
+      <li>リスナーが配信に入ってから、最初にスパチャ（投げ銭）するまで何分か（※YouTubeは「入った時間」を教えてくれないので、「最初にコメントした時間」から数えます）</li>
+      <li>1回の配信でのスパチャの合計・平均・何人が投げたか</li>
+      <li>1人のリスナーが何人のVTuberを見て回っているか（コメントした枠の数で数えます）</li>
+      <li>1日に何分くらい見ているか（最初と最後のコメントの時間から目安を出します）</li>
+      <li>初見さん（その子に初めてコメントした人）がどれくらい来たか・その後も来てくれたか</li>
+      <li>何のゲーム・何時の配信で、スパチャや初見さんが増えるか</li>
+    </ul></div>
+    <div class="soon"><b>Vぶいに入った後の動き</b><ul>
+      <li>Vぶいにログインしたリスナーの、その後の滞在時間・見に行った配信の数</li>
+      <li>Vぶいに入る前と後で、スパチャの金額が増えたか（※リスナーがVぶいでYouTubeアカウントとつないだ場合だけ分かります）</li>
+    </ul></div>
+    <p class="note">YouTubeのチャットを読むのは、YouTubeの1日の利用枠をたくさん使います（読むたびに5、1日の枠は10,000）。いまの枠のまま全部の配信を記録すると、配信を見つける仕組みが止まってしまうので、Googleに利用枠を増やす申請をするか、記録する配信をしぼる必要があります。</p>
+  </section>`;
+}
+
+function render() {
+  try { localStorage.setItem("hqTab", tab); } catch {}
+  $("#tabs").innerHTML = TABS.map(([k, l]) => `<button data-tab="${k}" aria-pressed="${tab === k}">${l}</button>`).join("");
+  const P = { grow: pageGrow, length: pageLength, time: pageTime, genre: pageGenre, title: pageTitle, first: pageFirst, vv: pageVV, list: pageList, next: pageNext }[tab] || pageGrow;
+  $("#view").innerHTML = (tab === "grow" ? summary() : "") + P();
+}
+document.addEventListener("click", (e) => {
+  const t = e.target.closest("[data-tab]"); if (t) { tab = t.dataset.tab; render(); scrollTo({ top: 0 }); return; }
+  const m = e.target.closest("[data-met]"); if (m) { metric = m.dataset.met; try { localStorage.setItem("hqMetric", metric); } catch {} render(); return; }
+  const g = e.target.closest("[data-gm]"); if (g) { gmode = g.dataset.gm; render(); return; }
+  const l = e.target.closest("[data-ls]"); if (l) { lsort = l.dataset.ls; render(); }
+});
+
+(async () => {
+  const gate = $("#gate");
+  try {
+    const sb = supabase.createClient(SB_URL, SB_KEY);
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { gate.innerHTML = `<p>運営アカウントでログインしてください。</p><a href="./?login=1">ログインする</a>`; return; }
+    const r = await fetch(`${SB_URL}/functions/v1/hq`, { method: "POST", headers: { apikey: SB_KEY, Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" }, body: JSON.stringify({ action: "data" }) });
+    const d = await r.json();
+    if (!d.ok) { gate.innerHTML = d.error === "not_admin" ? `<p>このページは運営だけが見られます。</p><a href="./">Vぶいへ戻る</a>` : `<p>読み込めませんでした（${esc(d.error || r.status)}）。</p>`; return; }
+    D = d; A = prep(d);
+    gate.hidden = true; $("#app").hidden = false; render();
+  } catch (e) { gate.innerHTML = `<p>読み込めませんでした。通信を確かめて、もう一度開いてください。</p>`; console.error(e); }
+})();
+</script>
+</body>
+</html>
