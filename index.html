@@ -1070,6 +1070,22 @@ class Player {
   sound(on) { if (!this.fr) return; if (on) { ytCmd(this.fr, "unMute"); ytCmd(this.fr, "setVolume", [80]); ytCmd(this.fr, "playVideo"); } else ytCmd(this.fr, "mute"); this.muted = !on; this.paint(); }
 }
 let HP = null, DP = null, WP = null;
+// Vぶいの中でどれだけ見たか（再生中の秒数だけ数える。1分ごとにまとめて送る。YouTubeの枠は使わない）
+const WATCH = new Map();
+setInterval(() => {
+  if (document.hidden) return;
+  for (const p of PLAYERS) { if (!p.target || p.state !== 1 || !p.vid) continue; const k = p.vid + "|" + p.kind; WATCH.set(k, (WATCH.get(k) || 0) + 5); }
+}, 5000);
+function flushWatch() {
+  if (!WATCH.size || typeof live === "undefined" || !live) return;
+  const uid = SESSION?.user?.id || null;
+  const rows = [...WATCH].map(([k, sec]) => { const [vid, place] = k.split("|"); const s = ST.find((x) => x.id === vid); return { session_id: SID, user_id: uid, channel_id: s?.channel_id || null, video_id: vid, place, sec: Math.min(sec, 3600) }; });
+  WATCH.clear();
+  fetch(`${SB_URL}/rest/v1/watch_log`, { method: "POST", headers: { apikey: SB_KEY, Authorization: `Bearer ${uid ? SESSION.access_token : SB_KEY}`, "Content-Type": "application/json", Prefer: "return=minimal" }, body: JSON.stringify(rows), keepalive: true }).catch(() => {});
+}
+setInterval(flushWatch, 60000);
+document.addEventListener("visibilitychange", () => { if (document.hidden) flushWatch(); });
+addEventListener("pagehide", flushWatch);
 addEventListener("resize", () => PLAYERS.forEach((p) => p.place()));
 setInterval(() => PLAYERS.forEach((p) => p.target && p.place()), 1000);
 let homeIO = null;
@@ -1329,6 +1345,7 @@ function renderSched() {
 /* ---------- アカウント（全員Googleログイン。VTuberはYouTubeで本人確認） ---------- */
 const AUTH = window.supabase?.createClient ? window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, detectSessionInUrl: true, flowType: "pkce" } }) : null;
 const ADMINS = ["sinjin.vtuber.lab@gmail.com", "core.tagishi@gmail.com"];
+let ytlMsg = false;
 let SESSION = null, PROFILE = null, MINE = [], SOS_TODAY = [], COLLAB = { incoming: [], outgoing: [] }, collabPending = 0, ownMsg = "", authBusy = false, authReady = false;
 let myRole = store.get("myRole", "listener"), PREVIEW = "me";
 const isAdmin = () => !!(SESSION && ADMINS.includes(SESSION.user?.email));
@@ -1360,6 +1377,16 @@ function needLogin(feature) {
   if (!authReady) { toast("読み込み中です。少し待ってからもう一度押してください"); return false; }
   if (SESSION && !PROFILE) { openNick(); return false; }
   openJoin(feature); return false;
+}
+// リスナー：YouTubeアカウントをつなぐ（自分のチャンネルIDを確かめるだけ。投稿などはしない）
+function ytLink() {
+  if (!AUTH || !SESSION) return;
+  store.set("ytlinkUid", SESSION.user.id);
+  AUTH.auth.signInWithOAuth({ provider: "google", options: { scopes: "https://www.googleapis.com/auth/youtube.readonly", redirectTo: location.origin + location.pathname + "?ytlink=1", queryParams: { login_hint: SESSION.user.email || "", prompt: "consent" } } });
+}
+async function listenApi(body) {
+  const r = await fetch(`${SB_URL}/functions/v1/listen`, { method: "POST", headers: { apikey: SB_KEY, Authorization: `Bearer ${SESSION ? SESSION.access_token : SB_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  return r.json();
 }
 function listenerLogin() {
   if (!AUTH) return toast("ログインの準備ができませんでした。通信を確認してください");
@@ -1441,13 +1468,13 @@ async function logout(quiet) {
 
 async function authInit() {
   if (!AUTH) { authReady = true; return; }
-  const q = new URLSearchParams(location.search), claim = q.get("claim"), reg = q.get("reg"), login = q.get("login");
+  const q = new URLSearchParams(location.search), claim = q.get("claim"), reg = q.get("reg"), login = q.get("login"), ytl = q.get("ytlink");
   if (q.get("role") === "vtuber") myRole = "vtuber";
   const go = q.get("go");
   if (go) try { history.replaceState({}, "", location.pathname); } catch {}
   const { data } = await AUTH.auth.getSession(); SESSION = data.session;
   AUTH.auth.onAuthStateChange((_e, s) => { if (s) SESSION = s; });
-  if (claim || reg || login) try { history.replaceState({}, "", location.pathname); } catch {}
+  if (claim || reg || login || ytl) try { history.replaceState({}, "", location.pathname); } catch {}
   if (!SESSION && go === "listener") return listenerLogin();
   if (!SESSION && go === "vtuber") return vtuberLogin();
   if (SESSION && go === "vtuber") { myRole = "vtuber"; store.set("myRole", "vtuber"); }
@@ -1473,10 +1500,22 @@ async function authInit() {
     if (login && MINE.length) { myRole = "vtuber"; store.set("myRole", "vtuber"); }
     if (go === "vtuber" && !MINE.length) return vtuberLogin();
     if (PROFILE) { await oshiLoad(); await oshiMigrate(); if (MINE.length) await collabLoad(); }
+    if (ytl && PROFILE) {
+      const was = store.get("ytlinkUid", null); store.set("ytlinkUid", null);
+      if (was && was !== SESSION.user.id) setMsg = "Vぶいとは別のGoogleアカウントが選ばれました。Vぶいと同じアカウントで、もう一度お試しください。";
+      else if (!SESSION.provider_token) setMsg = "Googleからの確認情報が届きませんでした。もう一度お試しください。";
+      else {
+        const r = await listenApi({ action: "ytlink", provider_token: SESSION.provider_token }).catch(() => ({}));
+        if (r.ok) { setMsg = "✅ YouTubeアカウントとつながりました"; const { data: p2 } = await AUTH.from("profiles").select("*").maybeSingle(); PROFILE = p2 || PROFILE; }
+        else setMsg = r.error === "no_scope" ? "Googleの画面で「YouTube アカウントの表示」にチェックを入れたまま進めてください。" : r.error === "no_channel" ? "このGoogleアカウントにはYouTubeのチャンネルがありませんでした（コメントするには、YouTubeでチャンネルを作る必要があります）。" : "うまくつなげませんでした。もう一度お試しください。";
+      }
+      ytlMsg = true;
+    }
   } catch (e) { ownMsg = "通信に失敗しました。"; }
   authBusy = false; authReady = true;
   if (SESSION && !PROFILE) openNick();
   pushInit(); navBadge(); heroCheck(); loadBanned();
+  if (ytlMsg) { ytlMsg = false; setTimeout(() => openSettings(), 300); }
   if (tab === "my") renderMy(); else if (curId) renderProfile(); else if (typeof refreshCurrent === "function") refreshCurrent();
 }
 
@@ -1605,6 +1644,14 @@ function accountSettings() {
     ${setAsVtuber() ? "" : `<label class="sl">ニックネーム（20文字まで）</label>
     <div class="srow3"><input type="text" id="setNick" maxlength="20" value="${esc(nick)}" autocomplete="off"><button class="sbtn" data-set="nicksave">変更</button></div>`}
     <small class="note2">${esc(SESSION?.user?.email || "")} でログイン中</small>
+  </section>${setAsVtuber() ? "" : ytBox()}`;
+}
+function ytBox() {
+  const on = !!PROFILE?.yt_channel_id;
+  return `<section class="sbox">
+    <h4>▶ YouTubeアカウント</h4>
+    ${on ? `<span>✅ YouTubeとつながっています</span><div><button class="sbtn gray" data-set="ytunlink">つなぐのをやめる</button></div>`
+      : `<small class="note2">YouTubeでコメントしているアカウントとつなぐと、YouTubeでの応援も「応援の記録」に残せるようになります（準備中）。Vぶいがあなたの代わりにコメントや投稿をすることはありません。</small><div><button class="sbtn" data-set="ytlink">YouTubeとつなぐ</button></div>`}
   </section>`;
 }
 // 設定の中身は「VTuberとして本人登録しているか」で決める（運営の見え方切り替えにも合わせる）
@@ -1713,6 +1760,8 @@ document.addEventListener("click", async (e) => {
   if (d.set === "open") { e.preventDefault(); return openSettings(ch); }
   if (d.set === "close") return closeOv("settings");
   if (d.set === "modopen") return openMod(ch);
+  if (d.set === "ytlink") return ytLink();
+  if (d.set === "ytunlink") { const r = await listenApi({ action: "ytunlink" }).catch(() => ({})); if (r.ok) { PROFILE = { ...PROFILE, yt_channel_id: null }; toast("YouTubeとのつながりを外しました"); } else toast("できませんでした"); return rerenderSettings(); }
   if (d.set === "ngsave") {
     const ta = document.querySelector(`textarea[data-ng="${CSS.escape(ch)}"]`); if (!ta) return;
     const words = ta.value.split(/\n|、|,/).map((w) => w.trim()).filter(Boolean);
