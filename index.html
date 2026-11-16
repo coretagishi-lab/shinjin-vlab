@@ -604,7 +604,7 @@ body.dark-nav .nav button[aria-current="page"]{color:#fff}
 .back .srow{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.1)}
 .back .srow .t{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .back .srow .v{flex:none;font-family:var(--f-num);opacity:.85}
-.back .spark{width:100%;height:70px;display:block;margin:4px 0 10px}
+.back .spark{width:100%;height:auto;display:block;margin:4px 0 8px}
 .grades{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .gcard{aspect-ratio:63/88;border-radius:7px;display:flex;flex-direction:column;justify-content:flex-end;padding:6px;font-family:var(--f-num);font-size:10px;font-weight:700;position:relative;overflow:hidden}
 .gcard.got{background:linear-gradient(135deg,#d8dce4,#9aa1b1 40%,#eef0f4)}
@@ -729,7 +729,7 @@ if (!SID) { SID = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random(
 const favs = new Set(), tops = new Set(); // ログインすると推しリストが入る
 const seen = new Set(store.get("seen", []));
 
-let CH = [], ST = [], DAILY = [], byId = new Map(), live = false;
+let CH = [], ST = [], DAILY = [], GAIN = new Map(), HIST = new Map(), byId = new Map(), live = false;
 // 荒らし対策：この端末の目印（出入り禁止の判定に使う）と、出入り禁止になっているチャンネル
 const DEVICE = (() => { let d = store.get("dev"); if (!d || !/^[A-Za-z0-9_-]{16,64}$/.test(d)) { const a = new Uint8Array(16); crypto.getRandomValues(a); d = [...a].map((b) => b.toString(16).padStart(2, "0")).join(""); store.set("dev", d); } return d; })();
 let BANNED = new Set(store.get("bannedCh", []));
@@ -739,6 +739,15 @@ async function rest(path) {
   const r = await fetch(`${SB_URL}/rest/v1/${path}`, { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } });
   if (!r.ok) throw new Error(r.status);
   return r.json();
+}
+// サーバーは1回に1,000件までしか返さないので、それより多いときは続きを取りに行く
+async function restAll(path, maxPages = 20) {
+  const out = [];
+  for (let pg = 0; pg < maxPages; pg++) {
+    const part = await rest(`${path}${path.includes("?") ? "&" : "?"}limit=1000&offset=${pg * 1000}`);
+    out.push(...part); if (part.length < 1000) break;
+  }
+  return out;
 }
 function logEvent(kind, channel_id) {
   if (!live) return;
@@ -752,13 +761,12 @@ function logEvent(kind, channel_id) {
 
 async function load(refresh = false) {
   try {
-    const since = new Date(Date.now() - 60 * 864e5).toISOString().slice(0, 10);
-    const [c, s, d] = await Promise.all([
-      rest("channel_list?select=*&order=listed_at.asc"),
-      rest("streams?select=id,channel_id,title,thumbnail_url,status,scheduled_start_at,actual_start_at,actual_end_at,peak_viewers,last_viewers,is_first_stream,embeddable,is_vertical,chat_enabled&status=neq.none&order=updated_at.desc&limit=3000"),
-      rest(`channel_daily?select=*&day=gte.${since}`),
+    const [c, s, g] = await Promise.all([
+      restAll("channel_list?select=*&order=listed_at.asc,id.asc"),
+      restAll("streams?select=id,channel_id,title,thumbnail_url,status,scheduled_start_at,actual_start_at,actual_end_at,peak_viewers,last_viewers,is_first_stream,embeddable,is_vertical,chat_enabled&status=neq.none&order=updated_at.desc", 3),
+      restAll("channel_gain30?select=channel_id,gain,days"),
     ]);
-    CH = c; ST = s; DAILY = d; live = true;
+    CH = c; ST = s; DAILY = []; GAIN = new Map(g.filter((x) => x.days >= 2).map((x) => [x.channel_id, Number(x.gain)])); live = true;
     const pR = loadRescue(); loadOverlayStatus().then(() => { if (typeof tab !== "undefined" && tab === "home") renderHome(); return pR; }).then(() => heroCheck(), () => {});
   } catch (e) {
     if (refresh && live) throw e; // 引っぱって更新で通信できなかった時は、今の表示をそのまま残す
@@ -1260,6 +1268,7 @@ let dirSeg = "list", rkCohort = null, rkMetric = "sec";
 const cohortOf = (c) => (c.first_stream_at ? jst(c.first_stream_at, { year: "numeric", month: "2-digit" }).replace(/\D+/g, "-").replace(/-$/, "") : null);
 const cohortLabel = (k) => { const [y, m] = k.split("-"); return `${y}年${Number(m)}月デビュー`; };
 function subGain(c) {
+  if (live) return GAIN.has(c.id) ? GAIN.get(c.id) : null;
   const ds = DAILY.filter((d) => d.channel_id === c.id && d.subscriber_count != null).sort((a, b) => (a.day < b.day ? -1 : 1));
   const last30 = ds.filter((d) => Date.parse(d.day) >= now() - 30 * 864e5);
   return last30.length >= 2 ? Number(last30.at(-1).subscriber_count) - Number(last30[0].subscriber_count) : null;
@@ -2510,7 +2519,7 @@ function discMove(dir, fromY = 0, vel = 0) {
 let curId = null, backTab = "prof";
 function openProfile(id, push = true) {
   const c = byId.get(id); if (!c) return;
-  curId = id; backTab = "prof"; cardAngle = 0;
+  curId = id; backTab = "prof"; cardAngle = 0; loadHist(id);
   seen.add(id); store.set("seen", [...seen]);
   logEvent("page_view", id);
   $("#shTitle").textContent = c.title;
@@ -2526,25 +2535,59 @@ function closeProfile(fromPop) {
   refreshCurrent();
 }
 function streamsOf(id) { return ST.filter((s) => s.channel_id === id); }
+// その子の登録者の記録と配信の記録を、プロフィールを開いたときに取りに行く（全件）
+async function loadHist(id) {
+  if (!live || HIST.has(id)) return;
+  HIST.set(id, null);
+  try {
+    const [d, ss] = await Promise.all([
+      restAll(`channel_daily?channel_id=eq.${encodeURIComponent(id)}&select=day,subscriber_count&order=day.asc`),
+      rest(`streams?channel_id=eq.${encodeURIComponent(id)}&actual_start_at=not.is.null&select=id,channel_id,title,status,actual_start_at,actual_end_at,peak_viewers&order=actual_start_at.desc&limit=200`),
+    ]);
+    HIST.set(id, { days: d, streams: ss });
+  } catch { HIST.delete(id); return; }
+  if (curId === id) { const pn = $("#pane"); if (pn) pn.innerHTML = backPane(byId.get(id)); }
+}
+function histDays(id) {
+  if (live) { const h = HIST.get(id); return h ? h.days : null; }
+  return DAILY.filter((d) => d.channel_id === id);
+}
+const mdj = (day) => jst(day + "T12:00:00+09:00", { month: "numeric", day: "numeric" });
+// 登録者の推移グラフ（名鑑に載ってから）。英語の略語は使わない
 function spark(id) {
-  const pts = DAILY.filter((d) => d.channel_id === id && d.subscriber_count != null).sort((a, b) => a.day < b.day ? -1 : 1);
-  if (pts.length < 2) return `<p style="opacity:.75">登録者数は${pts[0] ? jst(pts[0].day + "T12:00:00+09:00", { month: "numeric", day: "numeric" }) : "今日"}から毎日記録しています。2日分たまるとグラフになります。</p>`;
-  const W = 280, H = 70, P = 6, ys = pts.map((p) => Number(p.subscriber_count)), mn = Math.min(...ys), mx = Math.max(...ys), span = Math.max(1, mx - mn);
-  const xy = pts.map((p, i) => [P + i * (W - 2 * P) / (pts.length - 1), H - P - (Number(p.subscriber_count) - mn) / span * (H - 2 * P)]);
+  const c = byId.get(id);
+  if (c?.subscriber_hidden) return `<p style="opacity:.75">登録者数を公開していないチャンネルなので、グラフはありません。</p>`;
+  const all = histDays(id);
+  if (all == null) return `<p style="opacity:.6">読み込み中…</p>`;
+  const listed = c?.listed_at ? jst(c.listed_at, { year: "numeric", month: "2-digit", day: "2-digit" }).replace(/\//g, "-") : null;
+  let pts = all.filter((d) => d.subscriber_count != null).sort((a, b) => a.day < b.day ? -1 : 1);
+  const after = listed ? pts.filter((p) => p.day >= listed) : pts; if (after.length) pts = after;
+  if (pts.length < 2) return `<p style="opacity:.75">登録者数は${pts[0] ? mdj(pts[0].day) : "今日"}から毎日記録しています。2日分たまるとグラフになります。</p>`;
+  const W = 300, H = 112, L = 6, R = 6, T = 14, B = 16, ys = pts.map((p) => Number(p.subscriber_count)), mn = Math.min(...ys), mx = Math.max(...ys), span = Math.max(1, mx - mn);
+  const t0 = Date.parse(pts[0].day), t1 = Date.parse(pts.at(-1).day), tsp = Math.max(1, t1 - t0);
+  const xy = pts.map((p) => [L + (Date.parse(p.day) - t0) / tsp * (W - L - R), T + (1 - (Number(p.subscriber_count) - mn) / span) * (H - T - B)]);
   const line = xy.map((q, i) => (i ? "L" : "M") + q[0].toFixed(1) + " " + q[1].toFixed(1)).join(" ");
-  const last = xy[xy.length - 1];
-  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-label="登録者数の推移"><path d="${line} L${last[0]} ${H} L${P} ${H}Z" fill="rgba(233,184,74,.18)"/><path d="${line}" fill="none" stroke="#E9B84A" stroke-width="2"/><circle cx="${last[0]}" cy="${last[1]}" r="3.5" fill="#E9B84A"/></svg>
-    <p style="opacity:.75;margin-top:-4px">${pts.length}日で ${ys[0]}人 → <b style="color:#E9B84A">${ys[ys.length - 1]}人</b></p>`;
+  const f = xy[0], e = xy.at(-1), gain = ys.at(-1) - ys[0];
+  const fl = (n) => Number(n).toLocaleString("ja-JP");
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" role="img" aria-label="登録者の推移：${mdj(pts[0].day)}の${fl(ys[0])}人から、${mdj(pts.at(-1).day)}の${fl(ys.at(-1))}人">
+      <line x1="${L}" x2="${W - R}" y1="${T}" y2="${T}" stroke="rgba(255,255,255,.12)"/><line x1="${L}" x2="${W - R}" y1="${H - B}" y2="${H - B}" stroke="rgba(255,255,255,.12)"/>
+      <path d="${line} L${e[0]} ${H - B} L${f[0]} ${H - B}Z" fill="rgba(233,184,74,.18)"/><path d="${line}" fill="none" stroke="#E9B84A" stroke-width="2" stroke-linejoin="round"/>
+      <circle cx="${f[0]}" cy="${f[1]}" r="3.5" fill="#fff"/><circle cx="${e[0]}" cy="${e[1]}" r="4" fill="#E9B84A"/>
+      <text x="${L}" y="${T - 4}" font-size="9" fill="rgba(255,255,255,.55)">${fl(mx)}人</text><text x="${L}" y="${H - B - 4}" font-size="9" fill="rgba(255,255,255,.55)">${fl(mn)}人</text>
+      <text x="${L}" y="${H - 3}" font-size="9" fill="rgba(255,255,255,.55)">${mdj(pts[0].day)}</text><text x="${W - R}" y="${H - 3}" text-anchor="end" font-size="9" fill="rgba(255,255,255,.55)">${mdj(pts.at(-1).day)}</text></svg>
+    <p style="opacity:.85;margin:-2px 0 0">${listed && pts[0].day >= listed ? "名鑑に載った日" : "記録を始めた日"}（${mdj(pts[0].day)}）の <b>${fl(ys[0])}人</b> → いま <b style="color:#E9B84A">${fl(ys.at(-1))}人</b>${gain ? `（${gain > 0 ? "＋" : "−"}${fl(Math.abs(gain))}人）` : ""}</p>
+    ${mx >= 1000 ? `<p style="opacity:.55;font-size:10.5px;margin:2px 0 0">1,000人をこえると、YouTubeの登録者数は上から3けたで丸められます。</p>` : ""}`;
 }
 function backPane(c) {
-  const ss = streamsOf(c.id).filter((s) => s.actual_start_at).sort((a, b) => Date.parse(b.actual_start_at) - Date.parse(a.actual_start_at));
-  if (backTab === "prof") return `<div class="box"><dl class="kv"><dt>デビュー</dt><dd>${c.first_stream_at ? jst(c.first_stream_at, { year: "numeric", month: "numeric", day: "numeric" }) : "初配信前"}</dd>
+  const H0 = live ? HIST.get(c.id) : null;
+  const ss = (H0 ? H0.streams : streamsOf(c.id)).filter((s) => s.actual_start_at).sort((a, b) => Date.parse(b.actual_start_at) - Date.parse(a.actual_start_at));
+  if (backTab === "prof") return `<div class="lbl" style="margin-top:0">名鑑に載ってからの登録者</div><div class="box">${spark(c.id)}</div><div class="box"><dl class="kv"><dt>デビュー</dt><dd>${c.first_stream_at ? jst(c.first_stream_at, { year: "numeric", month: "numeric", day: "numeric" }) : "初配信前"}</dd>
       <dt>チャンネル開設</dt><dd>${c.channel_created_at ? jst(c.channel_created_at, { year: "numeric", month: "numeric", day: "numeric" }) : "-"}</dd>
       <dt>ハンドル</dt><dd>${esc(c.handle || "-")}</dd><dt>名鑑に登録</dt><dd>${noStr(c)}</dd></dl></div>
     ${c.collab_genres?.length ? `<div class="lbl">得意ジャンル</div><div class="box gnr">${c.collab_genres.map((g, i) => `<em><i>${i + 1}</i>${esc(g)}</em>`).join("")}</div>` : ""}
-    <div class="lbl">PROFILE</div><div class="box desc">${esc((c.description || "自己紹介はまだありません。").slice(0, 600))}</div>`;
-  if (backTab === "log") return `<div class="lbl">SUBSCRIBERS</div><div class="box">${spark(c.id)}</div>
-    <div class="lbl">STREAM LOG</div><div class="box">
+    <div class="lbl">自己紹介</div><div class="box desc">${esc((c.description || "自己紹介はまだありません。").slice(0, 600))}</div>`;
+  if (backTab === "log") return `<div class="lbl">登録者の推移</div><div class="box">${spark(c.id)}</div>
+    <div class="lbl">配信の記録</div><div class="box">
     ${ss.length ? ss.slice(0, 30).map((s) => { const sec = s.actual_end_at ? (Date.parse(s.actual_end_at) - Date.parse(s.actual_start_at)) / 1000 : (now() - Date.parse(s.actual_start_at)) / 1000; return `<div class="srow"><span class="t">${jst(s.actual_start_at, { month: "numeric", day: "numeric" })} ${esc(s.title)}</span><span class="v">${hours(sec)}h${s.peak_viewers ? `・${s.peak_viewers}人` : ""}</span></div>`; }).join("") : `<p style="opacity:.75;margin:0">まだ配信の記録がありません。</p>`}</div>`;
   if (backTab === "cards") return `<p style="opacity:.8">応援が集まると、本物のトレカになって応援した人に届きます。</p>
     <div class="grades">
