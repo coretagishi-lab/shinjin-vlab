@@ -85,6 +85,7 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
   const PK = "sb_publishable_igtK18JrLPQCoKbF0U03Gg_o8fKrApc";
   const q = new URLSearchParams(location.search);
   const KEY = q.get("k") || "";
+  const DEMO = q.get("demo") === "1";              // Vぶいの視聴画面でのお試し（演出だけ。どこにもつながない）
   const OC = q.get("oc") !== "0";                 // わんコメにも流す（初期はオン）
   const OC_URL = q.get("ocurl") || "http://localhost:11180";
   const SHOW_URL = q.get("show");                 // URLで指定があればそれを優先（"1"/"0"）
@@ -111,7 +112,7 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
   // わんコメを使わない人（oc=no）は、いつもこの画面にコメントを出す
   const showMode = () => SHOW_URL === "1" ? "on" : SHOW_URL === "0" ? "off" : S.oc === "no" ? "on" : S.show;
 
-  if (!KEY) { err("Vぶい：URLにカギ（k=…）がありません。Vぶいの設定画面からURLをコピーし直してください"); return; }
+  if (!KEY && !DEMO) { err("Vぶい：URLにカギ（k=…）がありません。Vぶいの設定画面からURLをコピーし直してください"); return; }
 
   // ---- わんコメ（配信者さんのPCで動いているコメントツール）に、Vぶいのコメントを混ぜる ----
   async function ocInit() {
@@ -283,6 +284,7 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
       (x, P, k) => { const spin = k * 3; x.globalAlpha = k > 0.85 ? Math.max(0, (1 - k) / 0.15) : Math.min(1, k * 4);
         for (const p of P) { const a = p.a + spin * (1.2 - p.d / 1000) + p.arm * 2.09 + p.d / 260; const px = 960 + Math.cos(a) * p.d * Math.min(1, k * 3), py = 500 + Math.sin(a) * p.d * 0.45 * Math.min(1, k * 3); x.fillStyle = p.c; x.beginPath(); x.arc(px, py, p.r, 0, 7); x.fill(); } });
   }
+  window.VBUI_CAT = (arr) => (arr || []).forEach((g) => (CAT[g.id] = g)); // お試し用：ギフトの一覧を外から渡す
   window.VBUI_GIFT = (gid, nick, combo) => giftIn({ body: `gift:${gid}:${combo || 1}`, nickname: nick || "テスト" }); // 確認用
 
   // ---- 届いたものを、届いた順に1つずつ処理する（同じものが2回届いても1回だけ） ----
@@ -350,8 +352,7 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
     timer = setTimeout(poll, rtOK ? 30000 : 2000);
   }
   applySettings();
-  realtime();
-  ocInit().then(poll);
+  if (!DEMO) { realtime(); ocInit().then(poll); }
   // わんコメが起動しているかを10秒ごとに確かめる
   //  ・閉じた → Vぶいのコメントは、この画面のすみっこに自動で出す
   //  ・また起動した → すみっこのコメントはすっと消して、また わんコメ（YouTubeのコメント）に混ぜて出す
