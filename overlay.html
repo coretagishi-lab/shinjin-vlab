@@ -32,6 +32,27 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
 @keyframes out{to{opacity:0;transform:translateY(10px)}}
 #err{position:absolute;left:24px;top:24px;background:#e5333d;color:#fff;font-size:22px;font-weight:700;border-radius:12px;padding:10px 16px;display:none}
 
+/* ---- ギフトの演出（小：画面のすみ／中：やや大きく／大：全画面） ---- */
+#gfx{position:absolute;inset:0;overflow:hidden}
+#gfx canvas{position:absolute;inset:0;width:1920px;height:1080px}
+.gchip{position:absolute;right:40px;bottom:200px;display:flex;align-items:center;gap:14px;background:rgba(20,16,32,.86);color:#fff;border:3px solid #ff7ab8;border-radius:999px;padding:10px 26px 10px 12px;font-size:30px;font-weight:800;box-shadow:0 8px 24px rgba(0,0,0,.35);animation:inr .4s ease both}
+.gchip .gi{font-size:56px;line-height:1}
+.gchip small{display:block;font-size:20px;font-weight:700;color:#ffb3d6}
+.gchip .cb{font-size:40px;color:#ffd25e;font-weight:900;margin-left:6px}
+.gfloat{position:absolute;font-size:72px;animation:gfl 2.6s ease-out forwards}
+@keyframes gfl{from{opacity:0;transform:translateY(0) scale(.6)}15%{opacity:1}to{opacity:0;transform:translateY(-520px) scale(1.2)}}
+.gmid{position:absolute;left:0;right:0;bottom:150px;display:flex;flex-direction:column;align-items:center;gap:8px;animation:pop .45s cubic-bezier(.2,1.4,.4,1) both}
+.gmid .gi{font-size:200px;line-height:1;filter:drop-shadow(0 10px 30px rgba(255,111,163,.6));animation:gbob 1s ease-in-out infinite alternate}
+@keyframes gbob{to{transform:translateY(-14px) rotate(4deg)}}
+.gname{background:linear-gradient(90deg,#ff5fa8,#8b6cff);color:#fff;font-weight:900;font-size:44px;border-radius:999px;padding:10px 34px;box-shadow:0 8px 30px rgba(0,0,0,.35);white-space:nowrap}
+.gname em{font-style:normal;color:#ffe27a}
+.gname .cb{color:#ffe27a;margin-left:10px}
+.gbig{position:absolute;inset:0;display:grid;place-items:center;animation:gfade .6s ease both}
+.gbig .gi{font-size:380px;line-height:1;filter:drop-shadow(0 0 60px rgba(160,140,255,.9));animation:gzoom 5.5s ease-out both}
+@keyframes gzoom{from{transform:scale(.3) rotate(-20deg);opacity:0}15%{transform:scale(1.15) rotate(4deg);opacity:1}25%{transform:scale(1)}to{transform:scale(1.08)}}
+.gbig .gname{position:absolute;bottom:130px;font-size:64px;padding:16px 48px}
+@keyframes gfade{from{opacity:0}to{opacity:1}}
+.gout{animation:out .6s ease both!important}
 /* ---- 救援ヒーロー（救援通知から駆けつけたリスナーさんの登場演出） ---- */
 .hero{position:absolute;left:0;top:0;width:120px;height:120px;will-change:transform}
 .hero .hb{position:absolute;inset:0}
@@ -55,7 +76,7 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
 </style>
 </head>
 <body>
-<div id="root"><div id="stack" class="bl"></div><div id="fx"></div></div>
+<div id="root"><div id="gfx"></div><div id="stack" class="bl"></div><div id="fx"></div></div>
 <div id="err"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
@@ -185,6 +206,85 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
   }
   window.VBUI_HERO = hero; // 確認用
 
+  // ===== ギフト演出 =====
+  //  ・演出でエラーが起きても、ここで止める（配信やほかの表示には影響させない）
+  //  ・たくさん届いたら順番に出す。たまりすぎたら古い小さいギフトから間引く
+  //  ・同じ人の同じギフトの連打は「×N」にまとめる
+  //  ・素材が出せないときは、名前の帯だけ出す
+  let CAT = {}; const GQ = []; let gBusy = false, gNow = null; const GQ_MAX = 20;
+  async function loadCatalog() {
+    try { const r = await fetch(SB + "/rest/v1/gift_catalog?select=id,name,price,tier,effect,icon", { headers: { apikey: PK, Authorization: "Bearer " + PK } }); const a = await r.json(); if (Array.isArray(a)) a.forEach((g) => (CAT[g.id] = g)); } catch {}
+  }
+  loadCatalog(); setInterval(loadCatalog, 10 * 60e3);
+  function giftIn(c) {
+    if (c.created_at && Date.now() - Date.parse(c.created_at) > 60e3) return; // つながり直したときの古いギフトは出さない
+    const [, gid, cb] = String(c.body || "").split(":"); const combo = Number(cb) || 1;
+    const g = CAT[gid] || { id: gid, name: "ギフト", tier: "small", effect: "", icon: "🎁" };
+    const key = (c.nickname || "") + "|" + gid;
+    if (gNow && gNow.key === key) { gNow.bump(combo); return; }                 // いま出ているものと同じ → ×Nを増やす
+    const same = GQ.find((x) => x.key === key); if (same) { same.combo = Math.max(same.combo, combo); return; }
+    if (GQ.length >= GQ_MAX) { const i = GQ.findIndex((x) => x.g.tier === "small"); GQ.splice(i >= 0 ? i : 0, 1); }
+    GQ.push({ key, g, combo, nick: c.nickname || "リスナー" });
+    if (!gBusy) gNext();
+  }
+  async function gNext() {
+    const it = GQ.shift(); if (!it) { gBusy = false; gNow = null; return; }
+    gBusy = true;
+    try { await gPlay(it); } catch { try { await gFallback(it); } catch {} }
+    gNow = null; await wait(250); gNext();
+  }
+  const comboTxt = (n) => (n > 1 ? `<span class="cb">×${n}</span>` : "");
+  function gEl(html, cls) { const el = document.createElement("div"); el.className = cls; el.innerHTML = html; $("#gfx").appendChild(el); return el; }
+  async function gEnd(els, ms) { await wait(ms); els.forEach((e) => e && e.classList.add("gout")); await wait(600); els.forEach((e) => e && e.remove()); }
+  async function gFallback(it) { const el = gEl(`<div class="gname"><em>${esc(it.nick)}</em> さんから ${esc(it.g.name)}${comboTxt(it.combo)}</div>`, "gmid"); await gEnd([el], 3500); }
+  async function gPlay(it) {
+    const g = it.g, ic = esc(g.icon || "🎁");
+    let cbEl = null; const setCombo = (n) => { it.combo = n; if (cbEl) cbEl.innerHTML = comboTxt(n); };
+    if (g.tier === "small") {
+      const el = gEl(`<span class="gi">${ic}</span><span><small>${esc(it.nick)} さんから</small>${esc(g.name)}<span class="cbw">${comboTxt(it.combo)}</span></span>`, "gchip"); cbEl = el.querySelector(".cbw");
+      const fl = []; const burst = () => { for (let i = 0; i < 6; i++) { const f = gEl(ic, "gfloat"); f.style.right = 80 + Math.random() * 380 + "px"; f.style.bottom = 220 + Math.random() * 60 + "px"; f.style.animationDelay = i * 0.12 + "s"; fl.push(f); } };
+      let extra = 0; gNow = { key: it.key, bump: (n) => { setCombo(n); burst(); extra += 900; } };
+      burst(); await wait(3200); while (extra > 0) { const e = extra; extra = 0; await wait(e); }
+      await gEnd([el, ...fl], 0); return;
+    }
+    if (g.tier === "mid") {
+      const cv = sparkle(4200, ["#ff7ab8", "#ffd25e", "#8be3ff"], 0.75);
+      const el = gEl(`<span class="gi">${ic}</span><div class="gname"><em>${esc(it.nick)}</em> さんから ${esc(g.name)}<span class="cbw">${comboTxt(it.combo)}</span></div>`, "gmid"); cbEl = el.querySelector(".cbw");
+      let extra = 0; gNow = { key: it.key, bump: (n) => { setCombo(n); extra += 1200; } };
+      await wait(4200); while (extra > 0) { const e = extra; extra = 0; await wait(e); }
+      await gEnd([el, cv], 0); return;
+    }
+    // 大：全画面
+    const bg = gEl("", "gbig"); bg.style.background = g.effect === "galaxy" ? "radial-gradient(circle at 50% 45%,rgba(120,80,255,.55),rgba(10,6,30,.85) 70%)" : "radial-gradient(circle at 50% 40%,rgba(255,190,90,.35),rgba(20,10,40,.75) 70%)";
+    const cv = g.effect === "galaxy" ? galaxy(6500) : starfall(6500);
+    const el = gEl(`<span class="gi">${ic}</span><div class="gname"><em>${esc(it.nick)}</em> さんから ${esc(g.name)}！<span class="cbw">${comboTxt(it.combo)}</span></div>`, "gbig"); cbEl = el.querySelector(".cbw");
+    let extra = 0; gNow = { key: it.key, bump: (n) => { setCombo(n); extra += 1500; } };
+    await wait(6500); while (extra > 0) { const e = extra; extra = 0; await wait(e); }
+    await gEnd([el, bg, cv], 0);
+  }
+  // 粒の演出（キャンバス）。時間が来たら自分で止まる
+  function canvasFx(ms, init, draw) {
+    const cv = document.createElement("canvas"); cv.width = 1920; cv.height = 1080; $("#gfx").appendChild(cv);
+    const x = cv.getContext("2d"); const P = init(); const t0 = performance.now();
+    const step = (t) => { const k = (t - t0) / ms; if (k > 1.2 || !cv.isConnected) return; x.clearRect(0, 0, 1920, 1080); try { draw(x, P, k); } catch { return; } requestAnimationFrame(step); };
+    requestAnimationFrame(step); return cv;
+  }
+  function sparkle(ms, cols, area) {
+    return canvasFx(ms, () => Array.from({ length: 70 }, () => ({ x: 960 + (Math.random() - 0.5) * 900 * area, y: 760 + (Math.random() - 0.5) * 300, vx: (Math.random() - 0.5) * 6, vy: -2 - Math.random() * 6, r: 3 + Math.random() * 6, c: cols[(Math.random() * cols.length) | 0] })),
+      (x, P, k) => { for (const p of P) { p.x += p.vx; p.y += p.vy; p.vy += 0.08; x.globalAlpha = Math.max(0, 1 - k); x.fillStyle = p.c; x.beginPath(); x.arc(p.x, p.y, p.r, 0, 7); x.fill(); } });
+  }
+  function starfall(ms) {
+    return canvasFx(ms, () => Array.from({ length: 90 }, () => ({ x: Math.random() * 2400, y: -Math.random() * 1200, s: 8 + Math.random() * 16, l: 80 + Math.random() * 160 })),
+      (x, P, k) => { x.globalAlpha = k > 0.85 ? Math.max(0, (1 - k) / 0.15) : 1; for (const p of P) { p.x -= p.s * 0.8; p.y += p.s; if (p.y > 1200) { p.y = -50; p.x = Math.random() * 2400; }
+        const g = x.createLinearGradient(p.x, p.y, p.x + p.l * 0.8, p.y - p.l); g.addColorStop(0, "rgba(255,240,180,1)"); g.addColorStop(1, "rgba(255,240,180,0)"); x.strokeStyle = g; x.lineWidth = 4; x.beginPath(); x.moveTo(p.x, p.y); x.lineTo(p.x + p.l * 0.8, p.y - p.l); x.stroke(); } });
+  }
+  function galaxy(ms) {
+    return canvasFx(ms, () => Array.from({ length: 700 }, (_, i) => ({ a: Math.random() * Math.PI * 2, d: Math.pow(Math.random(), 0.6) * 900, arm: i % 3, r: 1 + Math.random() * 3, c: ["#c9b8ff", "#ff9ad5", "#8be3ff", "#ffffff"][i % 4] })),
+      (x, P, k) => { const spin = k * 3; x.globalAlpha = k > 0.85 ? Math.max(0, (1 - k) / 0.15) : Math.min(1, k * 4);
+        for (const p of P) { const a = p.a + spin * (1.2 - p.d / 1000) + p.arm * 2.09 + p.d / 260; const px = 960 + Math.cos(a) * p.d * Math.min(1, k * 3), py = 500 + Math.sin(a) * p.d * 0.45 * Math.min(1, k * 3); x.fillStyle = p.c; x.beginPath(); x.arc(px, py, p.r, 0, 7); x.fill(); } });
+  }
+  window.VBUI_GIFT = (gid, nick, combo) => giftIn({ body: `gift:${gid}:${combo || 1}`, nickname: nick || "テスト" }); // 確認用
+
   // ---- 届いたものを、届いた順に1つずつ処理する（同じものが2回届いても1回だけ） ----
   const seen = new Set(); let chain = Promise.resolve();
   function handleItems(items) {
@@ -195,6 +295,7 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
     }
   }
   async function handleOne(c) {
+    if (c.kind === "gift") { try { giftIn(c); } catch {} return; } // ギフトはコメントとは別の列で順番に出す
     if (c.kind === "test") {
       ack = c.id; kick(); // 「設定確認」はすぐ返事する
       banner("✅ Vぶいと接続できました", onecomme ? "わんコメにもテストのコメントを送りました" : "わんコメは見つかりませんでした（Vぶいの画面にコメントを表示します）");
@@ -278,7 +379,7 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
       const t = await (await fetch(location.pathname + "?v=" + Date.now(), { cache: "no-store" })).text();
       if (selfText === null) { selfText = t; return; }
       if (t !== selfText && t.includes("Vぶい 演出画面")) {
-        const busy = () => heroBusy || document.querySelector("#fx .banner") || document.querySelector("#stack .cm");
+        const busy = () => heroBusy || gBusy || document.querySelector("#fx .banner") || document.querySelector("#stack .cm");
         const go = () => { if (busy()) return setTimeout(go, 5000); location.reload(); };
         go();
       }
