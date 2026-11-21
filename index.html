@@ -2333,9 +2333,11 @@ function giftHTML() {
     <div class="jh"><span class="jk">🎁 ギフト</span><b>${esc(c.title || "")}さんに贈る</b><span class="jf">配信画面に演出と、あなたの名前が出ます</span></div>
     ${demo ? `<p class="demo">🧪 お試しモード：OBSにつながっている設定で動きます。残高はこの端末の中だけで、本物のお金・記録は動きません。</p>` : ""}
     <div class="bal"><span>あなたの残高<br><small>${esc(exp)}</small></span><b>${coinFmt(w.balance)} <small>${esc(cat.coin)}</small></b></div>
+    ${(w.refunds || []).length ? `<p class="demo">↩︎ 演出が配信画面に出なかったため返金しました：${w.refunds.map((r) => `${esc((cat.gifts.find((x) => x.id === r.gift_id) || {}).name || "ギフト")} ${coinFmt(r.price)}`).join("、")}</p>` : ""}
     <div class="gl">${cat.gifts.map((x) => `<button class="gi" data-gsel="${esc(x.id)}" aria-pressed="${x.id === gSel}"><span class="ic">${esc(x.icon || "🎁")}</span><b>${esc(x.name)}</b><span>${coinFmt(x.price)}</span><i>${tier[x.tier] || ""}</i></button>`).join("")}</div>
     ${!on && !demo ? `<p class="note">配信者がOBS連携を切ったため、いまは送れません。</p>` : ""}
     <button class="send" data-gsend ${!g || short || (!on && !demo) ? "disabled" : ""}>${!g ? "ギフトを選んでください" : short ? `残高が足りません（あと ${coinFmt(g.price - w.balance)}）` : `${esc(g.name)}を贈る（${coinFmt(g.price)} ${esc(cat.coin)}）`}</button>
+    <p class="note">演出が配信画面に出なかったときは、自動で残高に戻ります。</p>
     <p class="note" style="margin-top:14px"><b>チャージ</b>（${esc(cat.coin)}は1枚＝${cat.yen_per_coin}円・購入から${cat.expire_months}か月で使えなくなります）</p>
     <div class="packs">${cat.packs.map((y) => `<button data-gpack="${y}">${coinFmt(y)}円</button>`).join("")}</div>
     ${cat.stripe ? "" : `<p class="note">チャージ（カード払い）はただいま準備中です。</p>`}
@@ -2386,7 +2388,8 @@ document.addEventListener("click", async (e) => {
     const g = GCAT?.gifts.find((x) => x.id === gSel); if (!g) return;
     t.disabled = true;
     const r = await giftApi({ action: "send", channel_id: gCh, gift_id: g.id }).catch(() => ({}));
-    if (r.ok) {
+    if (r.ok && r.refunded) { GWAL = { ...GWAL, balance: r.balance }; toast("配信画面に届けられなかったため、送らずに残高を戻しました"); }
+    else if (r.ok) {
       GWAL = { ...GWAL, balance: r.balance }; toast(`${g.name}を贈りました！${r.combo > 1 ? `（×${r.combo}）` : ""} 配信画面に出ます`);
       const p = document.createElement("div"); p.className = "gpop"; p.textContent = g.icon || "🎁"; document.body.appendChild(p); setTimeout(() => p.remove(), 1500);
     } else {
