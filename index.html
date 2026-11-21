@@ -109,7 +109,32 @@ a{color:inherit;text-decoration:none}
 .w-chat{overflow:hidden}
 /* YouTubeチャットの上の「トップチャット・メニュー」の帯（約49px）は使わないので、上にずらして隠す */
 .w-chat iframe{position:absolute;left:0;right:0;top:-49px;width:100%;height:calc(100% + 49px);border:0}
-.w-chat.crop iframe{top:0;height:100%}
+.w-chat .w-rank{position:absolute;inset:0;overflow:auto;background:#14121c;color:#fff;padding:10px 12px}
+.wtabs{flex:none;display:flex;gap:6px;padding:6px 10px;background:#14121c;border-top:1px solid #2A2738}
+.wtabs button{flex:1;border:0;border-radius:10px;padding:8px 6px;font:inherit;font-size:13px;font-weight:700;background:#221f2e;color:#b9b2c9;cursor:pointer}
+.wtabs button[aria-pressed="true"]{background:#fff;color:#14121c}
+.w-rank .rk{display:flex;gap:6px;margin-bottom:8px}
+.w-rank .rk button{border:1px solid #3a3450;background:none;color:#b9b2c9;border-radius:999px;padding:4px 12px;font:inherit;font-size:12px}
+.w-rank .rk button[aria-pressed="true"]{background:#ff5fa8;border-color:#ff5fa8;color:#fff}
+.w-rank ol{list-style:none;margin:0;padding:0}
+.w-rank li{display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid #221f2e;font-size:14px}
+.w-rank li .no{width:26px;text-align:center;font-weight:900;color:#b9b2c9}
+.w-rank li:nth-child(-n+3) .no{font-size:18px}
+.w-rank li b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.w-rank li span{color:#ffd25e;font-weight:800}
+.w-rank .empty{color:#b9b2c9;font-size:13px;text-align:center;padding:30px 10px;line-height:1.7}
+.w-bot{flex:none;display:flex;gap:10px;align-items:center;padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px));background:#14121c;border-top:1px solid #2A2738}
+.w-bot .vbc{flex:1;min-width:0;margin:0}
+.w-wait{flex:1;min-width:0;display:flex;gap:8px;align-items:center;background:rgba(0,0,0,.45);border:1.5px dashed #3a3450;border-radius:14px;padding:8px 12px;color:#8d86a0;font-size:12px;line-height:1.5;pointer-events:none;user-select:none}
+.w-wait b{display:block;color:#b9b2c9;font-size:13px}
+.w-bot .gfb{flex:none;width:48px;height:48px;border-radius:50%;padding:0;font-size:24px;display:grid;place-items:center;box-shadow:0 4px 14px rgba(255,95,168,.35)}
+.gfb,.gsh button{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+.gsh{position:relative}
+.gsh .gwait{position:absolute;inset:0;z-index:3;border-radius:inherit;background:rgba(10,8,18,.72);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;color:#fff;padding:24px;animation:gwfade .35s ease both}
+.gsh .gwait .z{font-size:44px}
+.gsh .gwait b{font-size:18px}
+.gsh .gwait span{font-size:13px;color:#ddd6ea;line-height:1.7}
+@keyframes gwfade{from{opacity:0}to{opacity:1}}
 .w-chat{overscroll-behavior:contain}
 #v-home,#v-discover{position:relative}
 #discList{height:100%}
@@ -1243,10 +1268,12 @@ function openWatch(vid, push = true) {
   const vbOK = s.status === "live" && vbuiOK(c.id);
   const heroNote = R0 && vbOK ? (SESSION && PROFILE ? `<span class="hero-note" data-heronote="${esc(c.id)}">🦸 配信画面に、あなたのヒーロー登場の演出を出しています…</span>` : `<span class="hero-note">🦸 リスナー登録すると、配信画面にあなたの名前でヒーロー登場の演出が出ます</span>`) : "";
   if (R0 && vbOK && SESSION && PROFILE) heroArrive(c.id, R0.id);
-  $("#wLower").innerHTML = (gDemo() ? `<div class="gfrow"><span style="flex:1;font-size:12px;color:#b9b2c9">お試しモード（OBSにつながっている設定）</span><button class="gfb" data-gift="${esc(c.id)}">🎁 ギフト</button></div>` : "") + (vbOK ? `<div class="gfrow">${vbuiCommentBar(c.id)}<button class="gfb" data-gift="${esc(c.id)}">🎁 ギフト</button></div>`
-    : s.status === "live" ? `<div class="gfoff"><button class="gfb" disabled>🎁 ギフト</button><span>配信者がギフト受付（OBS連携）をつないでいないため、いまは送れません</span></div>` : "") + (R0 ? `<div class="w-sos">🦸 <b>ヒーローどこだ〜！</b>${R0.message ? `「${esc(R0.message)}」` : ""}　来てくれてありがとう！ コメントで「救援きたよ」って伝えてあげてね${heroNote}</div>` : "") + (canChat
-    ? `<div class="w-chat${isIOS ? " crop" : ""}"><iframe src="https://www.youtube.com/live_chat?v=${encodeURIComponent(vid)}&embed_domain=${encodeURIComponent(location.hostname)}" title="チャット"></iframe></div>${isIOS ? `<a class="w-cmt" href="${ytWatch(vid)}" target="_blank" rel="noopener" data-watch="${esc(c.id)}">💬 コメントする（YouTubeアプリで開く）</a>` : ""}`
-    : chatOff ? `<div class="w-off">この配信はチャットがオフになっています。<br>映像と音声だけ楽しめます。</div>` : `<div class="w-note"><b>アーカイブを再生中</b><br>配信中の枠では、ここにチャットが出て、そのままコメントできます。</div>`);
+  gSid = s.id;
+  // いちばん下：コメント欄＋🎁（配信中。お試しモードはアーカイブでも🎁だけ出す）
+  const wBot = s.status === "live" || gDemo() ? `<div class="w-bot">${s.status !== "live" ? `<span class="w-wait">🧪 お試しモード：🎁からギフトを試せます</span>` : vbOK ? vbuiCommentBar(c.id) : `<div class="w-wait" aria-disabled="true">💤 <span><b>VTuberの設定待ち</b>推しがVぶいの設定をすると、ここからコメントやギフトが送れるようになるよ</span></div>`}<button class="gfb" data-gift="${esc(c.id)}" aria-label="ギフト">🎁</button></div>` : "";
+  $("#wLower").innerHTML = (R0 ? `<div class="w-sos">🦸 <b>ヒーローどこだ〜！</b>${R0.message ? `「${esc(R0.message)}」` : ""}　来てくれてありがとう！ コメントで「救援きたよ」って伝えてあげてね${heroNote}</div>` : "") + (canChat
+    ? `<div class="wtabs"><button data-wtab="chat" aria-pressed="true">💬 チャット</button><button data-wtab="rank" aria-pressed="false" data-ch="${esc(c.id)}">🏆 ギフトランキング</button></div><div class="w-chat"><iframe src="https://www.youtube.com/live_chat?v=${encodeURIComponent(vid)}&embed_domain=${encodeURIComponent(location.hostname)}" title="チャット"></iframe><div class="w-rank" hidden></div></div>${wBot}`
+    : chatOff ? `<div class="w-off">この配信はチャットがオフになっています。<br>映像と音声だけ楽しめます。</div>${wBot}` : `<div class="w-note"><b>アーカイブを再生中</b><br>配信中の枠では、ここにチャットが出て、そのままコメントできます。</div>${wBot}`);
   const w = $("#watch"); w.hidden = false; requestAnimationFrame(() => w.classList.add("open"));
   HP?.stop(); DP?.stop();
   $("#wPlayer").querySelector(".w-noemb")?.remove();
@@ -2293,7 +2320,15 @@ document.addEventListener("submit", async (e) => {
 });
 
 /* ---------- ギフト（残高から送る。配信画面の演出がつながっている時だけ） ---------- */
-let GCAT = null, GWAL = null, gCh = null, gSel = null, gPay = null;
+let GCAT = null, GWAL = null, gCh = null, gSel = null, gPay = null, gSid = null, gWait = false;
+// 連打よけ：送っている途中は次を受け付けない＋0.35秒あける＋10秒に10回まで（長押しで連打にならない）
+let gBusyUntil = 0; const gHits = [];
+function gGate() {
+  const now = Date.now(); if (now < gBusyUntil) return false;
+  while (gHits.length && now - gHits[0] > 10e3) gHits.shift();
+  if (gHits.length >= 10) { toast("ちょっと待ってね（10秒に10回まで）"); return false; }
+  gHits.push(now); gBusyUntil = now + 350; return true;
+}
 // お試しモード：core.tagishi でログインした時だけ。お金もサーバーも動かさず、この端末の中だけで残高と演出を試す
 const gDemo = () => !!(SESSION && SESSION.user?.email === "core.tagishi@gmail.com");
 const G_DEMO_CAT = { ok: true, demo: true, coin: "ぶいコイン", packs: [500, 1000, 3000], yen_per_coin: 1, expire_months: 6, stripe: true, gifts: [
@@ -2304,6 +2339,7 @@ let GD = { balance: 0, hist: [] };
 try { GD = JSON.parse(localStorage.getItem("vbui_gift_demo")) || GD; } catch {}
 const gdSave = () => { try { localStorage.setItem("vbui_gift_demo", JSON.stringify(GD)); } catch {} };
 const gdWallet = () => ({ ok: true, balance: GD.balance, next_expire: GD.balance ? { at: new Date(Date.now() + 182 * 864e5).toISOString(), amount: GD.balance } : null });
+const gdRank = (sid, cid, n) => { GD.rank = GD.rank || {}; GD.rank[sid] = (GD.rank[sid] || 0) + n; GD.rank["c:" + cid] = (GD.rank["c:" + cid] || 0) + n; gdSave(); };
 const gdLog = (t, n) => { GD.hist.unshift({ t, n, at: Date.now() }); GD.hist = GD.hist.slice(0, 8); gdSave(); };
 const G_COMBO = new Map();
 // 視聴画面の動画の上に、OBSと同じ演出画面を重ねて出す
@@ -2326,16 +2362,17 @@ function giftHTML() {
     <div class="pay"><span>カード：•••• 4242（お試し用）</span><span>有効期限：購入から${cat.expire_months}か月</span>
       <div class="row"><button class="sbtn gray" data-gpcancel>やめる</button><button class="sbtn" data-gpok>支払う（本物のお金は動きません）</button></div></div></div>`;
   if (!cat || !w) return `<div class="jn gsh"><button class="jx" data-gx aria-label="閉じる">×</button><p class="note">読み込み中…</p></div>`;
+  const waitCover = gWait ? `<div class="gwait"><span class="z">💤</span><b>VTuberの設定待ち</b><span>推しがVぶいの設定をすると、<br>ギフトを送れるようになるよ</span><button class="sbtn gray" data-gx style="margin-top:10px">閉じる</button></div>` : "";
   const g = cat.gifts.find((x) => x.id === gSel), short = g && w.balance < g.price, on = vbuiOK(gCh);
   const tier = { small: "小", mid: "中", large: "全画面" };
   const exp = w.next_expire ? `うち ${coinFmt(w.next_expire.amount)} は ${jst(w.next_expire.at, { month: "numeric", day: "numeric" })} まで` : "";
-  return `<div class="jn gsh"><button class="jx" data-gx aria-label="閉じる">×</button>
+  return `<div class="jn gsh">${waitCover}<button class="jx" data-gx aria-label="閉じる">×</button>
     <div class="jh"><span class="jk">🎁 ギフト</span><b>${esc(c.title || "")}さんに贈る</b><span class="jf">配信画面に演出と、あなたの名前が出ます</span></div>
     ${demo ? `<p class="demo">🧪 お試しモード：OBSにつながっている設定で動きます。残高はこの端末の中だけで、本物のお金・記録は動きません。</p>` : ""}
     <div class="bal"><span>あなたの残高<br><small>${esc(exp)}</small></span><b>${coinFmt(w.balance)} <small>${esc(cat.coin)}</small></b></div>
     ${(w.refunds || []).length ? `<p class="demo">↩︎ 演出が配信画面に出なかったため返金しました：${w.refunds.map((r) => `${esc((cat.gifts.find((x) => x.id === r.gift_id) || {}).name || "ギフト")} ${coinFmt(r.price)}`).join("、")}</p>` : ""}
     <div class="gl">${cat.gifts.map((x) => `<button class="gi" data-gsel="${esc(x.id)}" aria-pressed="${x.id === gSel}"><span class="ic">${esc(x.icon || "🎁")}</span><b>${esc(x.name)}</b><span>${coinFmt(x.price)}</span><i>${tier[x.tier] || ""}</i></button>`).join("")}</div>
-    ${!on && !demo ? `<p class="note">配信者がOBS連携を切ったため、いまは送れません。</p>` : ""}
+    ${!on && !demo && !gWait ? `<p class="note">配信者がOBS連携を切ったため、いまは送れません。</p>` : ""}
     <button class="send" data-gsend ${!g || short || (!on && !demo) ? "disabled" : ""}>${!g ? "ギフトを選んでください" : short ? `残高が足りません（あと ${coinFmt(g.price - w.balance)}）` : `${esc(g.name)}を贈る（${coinFmt(g.price)} ${esc(cat.coin)}）`}</button>
     <p class="note">演出が配信画面に出なかったときは、自動で残高に戻ります。</p>
     <p class="note" style="margin-top:14px"><b>チャージ</b>（${esc(cat.coin)}は1枚＝${cat.yen_per_coin}円・購入から${cat.expire_months}か月で使えなくなります）</p>
@@ -2347,8 +2384,14 @@ function giftHTML() {
 }
 const giftRender = () => { const el = $("#gift"); if (el && !el.hidden) el.querySelector(".ovp").innerHTML = giftHTML(); };
 async function openGift(cid) {
-  if (!needLogin("ギフト")) return;
   gCh = cid; gSel = null; gPay = null;
+  // 推しがまだ設定していない：一覧は見られるけど、黒いフェードで「設定待ち」
+  gWait = !gDemo() && !vbuiOK(cid);
+  if (gWait) {
+    if (!GCAT || GCAT.demo) { GCAT = { ...G_DEMO_CAT, demo: false, stripe: false }; giftApi({ action: "catalog" }).then((r) => { if (r.ok) { GCAT = r; giftRender(); } }).catch(() => {}); }
+    GWAL = { ok: true, balance: 0 }; overlay("gift", giftHTML()); return;
+  }
+  if (!needLogin("ギフト")) return;
   if (gDemo()) { GCAT = G_DEMO_CAT; GWAL = gdWallet(); overlay("gift", giftHTML()); return; }
   if (GCAT && GCAT.demo) GCAT = null;
   overlay("gift", giftHTML());
@@ -2370,8 +2413,8 @@ document.addEventListener("click", async (e) => {
     if ("gpok" in t.dataset) { const n = gPay / GCAT.yen_per_coin; GD.balance += n; gdLog(`チャージ ${coinFmt(gPay)}円`, n); gPay = null; GWAL = gdWallet(); toast("チャージありがとうございます！（お試し）"); return giftRender(); }
     if ("greset" in t.dataset) { GD = { balance: 0, hist: [] }; gdSave(); GWAL = gdWallet(); return giftRender(); }
     if ("gsend" in t.dataset) {
-      const g = GCAT.gifts.find((x) => x.id === gSel); if (!g || GD.balance < g.price) return;
-      GD.balance -= g.price; gdLog(`${g.icon} ${g.name}`, -g.price); GWAL = gdWallet();
+      const g = GCAT.gifts.find((x) => x.id === gSel); if (!g || GD.balance < g.price || !gGate()) return;
+      GD.balance -= g.price; gdLog(`${g.icon} ${g.name}`, -g.price); gdRank(gSid, gCh, g.price); GWAL = gdWallet(); rankLoad();
       closeOv("gift"); toast(`${g.name}を贈りました！（お試し）`); gDemoFx(g);
     }
     return;
@@ -2385,8 +2428,9 @@ document.addEventListener("click", async (e) => {
     return;
   }
   if ("gsend" in t.dataset) {
-    const g = GCAT?.gifts.find((x) => x.id === gSel); if (!g) return;
-    t.disabled = true;
+    const g = GCAT?.gifts.find((x) => x.id === gSel); if (!g || gWait || !gGate()) return;
+    t.disabled = true; gBusyUntil = Date.now() + 60e3;
+    try {
     const r = await giftApi({ action: "send", channel_id: gCh, gift_id: g.id }).catch(() => ({}));
     if (r.ok && r.refunded) { GWAL = { ...GWAL, balance: r.balance }; toast("配信画面に届けられなかったため、送らずに残高を戻しました"); }
     else if (r.ok) {
@@ -2394,11 +2438,37 @@ document.addEventListener("click", async (e) => {
       const p = document.createElement("div"); p.className = "gpop"; p.textContent = g.icon || "🎁"; document.body.appendChild(p); setTimeout(() => p.remove(), 1500);
     } else {
       if (r.error === "not_connected") OVL.set(gCh, { ...(OVL.get(gCh) || {}), connected: false });
-      toast({ not_connected: "配信者がギフト受付をつないでいないため、送れませんでした", not_live: "配信が終わっています", short: "残高が足りません", banned: "この配信にはギフトを送れません", no_profile: "先にニックネームを決めてください" }[r.error] || "送れませんでした（残高は減っていません）");
+      toast({ too_fast: "ちょっと待ってね（10秒に10回まで）", not_connected: "配信者がギフト受付をつないでいないため、送れませんでした", not_live: "配信が終わっています", short: "残高が足りません", banned: "この配信にはギフトを送れません", no_profile: "先にニックネームを決めてください" }[r.error] || "送れませんでした（残高は減っていません）");
     }
-    giftRender();
+    } finally { gBusyUntil = Date.now() + 350; }
+    giftRender(); rankLoad();
   }
 });
+
+/* ---------- ギフトランキング（チャット欄のタブ） ---------- */
+let rkMode = "stream", rkTimer = null;
+async function rankLoad() {
+  const box = $("#wLower .w-rank"); if (!box || box.hidden) return;
+  const cid = $("#wLower [data-wtab='rank']")?.dataset.ch; if (!cid) return;
+  let r = { stream: [], days: [] };
+  try { const x = await giftApi({ action: "ranking", channel_id: cid, stream_id: gSid }); if (x.ok) r = x; } catch {}
+  if (gDemo()) {                                         // お試し：この端末で贈った分も混ぜて見せる
+    const me = (PROFILE && PROFILE.nickname) || "たぎし", add = (arr, n) => { if (!n) return arr; const a = arr.filter((x) => x.nick !== me + "（お試し）"); a.push({ nick: me + "（お試し）", total: n }); return a.sort((x, y) => y.total - x.total); };
+    r = { stream: add(r.stream, GD.rank?.[gSid] || 0), days: add(r.days, GD.rank?.["c:" + cid] || 0) };
+  }
+  const list = rkMode === "stream" ? r.stream : r.days, medal = ["🥇", "🥈", "🥉"];
+  box.innerHTML = `<div class="rk"><button data-rk="stream" aria-pressed="${rkMode === "stream"}">この配信</button><button data-rk="days" aria-pressed="${rkMode === "days"}">30日間</button></div>
+    ${list.length ? `<ol>${list.map((x, i) => `<li><span class="no">${medal[i] || i + 1}</span><b>${esc(x.nick || "リスナー")}</b><span>${coinFmt(x.total)}</span></li>`).join("")}</ol>` : `<p class="empty">まだギフトはありません。<br>🎁 最初の応援になろう！</p>`}`;
+}
+document.addEventListener("click", (e) => {
+  const t = e.target.closest("[data-wtab],[data-rk]"); if (!t) return;
+  if (t.dataset.rk) { rkMode = t.dataset.rk; return rankLoad(); }
+  const rank = t.dataset.wtab === "rank";
+  document.querySelectorAll("#wLower [data-wtab]").forEach((b) => b.setAttribute("aria-pressed", String(b === t)));
+  const box = $("#wLower .w-rank"); if (box) box.hidden = !rank;
+  clearInterval(rkTimer); if (rank) { rankLoad(); rkTimer = setInterval(() => { if (!watchVid) clearInterval(rkTimer); else rankLoad(); }, 20e3); }
+});
+document.addEventListener("contextmenu", (e) => { if (e.target.closest(".gfb,.gsh")) e.preventDefault(); });
 
 /* ---------- LP・ガイドを下から出るシートで開く ---------- */
 function openLP(url) {
