@@ -402,6 +402,14 @@ a{color:inherit;text-decoration:none}
 .gsh .packs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .gsh .packs button{flex:1;min-width:90px;border:1.5px solid #e0d4ea;background:#fff;border-radius:12px;padding:10px;font:inherit;font-weight:700;cursor:pointer;color:#2a2238}
 .gsh .note{font-size:11.5px;color:#7a7190;margin:8px 0 0;line-height:1.6}
+.w-player iframe.gdemo{z-index:6;pointer-events:none;background:transparent}
+.gsh .demo{background:#fff6d6;color:#6b5200;border-radius:10px;padding:8px 12px;font-size:12px;margin:0 0 8px;line-height:1.6}
+.gsh .pay{border:2px dashed #d9c3ea;border-radius:14px;padding:14px;margin-top:10px;display:flex;flex-direction:column;gap:8px}
+.gsh .pay b{font-size:16px}
+.gsh .pay .row{display:flex;gap:8px}
+.gsh .pay .row button{flex:1}
+.gsh .hist{margin:10px 0 0;padding:0;list-style:none;font-size:12px;color:#5d5370}
+.gsh .hist li{display:flex;justify-content:space-between;border-top:1px solid #f0e8f5;padding:5px 2px}
 .gpop{position:fixed;left:50%;bottom:30%;transform:translateX(-50%);font-size:80px;z-index:90;pointer-events:none;animation:gpop 1.4s ease-out forwards}
 @keyframes gpop{0%{opacity:0;transform:translate(-50%,30px) scale(.5)}20%{opacity:1;transform:translate(-50%,0) scale(1.2)}100%{opacity:0;transform:translate(-50%,-160px) scale(1)}}
 .vbc{display:flex;gap:8px;align-items:center;margin:0 12px 8px;background:#1d1830;border:1.5px solid #ff7ab8;border-radius:14px;padding:6px 6px 6px 10px}
@@ -1235,7 +1243,7 @@ function openWatch(vid, push = true) {
   const vbOK = s.status === "live" && vbuiOK(c.id);
   const heroNote = R0 && vbOK ? (SESSION && PROFILE ? `<span class="hero-note" data-heronote="${esc(c.id)}">🦸 配信画面に、あなたのヒーロー登場の演出を出しています…</span>` : `<span class="hero-note">🦸 リスナー登録すると、配信画面にあなたの名前でヒーロー登場の演出が出ます</span>`) : "";
   if (R0 && vbOK && SESSION && PROFILE) heroArrive(c.id, R0.id);
-  $("#wLower").innerHTML = (vbOK ? `<div class="gfrow">${vbuiCommentBar(c.id)}<button class="gfb" data-gift="${esc(c.id)}">🎁 ギフト</button></div>`
+  $("#wLower").innerHTML = (gDemo() ? `<div class="gfrow"><span style="flex:1;font-size:12px;color:#b9b2c9">お試しモード（OBSにつながっている設定）</span><button class="gfb" data-gift="${esc(c.id)}">🎁 ギフト</button></div>` : "") + (vbOK ? `<div class="gfrow">${vbuiCommentBar(c.id)}<button class="gfb" data-gift="${esc(c.id)}">🎁 ギフト</button></div>`
     : s.status === "live" ? `<div class="gfoff"><button class="gfb" disabled>🎁 ギフト</button><span>配信者がギフト受付（OBS連携）をつないでいないため、いまは送れません</span></div>` : "") + (R0 ? `<div class="w-sos">🦸 <b>ヒーローどこだ〜！</b>${R0.message ? `「${esc(R0.message)}」` : ""}　来てくれてありがとう！ コメントで「救援きたよ」って伝えてあげてね${heroNote}</div>` : "") + (canChat
     ? `<div class="w-chat${isIOS ? " crop" : ""}"><iframe src="https://www.youtube.com/live_chat?v=${encodeURIComponent(vid)}&embed_domain=${encodeURIComponent(location.hostname)}" title="チャット"></iframe></div>${isIOS ? `<a class="w-cmt" href="${ytWatch(vid)}" target="_blank" rel="noopener" data-watch="${esc(c.id)}">💬 コメントする（YouTubeアプリで開く）</a>` : ""}`
     : chatOff ? `<div class="w-off">この配信はチャットがオフになっています。<br>映像と音声だけ楽しめます。</div>` : `<div class="w-note"><b>アーカイブを再生中</b><br>配信中の枠では、ここにチャットが出て、そのままコメントできます。</div>`);
@@ -2285,34 +2293,63 @@ document.addEventListener("submit", async (e) => {
 });
 
 /* ---------- ギフト（残高から送る。配信画面の演出がつながっている時だけ） ---------- */
-let GCAT = null, GWAL = null, gCh = null, gSel = null;
+let GCAT = null, GWAL = null, gCh = null, gSel = null, gPay = null;
+// お試しモード：core.tagishi でログインした時だけ。お金もサーバーも動かさず、この端末の中だけで残高と演出を試す
+const gDemo = () => !!(SESSION && SESSION.user?.email === "core.tagishi@gmail.com");
+const G_DEMO_CAT = { ok: true, demo: true, coin: "ぶいコイン", packs: [500, 1000, 3000], yen_per_coin: 1, expire_months: 6, stripe: true, gifts: [
+  { id: "clap", name: "拍手", price: 10, tier: "small", icon: "👏" }, { id: "heart", name: "ハート", price: 30, tier: "small", icon: "💗" },
+  { id: "ribbon", name: "リボン", price: 100, tier: "mid", icon: "🎀" }, { id: "bouquet", name: "花束", price: 300, tier: "mid", icon: "💐" },
+  { id: "star", name: "流れ星", price: 1000, tier: "large", icon: "🌠" }, { id: "galaxy", name: "銀河", price: 3000, tier: "large", icon: "🌌" }] };
+let GD = { balance: 0, hist: [] };
+try { GD = JSON.parse(localStorage.getItem("vbui_gift_demo")) || GD; } catch {}
+const gdSave = () => { try { localStorage.setItem("vbui_gift_demo", JSON.stringify(GD)); } catch {} };
+const gdWallet = () => ({ ok: true, balance: GD.balance, next_expire: GD.balance ? { at: new Date(Date.now() + 182 * 864e5).toISOString(), amount: GD.balance } : null });
+const gdLog = (t, n) => { GD.hist.unshift({ t, n, at: Date.now() }); GD.hist = GD.hist.slice(0, 8); gdSave(); };
+const G_COMBO = new Map();
+// 視聴画面の動画の上に、OBSと同じ演出画面を重ねて出す
+function gDemoFx(g) {
+  const host = $("#wPlayer"); if (!host) return;
+  let f = host.querySelector("iframe.gdemo");
+  const fire = () => { try { const k = g.id, now = Date.now(), p = G_COMBO.get(k); const n = p && now - p.at < 10000 ? p.n + 1 : 1; G_COMBO.set(k, { n, at: now }); f.contentWindow.VBUI_CAT(G_DEMO_CAT.gifts); f.contentWindow.VBUI_GIFT(g.id, (PROFILE && PROFILE.nickname) || "たぎし", n); } catch {} };
+  if (!f) { f = document.createElement("iframe"); f.className = "gdemo"; f.title = "ギフト演出"; f.setAttribute("allowtransparency", "true"); f.src = "overlay.html?demo=1"; host.appendChild(f); f.addEventListener("load", () => setTimeout(fire, 400), { once: true }); }
+  else fire();
+}
 async function giftApi(body) {
   const r = await fetch(`${SB_URL}/functions/v1/gift`, { method: "POST", headers: { apikey: SB_KEY, Authorization: `Bearer ${SESSION ? SESSION.access_token : SB_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
   return r.json();
 }
 const coinFmt = (n) => Number(n || 0).toLocaleString("ja-JP");
 function giftHTML() {
-  const c = byId.get(gCh) || {}, cat = GCAT, w = GWAL;
+  const c = byId.get(gCh) || {}, cat = GCAT, w = GWAL, demo = cat && cat.demo;
+  if (demo && gPay) return `<div class="jn gsh"><button class="jx" data-gx aria-label="閉じる">×</button>
+    <div class="jh"><span class="jk">💳 チャージ（お試し）</span><b>${coinFmt(gPay)}円で ${coinFmt(gPay / cat.yen_per_coin)} ${esc(cat.coin)}</b><span class="jf">本番ではここでStripeの支払いページが開きます</span></div>
+    <div class="pay"><span>カード：•••• 4242（お試し用）</span><span>有効期限：購入から${cat.expire_months}か月</span>
+      <div class="row"><button class="sbtn gray" data-gpcancel>やめる</button><button class="sbtn" data-gpok>支払う（本物のお金は動きません）</button></div></div></div>`;
   if (!cat || !w) return `<div class="jn gsh"><button class="jx" data-gx aria-label="閉じる">×</button><p class="note">読み込み中…</p></div>`;
   const g = cat.gifts.find((x) => x.id === gSel), short = g && w.balance < g.price, on = vbuiOK(gCh);
   const tier = { small: "小", mid: "中", large: "全画面" };
   const exp = w.next_expire ? `うち ${coinFmt(w.next_expire.amount)} は ${jst(w.next_expire.at, { month: "numeric", day: "numeric" })} まで` : "";
   return `<div class="jn gsh"><button class="jx" data-gx aria-label="閉じる">×</button>
     <div class="jh"><span class="jk">🎁 ギフト</span><b>${esc(c.title || "")}さんに贈る</b><span class="jf">配信画面に演出と、あなたの名前が出ます</span></div>
+    ${demo ? `<p class="demo">🧪 お試しモード：OBSにつながっている設定で動きます。残高はこの端末の中だけで、本物のお金・記録は動きません。</p>` : ""}
     <div class="bal"><span>あなたの残高<br><small>${esc(exp)}</small></span><b>${coinFmt(w.balance)} <small>${esc(cat.coin)}</small></b></div>
     <div class="gl">${cat.gifts.map((x) => `<button class="gi" data-gsel="${esc(x.id)}" aria-pressed="${x.id === gSel}"><span class="ic">${esc(x.icon || "🎁")}</span><b>${esc(x.name)}</b><span>${coinFmt(x.price)}</span><i>${tier[x.tier] || ""}</i></button>`).join("")}</div>
-    ${!on ? `<p class="note">配信者がOBS連携を切ったため、いまは送れません。</p>` : ""}
-    <button class="send" data-gsend ${!g || short || !on ? "disabled" : ""}>${!g ? "ギフトを選んでください" : short ? `残高が足りません（あと ${coinFmt(g.price - w.balance)}）` : `${esc(g.name)}を贈る（${coinFmt(g.price)} ${esc(cat.coin)}）`}</button>
+    ${!on && !demo ? `<p class="note">配信者がOBS連携を切ったため、いまは送れません。</p>` : ""}
+    <button class="send" data-gsend ${!g || short || (!on && !demo) ? "disabled" : ""}>${!g ? "ギフトを選んでください" : short ? `残高が足りません（あと ${coinFmt(g.price - w.balance)}）` : `${esc(g.name)}を贈る（${coinFmt(g.price)} ${esc(cat.coin)}）`}</button>
     <p class="note" style="margin-top:14px"><b>チャージ</b>（${esc(cat.coin)}は1枚＝${cat.yen_per_coin}円・購入から${cat.expire_months}か月で使えなくなります）</p>
     <div class="packs">${cat.packs.map((y) => `<button data-gpack="${y}">${coinFmt(y)}円</button>`).join("")}</div>
     ${cat.stripe ? "" : `<p class="note">チャージ（カード払い）はただいま準備中です。</p>`}
-    ${isAdmin() ? `<button class="sbtn gray" data-gtest style="margin-top:10px">運営：お試しで 1,000 を入れる</button>` : ""}
+    ${demo ? (GD.hist.length ? `<ul class="hist">${GD.hist.map((h) => `<li><span>${esc(h.t)}</span><b>${h.n > 0 ? "+" : ""}${coinFmt(h.n)}</b></li>`).join("")}</ul>` : "") + `<button class="sbtn gray" data-greset style="margin-top:10px">お試しの残高を0に戻す</button>` : ""}
+    ${isAdmin() && !demo ? `<button class="sbtn gray" data-gtest style="margin-top:10px">運営：お試しで 1,000 を入れる</button>` : ""}
   </div>`;
 }
 const giftRender = () => { const el = $("#gift"); if (el && !el.hidden) el.querySelector(".ovp").innerHTML = giftHTML(); };
 async function openGift(cid) {
   if (!needLogin("ギフト")) return;
-  gCh = cid; gSel = null; overlay("gift", giftHTML());
+  gCh = cid; gSel = null; gPay = null;
+  if (gDemo()) { GCAT = G_DEMO_CAT; GWAL = gdWallet(); overlay("gift", giftHTML()); return; }
+  if (GCAT && GCAT.demo) GCAT = null;
+  overlay("gift", giftHTML());
   try {
     const [cat, w] = await Promise.all([GCAT ? GCAT : giftApi({ action: "catalog" }), giftApi({ action: "wallet" }), overlayApi({ action: "status", channel_ids: [cid] }, false).then((r) => (r.status || []).forEach((s) => OVL.set(s.channel_id, s))).catch(() => {})]);
     if (cat.ok) GCAT = cat; if (w.ok) GWAL = w;
@@ -2320,9 +2357,23 @@ async function openGift(cid) {
   giftRender();
 }
 document.addEventListener("click", async (e) => {
-  const t = e.target.closest("[data-gift],[data-gx],[data-gsel],[data-gsend],[data-gpack],[data-gtest]"); if (!t) return;
+  const t = e.target.closest("[data-gift],[data-gx],[data-gsel],[data-gsend],[data-gpack],[data-gtest],[data-gpok],[data-gpcancel],[data-greset]"); if (!t) return;
   if (t.dataset.gift) return openGift(t.dataset.gift);
   if ("gx" in t.dataset) return closeOv("gift");
+  // ---- お試しモード（この端末の中だけ） ----
+  if (GCAT && GCAT.demo) {
+    if (t.dataset.gsel) { gSel = t.dataset.gsel; return giftRender(); }
+    if (t.dataset.gpack) { gPay = Number(t.dataset.gpack); return giftRender(); }
+    if ("gpcancel" in t.dataset) { gPay = null; toast("チャージをやめました"); return giftRender(); }
+    if ("gpok" in t.dataset) { const n = gPay / GCAT.yen_per_coin; GD.balance += n; gdLog(`チャージ ${coinFmt(gPay)}円`, n); gPay = null; GWAL = gdWallet(); toast("チャージありがとうございます！（お試し）"); return giftRender(); }
+    if ("greset" in t.dataset) { GD = { balance: 0, hist: [] }; gdSave(); GWAL = gdWallet(); return giftRender(); }
+    if ("gsend" in t.dataset) {
+      const g = GCAT.gifts.find((x) => x.id === gSel); if (!g || GD.balance < g.price) return;
+      GD.balance -= g.price; gdLog(`${g.icon} ${g.name}`, -g.price); GWAL = gdWallet();
+      closeOv("gift"); toast(`${g.name}を贈りました！（お試し）`); gDemoFx(g);
+    }
+    return;
+  }
   if (t.dataset.gsel) { gSel = t.dataset.gsel; return giftRender(); }
   if ("gtest" in t.dataset) { t.disabled = true; const r = await giftApi({ action: "test_charge", amount: 1000 }).catch(() => ({})); if (r.ok) { GWAL = r; toast("1,000 入れました（お試し）"); } else toast("できませんでした"); return giftRender(); }
   if (t.dataset.gpack) {
