@@ -216,7 +216,7 @@ a{color:inherit;text-decoration:none}
 .pl .pl-tap{position:absolute;inset:0;z-index:1;pointer-events:none}
 .pl-watch .pl-tap{pointer-events:auto;touch-action:none}
 .pl .pl-live{position:absolute;left:8px;bottom:8px;z-index:2;background:var(--live);color:#fff;font-family:var(--f-num);font-weight:700;font-size:11px;padding:2px 8px;border-radius:4px}
-.pl-watch .pl-live,.pl:not([data-live="1"]) .pl-live{display:none}
+.pl .pl-live{display:none}
 .pl .pl-ctl{position:absolute;inset:0;z-index:2;display:grid;place-items:center;background:rgba(0,0,0,.28);pointer-events:none}
 .pl .pl-ctl[hidden]{display:none}
 .pl .pl-pp{pointer-events:auto;width:64px;height:64px;border-radius:50%;border:0;background:rgba(0,0,0,.55);color:#fff;display:grid;place-items:center;cursor:pointer}
@@ -1065,7 +1065,9 @@ function homeSets() {
   const U = ST.filter(isUpcomingSoon).sort((a, b) => Date.parse(a.scheduled_start_at) - Date.parse(b.scheduled_start_at));
   const F = U.filter(isFirstUpcoming);
   const R = ST.filter((s) => s.status === "ended" && s.actual_start_at).sort((a, b) => Date.parse(b.actual_start_at) - Date.parse(a.actual_start_at)).slice(0, 40);
-  return { live: L, up: U, first: F, recent: R };
+  // YouTubeでしか再生できない設定（埋め込みオフ）の配信は載せない
+  const ok = (s) => s.embeddable !== false;
+  return { live: L.filter(ok), up: U.filter(ok), first: F.filter(ok), recent: R.filter(ok) };
 }
 function renderHome() {
   renderRescue();
@@ -1084,7 +1086,7 @@ function renderHome() {
 function vidCard(s) {
   const c = byId.get(s.channel_id); const d = debutDays(c);
   let badge = "", sub = "";
-  if (s.status === "live") { badge = `<span class="bdg live">LIVE</span>`; sub = `${s.last_viewers != null ? `${s.last_viewers}人が視聴中` : "配信中"}`; }
+  if (s.status === "live") { badge = ""; sub = `${s.last_viewers != null ? `${s.last_viewers}人が視聴中` : "配信中"}`; }
   else if (s.status === "upcoming") { badge = `<span class="bdg time">${md(s.scheduled_start_at)} ${hm(s.scheduled_start_at)}</span>`; sub = `${rel(s.scheduled_start_at)}に開始`; }
   else { const dur = s.actual_end_at ? (Date.parse(s.actual_end_at) - Date.parse(s.actual_start_at)) / 1000 : 0; badge = dur ? `<span class="bdg time">${Math.floor(dur / 3600)}:${String(Math.floor(dur % 3600 / 60)).padStart(2, "0")}:${String(Math.floor(dur % 60)).padStart(2, "0")}</span>` : ""; sub = `${rel(s.actual_start_at)}${s.peak_viewers ? `・最大${s.peak_viewers}人` : ""}`; }
   const first = s.status !== "ended" && isFirstUpcoming(s) ? `<span class="bdg first">初配信</span>` : "";
