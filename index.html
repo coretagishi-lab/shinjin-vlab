@@ -108,7 +108,7 @@ a{color:inherit;text-decoration:none}
 .w-chat{flex:1;min-height:0;position:relative;background:#fff;border-top:1px solid #2A2738}
 .w-chat{overflow:hidden}
 /* YouTubeチャットの上の「トップチャット・メニュー」の帯（約49px）は使わないので、上にずらして隠す */
-.w-chat iframe{position:absolute;left:0;right:0;top:-49px;width:100%;height:calc(100% + 49px);border:0}
+.w-chat iframe{position:absolute;left:0;right:0;top:-49px;width:100%;height:calc(100% + 49px + 96px);border:0}
 .w-chat .w-rank{position:absolute;inset:0;overflow:auto;background:#14121c;color:#fff;padding:10px 12px}
 .wtabs{flex:none;display:flex;gap:6px;padding:6px 10px;background:#14121c;border-top:1px solid #2A2738}
 .wtabs button{flex:1;border:0;border-radius:10px;padding:8px 6px;font:inherit;font-size:13px;font-weight:700;background:#221f2e;color:#b9b2c9;cursor:pointer}
@@ -135,6 +135,66 @@ a{color:inherit;text-decoration:none}
 .gsh .gwait b{font-size:18px}
 .gsh .gwait span{font-size:13px;color:#ddd6ea;line-height:1.7}
 @keyframes gwfade{from{opacity:0}to{opacity:1}}
+/* ギフト：下から出る画面（名前の下まで） */
+#gp{position:fixed;left:0;right:0;bottom:0;z-index:70;background:#fff;color:#2a2238;border-radius:18px 18px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.35);transform:translateY(100%);transition:transform .22s ease;display:flex;flex-direction:column}
+#gp.on{transform:none}
+#gp .gp-in{flex:1;min-height:0;display:flex;flex-direction:column;position:relative;overflow:hidden;border-radius:inherit}
+.gp-head{flex:none;display:flex;align-items:center;gap:8px;padding:12px 12px 10px 16px;border-bottom:1px solid #f0e8f5}
+.gp-bal{display:flex;align-items:center;gap:6px;flex:1;min-width:0}
+.gp-bal .coin{font-size:20px}
+.gp-bal b{font-size:22px;font-weight:900}
+.gp-bal small{font-size:12px;color:#7a7190;white-space:nowrap}
+.gp-plus{width:30px;height:30px;border-radius:50%;border:0;background:linear-gradient(135deg,#ff5fa8,#8b6cff);color:#fff;font-size:20px;font-weight:900;line-height:1;cursor:pointer;margin-left:4px}
+.gp-plus.pulse{animation:gpulse .5s ease 2}
+@keyframes gpulse{50%{transform:scale(1.35);box-shadow:0 0 0 6px rgba(255,95,168,.3)}}
+.gp-demo{font-size:11px;background:#fff6d6;color:#6b5200;border-radius:8px;padding:2px 8px}
+.gp-x{width:34px;height:34px;border-radius:50%;border:0;background:#f1ecf5;color:#5d5370;font-size:20px;cursor:pointer}
+.gp-body{flex:1;min-height:0;overflow:auto;padding:12px}
+.gp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.gp-grid .gi{position:relative;border:2px solid #eee4f3;background:#fff;border-radius:14px;padding:10px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:1px;font:inherit;cursor:pointer;color:#2a2238}
+.gp-grid .gi:active{border-color:#ff5fa8;background:#fff2f8}
+.gp-grid .gi.hit .ic{animation:gihit .25s ease-out}
+@keyframes gihit{from{transform:scale(1.35)}to{transform:none}}
+.gp-grid .gi .ic{font-size:34px;line-height:1.1}
+.gp-grid .gi b{font-size:13px}
+.gp-grid .gi .pr{font-size:12px;color:#7a7190}
+.gp-grid .gi i{font-style:normal;font-size:10px;border-radius:6px;padding:0 6px;margin-top:2px;background:#eee4f3;color:#5d5370}
+.gp-grid .gi .x{position:absolute;top:-8px;right:-4px;font-style:normal;font-weight:900;font-size:16px;color:#fff;background:linear-gradient(135deg,#ff5fa8,#ffb347);border-radius:999px;padding:2px 8px;box-shadow:0 4px 10px rgba(255,95,168,.4)}
+.gp-grid .gi .x.pop{animation:gihit .25s ease-out}
+.gp-rf{background:#eef8ff;color:#2a5d80;border-radius:10px;padding:6px 10px;font-size:12px;margin:0 0 8px}
+.gp-back{border:0;background:none;color:#7a7190;font:inherit;font-size:13px;padding:4px 0 10px;cursor:pointer}
+.gp-packs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.gp-packs button{border:1.5px solid #e0d4ea;background:#fff;border-radius:14px;padding:12px 4px;font:inherit;color:#2a2238;display:flex;flex-direction:column;align-items:center;cursor:pointer}
+.gp-packs b{font-size:18px}.gp-packs small{font-size:10px;color:#7a7190}.gp-packs span{margin-top:4px;font-weight:700;color:#ff5fa8}
+.gp-pay{border:2px dashed #d9c3ea;border-radius:14px;padding:12px;margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.gp-pay span{font-size:12px;color:#7a7190}.gp-pay .row{display:flex;gap:8px}.gp-pay .row button{flex:1}
+.gp-note{font-size:11.5px;color:#7a7190;margin:10px 0 0;line-height:1.6}
+.gp-load{padding:20px;text-align:center;color:#7a7190;font-size:13px}
+.gp-in .gwait,.pp-body .gwait{position:absolute;inset:58px 0 0;z-index:3;background:rgba(10,8,18,.74);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;color:#fff;padding:24px;animation:gwfade .35s ease both}
+.gwait .z{font-size:44px}.gwait b{font-size:18px}.gwait span{font-size:13px;color:#ddd6ea;line-height:1.7}
+.w-bot .w-wait{padding:10px 14px;font-size:13px;color:#8d86a0;justify-content:center;border-style:solid;border-color:#2a2738}
+/* 全画面：右下の丸ボタンと、右に出るパネル */
+.pl .pl-side{display:none}
+.pl.fs[data-gok="1"] .pl-side{display:flex;flex-direction:column;gap:12px;position:absolute;z-index:7;right:max(14px,env(safe-area-inset-right,0px));bottom:76px}
+.pl.fs:has(.pl-panel:not([hidden])) .pl-side{right:calc(min(400px,44%) + 14px)}
+.pl-rb{pointer-events:auto;width:50px;height:50px;border-radius:50%;border:0;background:rgba(20,16,32,.72);color:#fff;font-size:24px;display:grid;place-items:center;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.35);-webkit-touch-callout:none;user-select:none;touch-action:manipulation}
+.pl-rb[data-fsp="gift"]{background:linear-gradient(135deg,#ff5fa8,#8b6cff)}
+.pl .pl-panel{display:none}
+.pl.fs .pl-panel:not([hidden]){pointer-events:auto;display:flex;flex-direction:column;position:absolute;z-index:8;top:0;right:0;bottom:0;width:min(400px,44%);background:#fff;color:#2a2238;border-radius:16px 0 0 16px;box-shadow:-8px 0 30px rgba(0,0,0,.35);overflow:hidden;animation:inr .22s ease both}
+.pp-head{flex:none;display:flex;align-items:center;justify-content:space-between;padding:10px 12px 8px 16px;border-bottom:1px solid #f0e8f5}
+.pp-head b{font-size:16px}
+.pp-x{width:34px;height:34px;border-radius:50%;border:0;background:#f1ecf5;font-size:20px;color:#5d5370;cursor:pointer}
+.pp-body{flex:1;min-height:0;display:flex;flex-direction:column;position:relative}
+.pp-body .gp-head .gp-x{display:none}
+.pp-chat{flex:1;min-height:0;position:relative;overflow:hidden}
+.pl .pp-chat iframe{position:absolute;left:0;right:0;top:-49px;width:100%;height:calc(100% + 49px + 96px);border:0;pointer-events:auto}
+.pp-none{flex:1;display:grid;place-items:center;color:#7a7190;font-size:13px}
+.pp-bot{flex:none;padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));background:#14121c}
+.pp-bot .vbc{margin:0}
+.pp-bot .w-wait{padding:10px;justify-content:center;font-size:13px}
+@keyframes inr{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
+.pl .gdemo,.w-player .gdemo{position:absolute;inset:0;width:100%;height:100%;border:0;z-index:2;pointer-events:none;background:transparent}
+
 .w-chat{overscroll-behavior:contain}
 #v-home,#v-discover{position:relative}
 #discList{height:100%}
@@ -427,7 +487,6 @@ a{color:inherit;text-decoration:none}
 .gsh .packs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .gsh .packs button{flex:1;min-width:90px;border:1.5px solid #e0d4ea;background:#fff;border-radius:12px;padding:10px;font:inherit;font-weight:700;cursor:pointer;color:#2a2238}
 .gsh .note{font-size:11.5px;color:#7a7190;margin:8px 0 0;line-height:1.6}
-.w-player iframe.gdemo{z-index:6;pointer-events:none;background:transparent}
 .gsh .demo{background:#fff6d6;color:#6b5200;border-radius:10px;padding:8px 12px;font-size:12px;margin:0 0 8px;line-height:1.6}
 .gsh .pay{border:2px dashed #d9c3ea;border-radius:14px;padding:14px;margin-top:10px;display:flex;flex-direction:column;gap:8px}
 .gsh .pay b{font-size:16px}
@@ -1270,7 +1329,7 @@ function openWatch(vid, push = true) {
   if (R0 && vbOK && SESSION && PROFILE) heroArrive(c.id, R0.id);
   gSid = s.id;
   // いちばん下：コメント欄＋🎁（配信中。お試しモードはアーカイブでも🎁だけ出す）
-  const wBot = s.status === "live" || gDemo() ? `<div class="w-bot">${s.status !== "live" ? `<span class="w-wait">🧪 お試しモード：🎁からギフトを試せます</span>` : vbOK ? vbuiCommentBar(c.id) : `<div class="w-wait" aria-disabled="true">💤 <span><b>VTuberの設定待ち</b>推しがVぶいの設定をすると、ここからコメントやギフトが送れるようになるよ</span></div>`}<button class="gfb" data-gift="${esc(c.id)}" aria-label="ギフト">🎁</button></div>` : "";
+  const wBot = s.status === "live" || gDemo() ? `<div class="w-bot">${s.status !== "live" ? `<span class="w-wait">🧪 お試しモード：🎁からギフトを試せます</span>` : vbOK ? vbuiCommentBar(c.id) : `<div class="w-wait" aria-disabled="true">VTuberの設定待ち💤</div>`}<button class="gfb" data-gift="${esc(c.id)}" aria-label="ギフト">🎁</button></div>` : "";
   $("#wLower").innerHTML = (R0 ? `<div class="w-sos">🦸 <b>ヒーローどこだ〜！</b>${R0.message ? `「${esc(R0.message)}」` : ""}　来てくれてありがとう！ コメントで「救援きたよ」って伝えてあげてね${heroNote}</div>` : "") + (canChat
     ? `<div class="wtabs"><button data-wtab="chat" aria-pressed="true">💬 チャット</button><button data-wtab="rank" aria-pressed="false" data-ch="${esc(c.id)}">🏆 ギフトランキング</button></div><div class="w-chat"><iframe src="https://www.youtube.com/live_chat?v=${encodeURIComponent(vid)}&embed_domain=${encodeURIComponent(location.hostname)}" title="チャット"></iframe><div class="w-rank" hidden></div></div>${wBot}`
     : chatOff ? `<div class="w-off">この配信はチャットがオフになっています。<br>映像と音声だけ楽しめます。</div>${wBot}` : `<div class="w-note"><b>アーカイブを再生中</b><br>配信中の枠では、ここにチャットが出て、そのままコメントできます。</div>${wBot}`);
@@ -1281,7 +1340,7 @@ function openWatch(vid, push = true) {
     // 配信者がYouTubeで「埋め込み」をOFFにしている配信：映像はYouTubeで見てもらい、コメント・救援・推すはVぶいで
     WP?.stop();
     $("#wPlayer").insertAdjacentHTML("beforeend", `<a class="w-noemb" href="${ytWatch(vid)}" target="_blank" rel="noopener" data-watch="${esc(c.id)}">${s.thumbnail_url ? `<img src="${esc(s.thumbnail_url)}" alt="">` : ""}<span><b>▶ YouTubeで見る</b><small>この配信は、YouTubeでだけ再生できる設定です。<br>コメント・救援・推すは、このままVぶいで使えます</small></span></a>`);
-  } else { if (!WP) WP = new Player("watch"); WP.exitFs(); WP.vert = !!s.is_vertical; WP.host($("#wPlayer")); WP.play($("#wPlayer"), vid, s.status === "live"); WP.ctl(); }
+  } else { if (!WP) WP = new Player("watch"); WP.exitFs(); WP.vert = !!s.is_vertical; WP.host($("#wPlayer")); WP.play($("#wPlayer"), vid, s.status === "live"); WP.ctl(); fsButtons(); WP.el.dataset.gok = s.status === "live" || gDemo() ? "1" : ""; fsPanel(null); }
   if (push) try { history.pushState({ w: vid }, "", `?w=${encodeURIComponent(vid)}`); } catch {}
 }
 function closeWatch(fromPop) {
@@ -2320,15 +2379,8 @@ document.addEventListener("submit", async (e) => {
 });
 
 /* ---------- ギフト（残高から送る。配信画面の演出がつながっている時だけ） ---------- */
-let GCAT = null, GWAL = null, gCh = null, gSel = null, gPay = null, gSid = null, gWait = false;
-// 連打よけ：送っている途中は次を受け付けない＋0.35秒あける＋10秒に10回まで（長押しで連打にならない）
-let gBusyUntil = 0; const gHits = [];
-function gGate() {
-  const now = Date.now(); if (now < gBusyUntil) return false;
-  while (gHits.length && now - gHits[0] > 10e3) gHits.shift();
-  if (gHits.length >= 10) { toast("ちょっと待ってね（10秒に10回まで）"); return false; }
-  gHits.push(now); gBusyUntil = now + 350; return true;
-}
+// 押したらすぐ送る。3秒以内に続けて押すとコンボ（×N）。連打は数件ずつまとめてサーバーへ（100回押しても通信は数回）
+let GCAT = null, GWAL = null, gCh = null, gSid = null, gWait = false, gView = "list", gPay = null, gLocal = 0, gWhere = "sheet";
 // お試しモード：core.tagishi でログインした時だけ。お金もサーバーも動かさず、この端末の中だけで残高と演出を試す
 const gDemo = () => !!(SESSION && SESSION.user?.email === "core.tagishi@gmail.com");
 const G_DEMO_CAT = { ok: true, demo: true, coin: "ぶいコイン", packs: [500, 1000, 3000], yen_per_coin: 1, expire_months: 6, stripe: true, gifts: [
@@ -2338,112 +2390,147 @@ const G_DEMO_CAT = { ok: true, demo: true, coin: "ぶいコイン", packs: [500,
 let GD = { balance: 0, hist: [] };
 try { GD = JSON.parse(localStorage.getItem("vbui_gift_demo")) || GD; } catch {}
 const gdSave = () => { try { localStorage.setItem("vbui_gift_demo", JSON.stringify(GD)); } catch {} };
-const gdWallet = () => ({ ok: true, balance: GD.balance, next_expire: GD.balance ? { at: new Date(Date.now() + 182 * 864e5).toISOString(), amount: GD.balance } : null });
 const gdRank = (sid, cid, n) => { GD.rank = GD.rank || {}; GD.rank[sid] = (GD.rank[sid] || 0) + n; GD.rank["c:" + cid] = (GD.rank["c:" + cid] || 0) + n; gdSave(); };
-const gdLog = (t, n) => { GD.hist.unshift({ t, n, at: Date.now() }); GD.hist = GD.hist.slice(0, 8); gdSave(); };
-const G_COMBO = new Map();
-// 視聴画面の動画の上に、OBSと同じ演出画面を重ねて出す
-function gDemoFx(g) {
-  const host = $("#wPlayer"); if (!host) return;
-  let f = host.querySelector("iframe.gdemo");
-  const fire = () => { try { const k = g.id, now = Date.now(), p = G_COMBO.get(k); const n = p && now - p.at < 10000 ? p.n + 1 : 1; G_COMBO.set(k, { n, at: now }); f.contentWindow.VBUI_CAT(G_DEMO_CAT.gifts); f.contentWindow.VBUI_GIFT(g.id, (PROFILE && PROFILE.nickname) || "たぎし", n); } catch {} };
-  if (!f) { f = document.createElement("iframe"); f.className = "gdemo"; f.title = "ギフト演出"; f.setAttribute("allowtransparency", "true"); f.src = "overlay.html?demo=1"; host.appendChild(f); f.addEventListener("load", () => setTimeout(fire, 400), { once: true }); }
-  else fire();
-}
 async function giftApi(body) {
   const r = await fetch(`${SB_URL}/functions/v1/gift`, { method: "POST", headers: { apikey: SB_KEY, Authorization: `Bearer ${SESSION ? SESSION.access_token : SB_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
   return r.json();
 }
 const coinFmt = (n) => Number(n || 0).toLocaleString("ja-JP");
+// 視聴画面の動画の上に、OBSと同じ演出画面を重ねて出す（お試し）。全画面でも出るようにプレーヤーの中に置く
+let gDemoF = null;
+function gDemoFx(g, n) {
+  const host = WP?.el && !WP.el.hidden ? WP.el : $("#wPlayer"); if (!host) return;
+  let f = host.querySelector("iframe.gdemo");
+  const fire = () => { try { f.contentWindow.VBUI_CAT(G_DEMO_CAT.gifts); f.contentWindow.VBUI_GIFT(g.id, (PROFILE && PROFILE.nickname) || "たぎし", n); } catch {} };
+  if (!f) { f = document.createElement("iframe"); f.className = "gdemo"; f.title = "ギフト演出"; f.setAttribute("allowtransparency", "true"); f.src = "overlay.html?demo=1"; host.appendChild(f); f.addEventListener("load", () => setTimeout(fire, 300), { once: true }); }
+  else fire();
+}
+
+// ---- 画面 ----
 function giftHTML() {
-  const c = byId.get(gCh) || {}, cat = GCAT, w = GWAL, demo = cat && cat.demo;
-  if (demo && gPay) return `<div class="jn gsh"><button class="jx" data-gx aria-label="閉じる">×</button>
-    <div class="jh"><span class="jk">💳 チャージ（お試し）</span><b>${coinFmt(gPay)}円で ${coinFmt(gPay / cat.yen_per_coin)} ${esc(cat.coin)}</b><span class="jf">本番ではここでStripeの支払いページが開きます</span></div>
-    <div class="pay"><span>カード：•••• 4242（お試し用）</span><span>有効期限：購入から${cat.expire_months}か月</span>
-      <div class="row"><button class="sbtn gray" data-gpcancel>やめる</button><button class="sbtn" data-gpok>支払う（本物のお金は動きません）</button></div></div></div>`;
-  if (!cat || !w) return `<div class="jn gsh"><button class="jx" data-gx aria-label="閉じる">×</button><p class="note">読み込み中…</p></div>`;
-  const waitCover = gWait ? `<div class="gwait"><span class="z">💤</span><b>VTuberの設定待ち</b><span>推しがVぶいの設定をすると、<br>ギフトを送れるようになるよ</span><button class="sbtn gray" data-gx style="margin-top:10px">閉じる</button></div>` : "";
-  const g = cat.gifts.find((x) => x.id === gSel), short = g && w.balance < g.price, on = vbuiOK(gCh);
+  const cat = GCAT; if (!cat) return `<p class="gp-load">読み込み中…</p>`;
+  const demo = !!cat.demo, bal = gLocal;
+  const head = `<div class="gp-head"><div class="gp-bal"><span class="coin">🪙</span><b data-gbal>${coinFmt(bal)}</b><small>${esc(cat.coin)}</small>
+    <button class="gp-plus" data-gcharge aria-label="チャージ">＋</button></div>${demo ? `<span class="gp-demo">🧪 お試し</span>` : ""}<button class="gp-x" data-gx aria-label="閉じる">×</button></div>`;
+  const wait = gWait ? `<div class="gwait"><span class="z">💤</span><b>VTuberの設定待ち</b><span>推しがVぶいの設定をすると、<br>ギフトを送れるようになるよ</span></div>` : "";
+  if (gView === "charge") {
+    const pay = gPay ? `<div class="gp-pay"><b>${coinFmt(gPay)}円で ${coinFmt(gPay / cat.yen_per_coin)} ${esc(cat.coin)}</b><span>${demo ? "お試し：本物のお金は動きません" : ""}</span>
+      <div class="row"><button class="sbtn gray" data-gpcancel>やめる</button><button class="sbtn" data-gpok>支払う</button></div></div>` : "";
+    return `${head}<div class="gp-body"><button class="gp-back" data-gback>← ギフトにもどる</button>
+      <div class="gp-packs">${cat.packs.map((y) => `<button data-gpack="${y}"><b>${coinFmt(y / cat.yen_per_coin)}</b><small>${esc(cat.coin)}</small><span>${coinFmt(y)}円</span></button>`).join("")}</div>${pay}
+      <p class="gp-note">1枚＝${cat.yen_per_coin}円・購入から${cat.expire_months}か月で使えなくなります${cat.stripe || demo ? "" : "。カード払いはただいま準備中です"}</p></div>${wait}`;
+  }
+  const rf = (GWAL?.refunds || []).length ? `<p class="gp-rf">↩︎ 演出が出なかったため返金しました：${GWAL.refunds.map((r) => `${esc((cat.gifts.find((x) => x.id === r.gift_id) || {}).name || "ギフト")} ${coinFmt(r.price)}`).join("、")}</p>` : "";
   const tier = { small: "小", mid: "中", large: "全画面" };
-  const exp = w.next_expire ? `うち ${coinFmt(w.next_expire.amount)} は ${jst(w.next_expire.at, { month: "numeric", day: "numeric" })} まで` : "";
-  return `<div class="jn gsh">${waitCover}<button class="jx" data-gx aria-label="閉じる">×</button>
-    <div class="jh"><span class="jk">🎁 ギフト</span><b>${esc(c.title || "")}さんに贈る</b><span class="jf">配信画面に演出と、あなたの名前が出ます</span></div>
-    ${demo ? `<p class="demo">🧪 お試しモード：OBSにつながっている設定で動きます。残高はこの端末の中だけで、本物のお金・記録は動きません。</p>` : ""}
-    <div class="bal"><span>あなたの残高<br><small>${esc(exp)}</small></span><b>${coinFmt(w.balance)} <small>${esc(cat.coin)}</small></b></div>
-    ${(w.refunds || []).length ? `<p class="demo">↩︎ 演出が配信画面に出なかったため返金しました：${w.refunds.map((r) => `${esc((cat.gifts.find((x) => x.id === r.gift_id) || {}).name || "ギフト")} ${coinFmt(r.price)}`).join("、")}</p>` : ""}
-    <div class="gl">${cat.gifts.map((x) => `<button class="gi" data-gsel="${esc(x.id)}" aria-pressed="${x.id === gSel}"><span class="ic">${esc(x.icon || "🎁")}</span><b>${esc(x.name)}</b><span>${coinFmt(x.price)}</span><i>${tier[x.tier] || ""}</i></button>`).join("")}</div>
-    ${!on && !demo && !gWait ? `<p class="note">配信者がOBS連携を切ったため、いまは送れません。</p>` : ""}
-    <button class="send" data-gsend ${!g || short || (!on && !demo) ? "disabled" : ""}>${!g ? "ギフトを選んでください" : short ? `残高が足りません（あと ${coinFmt(g.price - w.balance)}）` : `${esc(g.name)}を贈る（${coinFmt(g.price)} ${esc(cat.coin)}）`}</button>
-    <p class="note">演出が配信画面に出なかったときは、自動で残高に戻ります。</p>
-    <p class="note" style="margin-top:14px"><b>チャージ</b>（${esc(cat.coin)}は1枚＝${cat.yen_per_coin}円・購入から${cat.expire_months}か月で使えなくなります）</p>
-    <div class="packs">${cat.packs.map((y) => `<button data-gpack="${y}">${coinFmt(y)}円</button>`).join("")}</div>
-    ${cat.stripe ? "" : `<p class="note">チャージ（カード払い）はただいま準備中です。</p>`}
-    ${demo ? (GD.hist.length ? `<ul class="hist">${GD.hist.map((h) => `<li><span>${esc(h.t)}</span><b>${h.n > 0 ? "+" : ""}${coinFmt(h.n)}</b></li>`).join("")}</ul>` : "") + `<button class="sbtn gray" data-greset style="margin-top:10px">お試しの残高を0に戻す</button>` : ""}
-    ${isAdmin() && !demo ? `<button class="sbtn gray" data-gtest style="margin-top:10px">運営：お試しで 1,000 を入れる</button>` : ""}
-  </div>`;
+  return `${head}<div class="gp-body">${rf}<div class="gp-grid">${cat.gifts.map((x) => `<button class="gi" data-gtap="${esc(x.id)}"><span class="ic">${esc(x.icon || "🎁")}</span><b>${esc(x.name)}</b><span class="pr">🪙${coinFmt(x.price)}</span><i>${tier[x.tier] || ""}</i><em class="x" hidden></em></button>`).join("")}</div></div>${wait}`;
 }
-const giftRender = () => { const el = $("#gift"); if (el && !el.hidden) el.querySelector(".ovp").innerHTML = giftHTML(); };
+// いま開いているギフト画面（全画面中は右のパネル、ふだんは下から出る画面）
+const gHosts = () => [$("#gp:not([hidden]) .gp-in"), WP?.fs ? WP.el.querySelector(".pl-panel[data-mode='gift'] .pp-body") : null].filter(Boolean);
+const giftRender = () => gHosts().forEach((h) => (h.innerHTML = giftHTML()));
+const gPaintBal = () => document.querySelectorAll("[data-gbal]").forEach((e) => (e.textContent = coinFmt(gLocal)));
+
+async function gLoad(cid) {
+  gCh = cid; gView = "list"; gPay = null;
+  gWait = !gDemo() && !vbuiOK(cid);                              // 推しがまだ設定していない：一覧は見られるけど、黒いフェードで「設定待ち」
+  if (gDemo()) { GCAT = G_DEMO_CAT; gLocal = GD.balance; GWAL = null; return; }
+  if (!GCAT || GCAT.demo) GCAT = { ...G_DEMO_CAT, demo: false, stripe: false };
+  if (gWait) { gLocal = 0; giftApi({ action: "catalog" }).then((r) => { if (r.ok) { GCAT = r; giftRender(); } }).catch(() => {}); return; }
+  try { const [cat, w] = await Promise.all([giftApi({ action: "catalog" }), giftApi({ action: "wallet" })]); if (cat.ok) GCAT = cat; if (w.ok) { GWAL = w; gLocal = w.balance - gPendCost(); } } catch {}
+}
+// 下から出るギフト画面：名前と「〇人が視聴中」の下までの高さで開く
 async function openGift(cid) {
-  gCh = cid; gSel = null; gPay = null;
-  // 推しがまだ設定していない：一覧は見られるけど、黒いフェードで「設定待ち」
-  gWait = !gDemo() && !vbuiOK(cid);
-  if (gWait) {
-    if (!GCAT || GCAT.demo) { GCAT = { ...G_DEMO_CAT, demo: false, stripe: false }; giftApi({ action: "catalog" }).then((r) => { if (r.ok) { GCAT = r; giftRender(); } }).catch(() => {}); }
-    GWAL = { ok: true, balance: 0 }; overlay("gift", giftHTML()); return;
-  }
-  if (!needLogin("ギフト")) return;
-  if (gDemo()) { GCAT = G_DEMO_CAT; GWAL = gdWallet(); overlay("gift", giftHTML()); return; }
-  if (GCAT && GCAT.demo) GCAT = null;
-  overlay("gift", giftHTML());
-  try {
-    const [cat, w] = await Promise.all([GCAT ? GCAT : giftApi({ action: "catalog" }), giftApi({ action: "wallet" }), overlayApi({ action: "status", channel_ids: [cid] }, false).then((r) => (r.status || []).forEach((s) => OVL.set(s.channel_id, s))).catch(() => {})]);
-    if (cat.ok) GCAT = cat; if (w.ok) GWAL = w;
-  } catch {}
-  giftRender();
+  if (!gDemo() && vbuiOK(cid) && !needLogin("ギフト")) return;
+  let el = $("#gp"); if (!el) { document.body.insertAdjacentHTML("beforeend", `<div id="gp" hidden><div class="gp-in"></div></div>`); el = $("#gp"); }
+  const who = $("#wBar .who"); el.style.top = who ? Math.max(0, who.getBoundingClientRect().bottom + 6) + "px" : "40%";
+  await gLoad(cid);
+  el.hidden = false; requestAnimationFrame(() => el.classList.add("on")); giftRender();
 }
-document.addEventListener("click", async (e) => {
-  const t = e.target.closest("[data-gift],[data-gx],[data-gsel],[data-gsend],[data-gpack],[data-gtest],[data-gpok],[data-gpcancel],[data-greset]"); if (!t) return;
-  if (t.dataset.gift) return openGift(t.dataset.gift);
-  if ("gx" in t.dataset) return closeOv("gift");
-  // ---- お試しモード（この端末の中だけ） ----
-  if (GCAT && GCAT.demo) {
-    if (t.dataset.gsel) { gSel = t.dataset.gsel; return giftRender(); }
-    if (t.dataset.gpack) { gPay = Number(t.dataset.gpack); return giftRender(); }
-    if ("gpcancel" in t.dataset) { gPay = null; toast("チャージをやめました"); return giftRender(); }
-    if ("gpok" in t.dataset) { const n = gPay / GCAT.yen_per_coin; GD.balance += n; gdLog(`チャージ ${coinFmt(gPay)}円`, n); gPay = null; GWAL = gdWallet(); toast("チャージありがとうございます！（お試し）"); return giftRender(); }
-    if ("greset" in t.dataset) { GD = { balance: 0, hist: [] }; gdSave(); GWAL = gdWallet(); return giftRender(); }
-    if ("gsend" in t.dataset) {
-      const g = GCAT.gifts.find((x) => x.id === gSel); if (!g || GD.balance < g.price || !gGate()) return;
-      GD.balance -= g.price; gdLog(`${g.icon} ${g.name}`, -g.price); gdRank(gSid, gCh, g.price); GWAL = gdWallet(); rankLoad();
-      closeOv("gift"); toast(`${g.name}を贈りました！（お試し）`); gDemoFx(g);
-    }
-    return;
+function closeGift() { const el = $("#gp"); if (!el || el.hidden) return; el.classList.remove("on"); setTimeout(() => (el.hidden = true), 220); }
+
+// ---- 押したらすぐ送る ----
+const TAP = { id: null, n: 0, at: 0 };            // 自分の画面のコンボ表示（3秒以内の続き）
+const GP = { pend: new Map(), busy: false, t: 0 };  // まだサーバーに送っていない数
+const gPendCost = () => { let c = 0; GP.pend.forEach((n, id) => { const g = GCAT?.gifts.find((x) => x.id === id); if (g) c += g.price * n; }); return c; };
+function gTapFx(btn, g, n) {
+  document.querySelectorAll(".gi .x").forEach((x) => { if (x.parentNode.dataset.gtap !== g.id) x.hidden = true; });
+  const x = btn?.querySelector(".x"); if (x) { x.hidden = false; x.textContent = "×" + n; x.classList.remove("pop"); void x.offsetWidth; x.classList.add("pop"); clearTimeout(x._t); x._t = setTimeout(() => (x.hidden = true), 3000); }
+  if (btn) { btn.classList.remove("hit"); void btn.offsetWidth; btn.classList.add("hit"); }
+}
+function gTap(gid, btn) {
+  if (gWait) return;
+  const g = GCAT?.gifts.find((x) => x.id === gid); if (!g) return;
+  // 残高が足りない時は送らない（勢いで押しても、持っている分しか送れない）
+  if (gLocal < g.price) { toast(`${GCAT.coin}が足りません。＋からチャージしてね`); document.querySelectorAll(".gp-plus").forEach((p) => { p.classList.remove("pulse"); void p.offsetWidth; p.classList.add("pulse"); }); return; }
+  const now = Date.now(); TAP.n = TAP.id === gid && now - TAP.at <= 3000 ? TAP.n + 1 : 1; TAP.id = gid; TAP.at = now;
+  gLocal -= g.price; gPaintBal(); gTapFx(btn, g, TAP.n);
+  if (GCAT.demo) { GD.balance = gLocal; gdRank(gSid, gCh, g.price); gdSave(); gDemoFx(g, TAP.n); return; }
+  GP.pend.set(g.id, (GP.pend.get(g.id) || 0) + 1);
+  clearTimeout(GP.t); GP.t = setTimeout(gFlush, 250);
+}
+async function gFlush() {
+  if (GP.busy) return; const e = [...GP.pend.entries()][0]; if (!e) return;
+  const [gid, qty] = e; GP.pend.delete(gid); GP.busy = true;
+  const g = GCAT.gifts.find((x) => x.id === gid);
+  let r = {}; try { r = await giftApi({ action: "send", channel_id: gCh, gift_id: gid, qty }); } catch {}
+  GP.busy = false;
+  if (r.error === "too_fast") { GP.pend.set(gid, (GP.pend.get(gid) || 0) + qty); setTimeout(gFlush, 1500); return; }
+  if (r.ok) {
+    const sent = r.qty || 0;
+    if (r.refunded) toast("配信画面に届けられなかったため、送らずにコインを戻しました");
+    else if (sent < qty) toast(`コインが足りず、${qty - sent}回分は送っていません`);
+    gLocal = r.balance - gPendCost();
+  } else {
+    gLocal += g.price * qty;                                   // 送れなかった分は表示を戻す（サーバーでは減っていない）
+    if (r.error === "not_connected") { OVL.set(gCh, { ...(OVL.get(gCh) || {}), connected: false }); gWait = true; giftRender(); }
+    toast({ not_connected: "配信者がギフト受付をつないでいないため、送れませんでした", not_live: "配信が終わっています", short: "コインが足りません", banned: "この配信にはギフトを送れません", no_profile: "先にニックネームを決めてください" }[r.error] || "送れませんでした（コインは減っていません）");
   }
-  if (t.dataset.gsel) { gSel = t.dataset.gsel; return giftRender(); }
-  if ("gtest" in t.dataset) { t.disabled = true; const r = await giftApi({ action: "test_charge", amount: 1000 }).catch(() => ({})); if (r.ok) { GWAL = r; toast("1,000 入れました（お試し）"); } else toast("できませんでした"); return giftRender(); }
+  gPaintBal(); rankLoad();
+  if (GP.pend.size) gFlush();
+}
+
+document.addEventListener("click", async (e) => {
+  const t = e.target.closest("[data-gift],[data-gx],[data-gtap],[data-gcharge],[data-gback],[data-gpack],[data-gpok],[data-gpcancel],[data-fsp],[data-fsx]");
+  if (!t) { if (!e.target.closest("#gp") && $("#gp.on") && !e.target.closest(".toast")) closeGift(); return; }
+  if (t.dataset.gift) return openGift(t.dataset.gift);
+  if ("gx" in t.dataset) { closeGift(); fsPanel(null); return; }
+  if (t.dataset.gtap) return gTap(t.dataset.gtap, t);
+  if ("gcharge" in t.dataset) { if (!GCAT?.demo && !SESSION) return needLogin("チャージ"); gView = "charge"; gPay = null; return giftRender(); }
+  if ("gback" in t.dataset) { gView = "list"; gPay = null; return giftRender(); }
   if (t.dataset.gpack) {
+    if (GCAT?.demo) { gPay = Number(t.dataset.gpack); return giftRender(); }
     if (!GCAT?.stripe) return toast("チャージはただいま準備中です");
     t.disabled = true; const r = await giftApi({ action: "checkout", yen: Number(t.dataset.gpack) }).catch(() => ({}));
     if (r.url) location.href = r.url; else { toast("支払いページを開けませんでした"); t.disabled = false; }
     return;
   }
-  if ("gsend" in t.dataset) {
-    const g = GCAT?.gifts.find((x) => x.id === gSel); if (!g || gWait || !gGate()) return;
-    t.disabled = true; gBusyUntil = Date.now() + 60e3;
-    try {
-    const r = await giftApi({ action: "send", channel_id: gCh, gift_id: g.id }).catch(() => ({}));
-    if (r.ok && r.refunded) { GWAL = { ...GWAL, balance: r.balance }; toast("配信画面に届けられなかったため、送らずに残高を戻しました"); }
-    else if (r.ok) {
-      GWAL = { ...GWAL, balance: r.balance }; toast(`${g.name}を贈りました！${r.combo > 1 ? `（×${r.combo}）` : ""} 配信画面に出ます`);
-      const p = document.createElement("div"); p.className = "gpop"; p.textContent = g.icon || "🎁"; document.body.appendChild(p); setTimeout(() => p.remove(), 1500);
-    } else {
-      if (r.error === "not_connected") OVL.set(gCh, { ...(OVL.get(gCh) || {}), connected: false });
-      toast({ too_fast: "ちょっと待ってね（10秒に10回まで）", not_connected: "配信者がギフト受付をつないでいないため、送れませんでした", not_live: "配信が終わっています", short: "残高が足りません", banned: "この配信にはギフトを送れません", no_profile: "先にニックネームを決めてください" }[r.error] || "送れませんでした（残高は減っていません）");
-    }
-    } finally { gBusyUntil = Date.now() + 350; }
-    giftRender(); rankLoad();
-  }
+  if ("gpcancel" in t.dataset) { gPay = null; return giftRender(); }
+  if ("gpok" in t.dataset && GCAT?.demo) { const n = gPay / GCAT.yen_per_coin; GD.balance += n; gLocal = GD.balance; gdSave(); gPay = null; gView = "list"; toast("チャージしました！（お試し）"); return giftRender(); }
+  if (t.dataset.fsp) return fsPanel(t.dataset.fsp);
+  if ("fsx" in t.dataset) return fsPanel(null);
 });
+document.addEventListener("contextmenu", (e) => { if (e.target.closest(".gfb,.gi,.pl-rb,#gp")) e.preventDefault(); });
+
+// ---- 全画面のとき：右下の 📣 と 🎁、押すと右にパネル（YouTubeと同じ形） ----
+function fsButtons() {
+  if (!WP?.el || WP.el.querySelector(".pl-side")) return;
+  WP.el.insertAdjacentHTML("beforeend", `<div class="pl-side"><button class="pl-rb" data-fsp="chat" aria-label="コメント">📣</button><button class="pl-rb" data-fsp="gift" aria-label="ギフト">🎁</button></div><div class="pl-panel" hidden><div class="pp-head"><b></b><button class="pp-x" data-fsx aria-label="閉じる">×</button></div><div class="pp-body"></div></div>`);
+}
+async function fsPanel(mode) {
+  const p = WP?.el?.querySelector(".pl-panel"); if (!p) return;
+  if (!mode || p.dataset.mode === mode && !p.hidden) { p.hidden = true; p.dataset.mode = ""; p.querySelector(".pp-body").innerHTML = ""; return; }
+  const s = ST.find((x) => x.id === watchVid), cid = s?.channel_id; if (!cid) return;
+  p.dataset.mode = mode; p.hidden = false; p.querySelector(".pp-head b").textContent = mode === "gift" ? "🎁 ギフト" : "📣 コメント";
+  const body = p.querySelector(".pp-body");
+  if (mode === "chat") {
+    const ok = vbuiOK(cid) && s.status === "live";
+    body.innerHTML = `${s.status === "live" && s.chat_enabled !== false ? `<div class="pp-chat"><iframe src="https://www.youtube.com/live_chat?v=${encodeURIComponent(s.id)}&embed_domain=${encodeURIComponent(location.hostname)}" title="チャット"></iframe></div>` : `<div class="pp-none">チャットはありません</div>`}
+      <div class="pp-bot">${ok ? vbuiCommentBar(cid) : `<div class="w-wait">VTuberの設定待ち💤</div>`}</div>`;
+    return;
+  }
+  body.innerHTML = `<p class="gp-load">読み込み中…</p>`;
+  if (!gDemo() && vbuiOK(cid) && !SESSION) { body.innerHTML = `<p class="gp-load">ギフトを送るにはログインしてね</p>`; return; }
+  await gLoad(cid); giftRender();
+}
 
 /* ---------- ギフトランキング（チャット欄のタブ） ---------- */
 let rkMode = "stream", rkTimer = null;
@@ -2468,7 +2555,7 @@ document.addEventListener("click", (e) => {
   const box = $("#wLower .w-rank"); if (box) box.hidden = !rank;
   clearInterval(rkTimer); if (rank) { rankLoad(); rkTimer = setInterval(() => { if (!watchVid) clearInterval(rkTimer); else rankLoad(); }, 20e3); }
 });
-document.addEventListener("contextmenu", (e) => { if (e.target.closest(".gfb,.gsh")) e.preventDefault(); });
+
 
 /* ---------- LP・ガイドを下から出るシートで開く ---------- */
 function openLP(url) {
