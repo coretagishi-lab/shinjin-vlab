@@ -360,7 +360,7 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
   const CHIP_MAX = LITE ? 2 : 4, SES_MAX = LITE ? 8 : 30, COMBO_GAP = 3500;   // 札は同時に4枚まで。3秒（＋通信の遅れ）押さなければコンボ終了
   const FXQ = []; let fxBusy = false;   // 真ん中の大きな演出は1つずつ順番に。捨てずに必ず全部出す
   async function loadCatalog() {
-    try { const r = await fetch(SB + "/rest/v1/gift_catalog?select=id,name,price,tier,effect,icon", { headers: { apikey: PK, Authorization: "Bearer " + PK } }); const a = await r.json(); if (Array.isArray(a)) a.forEach((g) => (CAT[g.id] = g)); } catch {}
+    try { const r = await fetch(SB + "/rest/v1/gift_catalog?select=id,name,price,tier,effect,icon,video_url", { headers: { apikey: PK, Authorization: "Bearer " + PK } }); const a = await r.json(); if (Array.isArray(a)) a.forEach((g) => (CAT[g.id] = g)); } catch {}
   }
   loadCatalog(); setInterval(loadCatalog, 10 * 60e3);
   // 「出ました」「出せませんでした」をVぶいに知らせる（出せなかった分は視聴者に返金される）。まとめて送り、失敗したらもう一度
@@ -381,8 +381,12 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
   const isCenter = (g) => g.effect === "phoenix" || /phoenix/.test(g.video_url || "");
   // 100コンボごと：右下の札が「ドン」と大きく跳ねる（真ん中には出さない）
   function chipBoom(s) { const c = s.chip; if (!c) return; c.classList.remove("boom"); void c.offsetWidth; c.classList.add("boom"); }
+  const DRESS_BUSY = () => !!document.querySelector(".gbox,#gtop canvas,#gtop .gvid");
+  let catAt = 0;
   function giftIn(c) {
     const id = Number(c.id);
+    // 知らないギフト（あとから追加されたもの）が来たら、一覧をすぐ読み直してから出す
+    { const gid0 = String(c.body || "").split(":")[1]; if (gid0 && !CAT[gid0] && !c._re && Date.now() - catAt > 5000) { catAt = Date.now(); c._re = 1; loadCatalog().then(() => giftIn(c)); return; } }
     if (c.created_at && Date.now() - Date.parse(c.created_at) > 60e3) { ackIds([id], "dropped"); return; } // つながり直したときの古いギフトは出さない（返金）
     const [, gid, cb] = String(c.body || "").split(":"); const combo = Number(cb) || 1;
     const g = CAT[gid] || { id: gid, name: "ギフト", tier: "small", effect: "", icon: "🎁" };
@@ -458,7 +462,9 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
   }
   // 着せ替えが届いた：1個目はプレゼントボックス、続けて贈られたら「×N」のコンボ札。合計100個に届いたら金のプレゼントボックス
   async function dressGift(d) {
-    const cat = await dressCat(), it = cat[d.slug] || {};
+    let cat = await dressCat();
+    if (d.slug && !cat[d.slug] && KEY) { DCAT = null; DCATP = null; cat = await dressCat(); }   // 新しく追加されたアイテムなら読み直す
+    const it = cat[d.slug] || {};
     const combo = Number(d.combo) || 1, qty = Number(d.qty) || 1, nick = d.nick || "リスナー";
     const thumb = d.thumb_url || it.thumb_url || "", gthumb = d.gold_thumb_url || it.gold_thumb_url || "";
     const g = { id: "dress:" + (d.slug || d.name), name: d.name || "着せ替え", icon: "👗", img: thumb, tier: "small" };
@@ -803,7 +809,7 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
       const t = await (await fetch(location.pathname + "?v=" + Date.now(), { cache: "no-store" })).text();
       if (selfText === null) { selfText = t; return; }
       if (t !== selfText && t.includes("Vぶい 演出画面")) {
-        const busy = () => heroBusy || gBusy || document.querySelector("#fx .banner") || document.querySelector("#stack .cm");
+        const busy = () => heroBusy || fxBusy || SES.size || DRESS_BUSY() || document.querySelector("#fx .banner") || document.querySelector("#stack .cm");
         const go = () => { if (busy()) return setTimeout(go, 5000); location.reload(); };
         go();
       }
