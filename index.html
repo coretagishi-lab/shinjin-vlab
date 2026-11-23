@@ -201,6 +201,26 @@ a{color:inherit;text-decoration:none}
 .pp-bot{flex:none;padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));background:#14121c}
 .pp-bot .vbc{margin:0}
 .pp-bot .w-wait{padding:10px;justify-content:center;font-size:13px}
+.gp-tabs{flex:none;display:flex;gap:6px;padding:8px 12px 0}
+.gp-tabs button{flex:1;border:0;border-radius:10px;padding:8px;font:inherit;font-size:13px;font-weight:700;background:#f1ecf5;color:#7a7190;cursor:pointer}
+.gp-tabs button[aria-pressed="true"]{background:#2a2238;color:#fff}
+.gp-grid .gi .th{width:56px;height:42px;object-fit:contain}
+.gp-grid .gi.off{opacity:.45}
+.gp-grid .gi.dr.hit .th{animation:gihit .3s ease-out}
+.clo .clo-sec{margin-top:12px}
+.clo h5{margin:0 0 6px;font-size:14px;display:flex;gap:8px;align-items:baseline}
+.clo h5 small{font-weight:400;color:#7a7190;font-size:12px}
+.clo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.clo-it{border:2px solid #eee4f3;background:#fff;border-radius:12px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;font:inherit;color:#2a2238;cursor:pointer}
+.clo-it.on{border-color:#ff5fa8;background:#fff2f8}
+.clo-it img{width:64px;height:48px;object-fit:contain}.clo-it .ic{font-size:30px}
+.clo-it b{font-size:12.5px}.clo-it small{font-size:10.5px;color:#7a7190;text-align:center}
+.clo-it i{font-style:normal;font-size:10px;background:#eee4f3;border-radius:6px;padding:0 6px;margin-top:2px}
+.clo-it.on i{background:#ff5fa8;color:#fff}
+.clo-none{font-size:12px;color:#7a7190;margin:0}
+.clo-adj{display:flex;flex-direction:column;gap:6px;margin-top:8px;background:#f8f4fb;border-radius:12px;padding:10px}
+.clo-adj label{display:flex;align-items:center;gap:8px;font-size:12px;color:#5d5370}
+.clo-adj input{flex:1}
 @keyframes inr{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
 .pl .gdemo,.w-player .gdemo{position:absolute;inset:0;width:100%;height:100%;border:0;z-index:2;pointer-events:none;background:transparent}
 
@@ -1801,7 +1821,7 @@ function ytBox() {
 const setAsVtuber = () => viewAs() === "vtuber" && MINE.length > 0;
 function settingsHTML() {
   const vt = setAsVtuber();
-  const chs = MINE.map((m) => channelSettings(m) + obsBlock(m)).join("");
+  const chs = MINE.map((m) => channelSettings(m) + obsBlock(m) + closetBlock(m)).join("");
   const addCh = `<button class="sbox addch" data-own="login">＋ 別のチャンネルも本人登録する<small>Googleの画面で、登録したいチャンネルを選んでください</small></button>`;
   const beVt = `<button class="sbox addch" data-own="login">🎙 VTuberとして本人登録する<small>YouTubeで本人確認すると、救援やコラボ申請が使えます</small></button>`;
   return `<div class="jn"><button class="jx" data-set="close" aria-label="閉じる">×</button>
@@ -2391,7 +2411,7 @@ document.addEventListener("submit", async (e) => {
 
 /* ---------- ギフト（残高から送る。配信画面の演出がつながっている時だけ） ---------- */
 // 押したらすぐ送る。3秒以内に続けて押すとコンボ（×N）。連打は数件ずつまとめてサーバーへ（100回押しても通信は数回）
-let GCAT = null, GWAL = null, gCh = null, gSid = null, gWait = false, gView = "list", gPay = null, gLocal = 0, gWhere = "sheet";
+let GCAT = null, GWAL = null, gCh = null, gSid = null, gWait = false, gView = "list", gPay = null, gLocal = 0, gWhere = "sheet", gTab = "gift", DCAT = null;
 // お試しモード：core.tagishi でログインした時だけ。お金もサーバーも動かさず、この端末の中だけで残高と演出を試す
 const gDemo = () => !!(SESSION && SESSION.user?.email === "core.tagishi@gmail.com");
 const G_DEMO_CAT = { ok: true, demo: true, coin: "ぶいコイン", packs: [500, 1000, 3000], yen_per_coin: 1, expire_months: 6, stripe: true, gifts: [
@@ -2423,7 +2443,7 @@ function giftHTML() {
   const demo = !!cat.demo, bal = gLocal;
   const head = `<div class="gp-head"><div class="gp-bal"><span class="coin">🪙</span><b data-gbal>${coinFmt(bal)}</b><small>${esc(cat.coin)}</small>
     <button class="gp-plus" data-gcharge aria-label="チャージ">＋</button></div>${demo ? `<span class="gp-demo">🧪 お試し</span>` : ""}<button class="gp-x" data-gx aria-label="閉じる">×</button></div>`;
-  const wait = gWait ? `<div class="gwait"><span class="z">💤</span><b>VTuberの設定待ち</b><span>推しがVぶいの設定をすると、<br>ギフトを送れるようになるよ</span></div>` : "";
+  const wait = gWait && gTab === "gift" ? `<div class="gwait"><span class="z">💤</span><b>VTuberの設定待ち</b><span>推しがVぶいの設定をすると、<br>ギフトを送れるようになるよ</span></div>` : "";
   if (gView === "charge") {
     const pay = gPay ? `<div class="gp-pay"><b>${coinFmt(gPay)}円で ${coinFmt(gPay / cat.yen_per_coin)} ${esc(cat.coin)}</b><span>${demo ? "お試し：本物のお金は動きません" : ""}</span>
       <div class="row"><button class="sbtn gray" data-gpcancel>やめる</button><button class="sbtn" data-gpok>支払う</button></div></div>` : "";
@@ -2431,9 +2451,16 @@ function giftHTML() {
       <div class="gp-packs">${cat.packs.map((y) => `<button data-gpack="${y}"><b>${coinFmt(y / cat.yen_per_coin)}</b><small>${esc(cat.coin)}</small><span>${coinFmt(y)}円</span></button>`).join("")}</div>${pay}
       <p class="gp-note">1枚＝${cat.yen_per_coin}円・購入から${cat.expire_months}か月で使えなくなります${cat.stripe || demo ? "" : "。カード払いはただいま準備中です"}</p></div>${wait}`;
   }
+  const tabs = `<div class="gp-tabs"><button data-gtab="gift" aria-pressed="${gTab === "gift"}">🎁 ギフト</button><button data-gtab="dress" aria-pressed="${gTab === "dress"}">👗 着せ替え</button></div>`;
+  if (gTab === "dress") {
+    const slotJ = { head: "頭", hand: "手持ち", back: "背中" }, its = DCAT || [];
+    return `${head}${tabs}<div class="gp-body">${DCAT === null ? `<p class="gp-load">読み込み中…</p>` : its.length ? `<div class="gp-grid">${its.map((x) => `<button class="gi dr${x.enabled ? "" : " off"}" data-dtap="${esc(x.slug)}" ${x.enabled ? "" : "disabled"}>${x.thumb_url ? `<img class="th" src="${esc(x.thumb_url)}" alt="">` : `<span class="ic">👗</span>`}<b>${esc(x.name)}</b><span class="pr">${x.enabled ? `🪙${coinFmt(x.price)}` : "準備中"}</span><i>${slotJ[x.slot] || ""}</i></button>`).join("")}</div>` : `<p class="gp-load">着せ替えアイテムは準備中です。もうすぐ届くよ</p>`}
+      <p class="gp-note">贈ったアイテムは推しのクローゼットに入り、推しが着けると配信画面に出ます。いまはお試し中なので、押してもコインは減りません。</p>
+      ${isAdmin() ? `<button class="sbtn gray" data-closet="${esc(gCh)}" style="margin-top:10px">運営：この配信者のクローゼットを開く</button>` : ""}</div>`;
+  }
   const rf = (GWAL?.refunds || []).length ? `<p class="gp-rf">↩︎ 演出が出なかったため返金しました：${GWAL.refunds.map((r) => `${esc((cat.gifts.find((x) => x.id === r.gift_id) || {}).name || "ギフト")} ${coinFmt(r.price)}`).join("、")}</p>` : "";
   const tier = { small: "小", mid: "中", large: "全画面" };
-  return `${head}<div class="gp-body">${rf}<div class="gp-grid">${cat.gifts.map((x) => `<button class="gi" data-gtap="${esc(x.id)}"><span class="ic">${esc(x.icon || "🎁")}</span><b>${esc(x.name)}</b><span class="pr">🪙${coinFmt(x.price)}</span><i>${tier[x.tier] || ""}</i><em class="x" hidden></em></button>`).join("")}</div></div>${wait}`;
+  return `${head}${tabs}<div class="gp-body">${rf}<div class="gp-grid">${cat.gifts.map((x) => `<button class="gi" data-gtap="${esc(x.id)}"><span class="ic">${esc(x.icon || "🎁")}</span><b>${esc(x.name)}</b><span class="pr">🪙${coinFmt(x.price)}</span><i>${tier[x.tier] || ""}</i><em class="x" hidden></em></button>`).join("")}</div></div>${wait}`;
 }
 // いま開いているギフト画面（全画面中は右のパネル、ふだんは下から出る画面）
 const gHosts = () => [$("#gp:not([hidden]) .gp-in"), WP?.fs ? WP.el.querySelector(".pl-panel[data-mode='gift'] .pp-body") : null].filter(Boolean);
@@ -2442,6 +2469,7 @@ const gPaintBal = () => document.querySelectorAll("[data-gbal]").forEach((e) => 
 
 async function gLoad(cid) {
   gCh = cid; gView = "list"; gPay = null;
+  if (DCAT === null) giftApi({ action: "dress_catalog" }).then((r) => { DCAT = r.ok ? r.items : []; if (gTab === "dress") giftRender(); }).catch(() => { DCAT = []; });
   gWait = !gDemo() && !vbuiOK(cid);                              // 推しがまだ設定していない：一覧は見られるけど、黒いフェードで「設定待ち」
   if (gDemo()) { GCAT = G_DEMO_CAT; gLocal = GD.balance; GWAL = null; return; }
   if (!GCAT || GCAT.demo) GCAT = { ...G_DEMO_CAT, demo: false, stripe: false };
@@ -2500,11 +2528,21 @@ async function gFlush() {
 }
 
 document.addEventListener("click", async (e) => {
-  const t = e.target.closest("[data-gift],[data-gx],[data-gtap],[data-gcharge],[data-gback],[data-gpack],[data-gpok],[data-gpcancel],[data-fsp],[data-fsx]");
+  const t = e.target.closest("[data-gift],[data-gx],[data-gtap],[data-gcharge],[data-gback],[data-gpack],[data-gpok],[data-gpcancel],[data-fsp],[data-fsx],[data-gtab],[data-dtap],[data-closet]");
   if (!t) { if (!e.target.closest("#gp") && $("#gp.on") && !e.target.closest(".toast")) closeGift(); return; }
   if (t.dataset.gift) return openGift(t.dataset.gift);
   if ("gx" in t.dataset) { closeGift(); fsPanel(null); return; }
   if (t.dataset.gtap) return gTap(t.dataset.gtap, t);
+  if (t.dataset.gtab) { gTab = t.dataset.gtab; gView = "list"; return giftRender(); }
+  if (t.dataset.closet) return openCloset(t.dataset.closet);
+  if (t.dataset.dtap) {                                     // 着せ替えを贈る（いまはお試し：コインは減らない）
+    if (!SESSION) return needLogin("着せ替え");
+    if (t._busy) return; t._busy = true; setTimeout(() => (t._busy = false), 800);
+    const r = await giftApi({ action: "dress_send", channel_id: gCh, slug: t.dataset.dtap }).catch(() => ({}));
+    if (r.ok) { toast(`${r.item.name}を贈りました！推しのクローゼットに届きます（コインは減りません）`); t.classList.remove("hit"); void t.offsetWidth; t.classList.add("hit"); }
+    else toast({ not_ready: "このアイテムは準備中です", banned: "この配信者には贈れません" }[r.error] || "贈れませんでした");
+    return;
+  }
   if ("gcharge" in t.dataset) { if (!GCAT?.demo && !SESSION) return needLogin("チャージ"); gView = "charge"; gPay = null; return giftRender(); }
   if ("gback" in t.dataset) { gView = "list"; gPay = null; return giftRender(); }
   if (t.dataset.gpack) {
@@ -2524,6 +2562,46 @@ document.addEventListener("contextmenu", (e) => { if (e.target.closest(".gfb,.gi
 ["gesturestart", "gesturechange"].forEach((ev) => document.addEventListener(ev, (e) => e.preventDefault(), { passive: false }));
 document.addEventListener("dblclick", (e) => e.preventDefault(), { passive: false });
 document.addEventListener("touchmove", (e) => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });
+
+// ---- クローゼット（配信者のマイページ）：贈られた着せ替えを着ける・外す・位置を合わせる ----
+const DSLOT = [["head", "頭"], ["hand", "手持ち"], ["back", "背中"]];
+let CLO = null;
+async function openCloset(cid) {
+  overlay("closet", `<div class="jn"><p class="gp-load">読み込み中…</p></div>`);
+  const r = await giftApi({ action: "closet", channel_id: cid }).catch(() => ({}));
+  if (!r.ok) { overlay("closet", `<div class="jn"><button class="jx" data-cx aria-label="閉じる">×</button><p class="gp-load">開けませんでした</p></div>`); return; }
+  CLO = { cid, ...r }; closetRender();
+}
+function closetRender() {
+  const r = CLO, items = new Map((r.items || []).map((i) => [i.slug, i])), eq = new Map((r.equip || []).map((e) => [e.slot, e]));
+  const own = new Map(); (r.owned || []).forEach((o) => { const g = own.get(o.slug) || { n: 0, from: [] }; g.n++; if (g.from.length < 3 && !g.from.includes(o.from_nick)) g.from.push(o.from_nick); own.set(o.slug, g); });
+  const c = byId.get(r.cid) || {};
+  const sec = DSLOT.map(([slot, lb]) => {
+    const list = [...own.entries()].filter(([sl]) => items.get(sl)?.slot === slot), on = eq.get(slot);
+    return `<div class="clo-sec"><h5>${lb}<small>${on ? "装着中：" + esc(items.get(on.slug)?.name || "") : "なし"}</small></h5>
+      ${list.length ? `<div class="clo-grid">${list.map(([sl, g]) => { const it = items.get(sl) || {}, act = on?.slug === sl;
+        return `<button class="clo-it${act ? " on" : ""}" data-cwear="${esc(sl)}" data-slot="${slot}" ${it.enabled ? "" : "disabled"}>${it.thumb_url ? `<img src="${esc(it.thumb_url)}" alt="">` : `<span class="ic">👗</span>`}<b>${esc(it.name || sl)}</b><small>${esc(g.from.join("・"))}${g.n > g.from.length ? " ほか" : ""}さんから${g.n > 1 ? `（${g.n}個）` : ""}</small><i>${act ? "装着中" : it.enabled ? "タップで着ける" : "準備中"}</i></button>`; }).join("")}</div>` : `<p class="clo-none">まだありません</p>`}
+      ${on ? `<div class="clo-adj" data-adj="${slot}"><label>左右<input type="range" min="-0.5" max="0.5" step="0.01" value="${on.dx}" data-k="dx"></label><label>上下<input type="range" min="-0.5" max="0.5" step="0.01" value="${on.dy}" data-k="dy"></label><label>大きさ<input type="range" min="0.3" max="3" step="0.05" value="${on.scale}" data-k="scale"></label><button class="sbtn" data-csave="${slot}">位置を保存</button></div>` : ""}</div>`;
+  }).join("");
+  overlay("closet", `<div class="jn clo"><button class="jx" data-cx aria-label="閉じる">×</button>
+    <div class="jh"><span class="jk">👗 クローゼット</span><b>${esc(c.custom_title || c.title || "")}</b><span class="jf">着けたアイテムは、OBSの演出画面に出しっぱなしになります（頭・手持ち・背中それぞれ1つまで）。OBSにつないでいない時は、つないだ時に出ます。</span></div>${sec}</div>`);
+}
+document.addEventListener("click", async (e) => {
+  const t = e.target.closest("[data-cx],[data-cwear],[data-csave]"); if (!t || !CLO) return;
+  if ("cx" in t.dataset) return closeOv("closet");
+  const slot = t.dataset.slot || t.dataset.csave, on = (CLO.equip || []).find((x) => x.slot === slot);
+  let body;
+  if (t.dataset.cwear) body = on?.slug === t.dataset.cwear ? { slot, slug: null } : { slot, slug: t.dataset.cwear, dx: 0, dy: 0, scale: 1 };
+  else { const w = document.querySelector(`#closet [data-adj="${slot}"]`), v = (k) => Number(w.querySelector(`[data-k="${k}"]`).value); body = { slot, slug: on.slug, dx: v("dx"), dy: v("dy"), scale: v("scale") }; }
+  t.disabled = true;
+  const r = await giftApi({ action: "equip", channel_id: CLO.cid, ...body }).catch(() => ({}));
+  if (r.ok) { CLO = { cid: CLO.cid, ...r }; toast(t.dataset.csave ? "位置を保存しました" : body.slug ? "着けました" : "外しました"); closetRender(); } else { t.disabled = false; toast("できませんでした"); }
+});
+function closetBlock(m) {
+  return `<section class="sbox"><h4>👗 クローゼット${MINE.length > 1 ? `<small class="note2">（${esc(m.custom_title || m.title)}）</small>` : ""}</h4>
+    <p class="note2">リスナーから贈られた着せ替えアイテムが届きます。着けると、OBSの演出画面に出ます。</p>
+    <button class="sbtn" data-closet="${esc(m.id)}">クローゼットを開く</button></section>`;
+}
 
 // ---- 全画面のとき：右下の 📣 と 🎁、押すと右にパネル（YouTubeと同じ形） ----
 function fsButtons() {
