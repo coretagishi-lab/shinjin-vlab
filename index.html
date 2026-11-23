@@ -151,7 +151,8 @@ a{color:inherit;text-decoration:none}
 .tfly{position:fixed;z-index:95;pointer-events:none;font-size:30px;transform:translate(-50%,0);animation:tfly .9s ease-out forwards}
 .tfly img{width:56px;height:32px;object-fit:contain}
 @keyframes tfly{0%{opacity:0;transform:translate(-50%,0) scale(.6)}20%{opacity:1;transform:translate(-50%,-20px) scale(1.15)}100%{opacity:0;transform:translate(-50%,-110px) scale(1)}}
-.gp-demo{text-decoration:none;font-size:11px;background:#fff6d6;color:#6b5200;border-radius:8px;padding:2px 8px}
+.gp-demo{text-decoration:none;font-size:11px;background:#fff6d6;color:#6b5200;border:0;border-radius:8px;padding:2px 8px;font-family:inherit}
+.gp-demo.on{background:#6b5200;color:#fff6d6}
 .gp-x{width:34px;height:34px;border-radius:50%;border:0;background:#f1ecf5;color:#5d5370;font-size:20px;cursor:pointer}
 .gp-body{flex:1;min-height:0;overflow:auto;padding:12px}
 .gp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
@@ -2438,7 +2439,7 @@ async function giftApi(body) {
 }
 const coinFmt = (n) => Number(n || 0).toLocaleString("ja-JP");
 // 視聴画面の動画の上に、OBSと同じ演出画面を重ねて出す（お試し）。全画面でも出るようにプレーヤーの中に置く
-let gDemoF = null;
+let gDemoF = null, gLab = false;   // gLab：お試し中は、押したギフトの演出を動画の上に重ねて出す（配信画面と同じ見え方）
 // スマホの自分の画面では、重い演出（配信画面と同じもの）は出さず、押したアイコンがふわっと浮く軽い合図だけにする（iPhoneで落ちないように）
 function tapFly(btn, html) {
   if (!btn || document.querySelectorAll(".tfly").length >= 8) return;
@@ -2463,7 +2464,7 @@ function giftHTML() {
   const cat = GCAT; if (!cat) return `<p class="gp-load">読み込み中…</p>`;
   const demo = !!cat.demo, bal = gLocal;
   const head = `<div class="gp-head"><div class="gp-bal"><span class="coin">🪙</span><b data-gbal>${coinFmt(bal)}</b><small>${esc(cat.coin)}</small>
-    <button class="gp-plus" data-gcharge aria-label="チャージ">＋</button></div>${demo ? `<a class="gp-demo" href="overlay.html?demo=1&lab=1" target="_blank" rel="noopener">🧪 演出を試す</a>` : ""}<button class="gp-x" data-gx aria-label="閉じる">×</button></div>`;
+    <button class="gp-plus" data-gcharge aria-label="チャージ">＋</button></div>${demo ? `<button class="gp-demo${gLab ? " on" : ""}" data-glab aria-pressed="${gLab}">🧪 ${gLab ? "お試し中" : "演出を試す"}</button>` : ""}<button class="gp-x" data-gx aria-label="閉じる">×</button></div>`;
   const wait = gWait && gTab === "gift" ? `<div class="gwait"><span class="z">💤</span><b>VTuberの設定待ち</b><span>推しがVぶいの設定をすると、<br>ギフトを送れるようになるよ</span></div>` : "";
   if (gView === "charge") {
     const pay = gPay ? `<div class="gp-pay"><b>${coinFmt(gPay)}円で ${coinFmt(gPay / cat.yen_per_coin)} ${esc(cat.coin)}</b><span>${demo ? "お試し：本物のお金は動きません" : ""}</span>
@@ -2526,6 +2527,7 @@ function gTap(gid, btn) {
   const now = Date.now(); TAP.n = TAP.id === gid && now - TAP.at <= 3000 ? TAP.n + 1 : 1; TAP.id = gid; TAP.at = now;
   gLocal -= g.price; gPaintBal(); gTapFx(btn, g, TAP.n);
   tapFly(btn, esc(g.icon || "🎁"));
+  if (gLab) { const n = TAP.n; localFx((w) => { w.VBUI_CAT(GCAT.gifts); w.VBUI_GIFT(g.id, myNick(), n); }); }
   if (GCAT.demo) { GD.balance = gLocal; gdRank(gSid, gCh, g.price); gdSave(); return; }
   GP.pend.set(g.id, (GP.pend.get(g.id) || 0) + 1);
   clearTimeout(GP.t); GP.t = setTimeout(gFlush, 250);
@@ -2552,12 +2554,13 @@ async function gFlush() {
 }
 
 document.addEventListener("click", async (e) => {
-  const t = e.target.closest("[data-gift],[data-gx],[data-gtap],[data-gcharge],[data-gback],[data-gpack],[data-gpok],[data-gpcancel],[data-fsp],[data-fsx],[data-gtab],[data-dtap],[data-closet],[data-gmax]");
+  const t = e.target.closest("[data-gift],[data-gx],[data-gtap],[data-gcharge],[data-gback],[data-gpack],[data-gpok],[data-gpcancel],[data-fsp],[data-fsx],[data-gtab],[data-dtap],[data-closet],[data-gmax],[data-glab]");
   if (!t) { if (!e.target.closest("#gp") && $("#gp.on") && !e.target.closest(".toast")) closeGift(); return; }
   if (t.dataset.gift) return openGift(t.dataset.gift);
   if ("gx" in t.dataset) { closeGift(); fsPanel(null); return; }
   if (t.dataset.gtap) return gTap(t.dataset.gtap, t);
   if ("gmax" in t.dataset && GCAT?.demo) { GD.balance = 999999; gdSave(); gLocal = GD.balance; gView = "list"; toast("コインを最大にしました（お試し）"); return giftRender(); }
+  if ("glab" in t.dataset) { gLab = !gLab; if (!gLab) document.querySelectorAll("iframe.gdemo").forEach((f) => f.remove()); toast(gLab ? "押したギフトの演出を、配信画面と同じように動画の上に出します" : "演出のお試しを終わりました"); return giftRender(); }
   if (t.dataset.gtab) { gTab = t.dataset.gtab; gView = "list"; return giftRender(); }
   if (t.dataset.closet) return openCloset(t.dataset.closet);
   if (t.dataset.dtap) {                                     // 着せ替えを贈る：押したらすぐ。3秒以内の連打はコンボ（ふつうのギフトと同じくコインを使う）
@@ -2597,6 +2600,7 @@ function dTap(slug, btn) {
   gLocal -= it.price; if (GCAT?.demo) { GD.balance = gLocal; gdSave(); } gPaintBal(); gTapFx(btn, { id: slug }, DTAP.n);
   tapFly(btn, it.thumb_url ? `<img src="${esc(it.thumb_url)}" alt="">` : "👗");   // 自分の画面は軽い合図だけ（箱の演出は配信画面に出る）、2個目からは×N
   DCNT[slug] = (DCNT[slug] || 0) + 1; dPaintN(slug);
+  if (gLab) { const gold = DCNT[slug] >= DGOLD, n = DTAP.n; localFx((w) => w.VBUI_DRESSGIFT(it.name, gold ? it.gold_thumb_url || it.thumb_url : it.thumb_url, myNick(), n, gold, slug, 1)); }
   DSP.pend.set(slug, (DSP.pend.get(slug) || 0) + 1); clearTimeout(DSP.t); DSP.t = setTimeout(dFlush, 250);
 }
 async function dFlush() {
