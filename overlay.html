@@ -41,6 +41,10 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
 .cm.gf b i{background:#ff5fa8}
 #gchips{position:absolute;right:40px;bottom:200px;display:flex;flex-direction:column-reverse;align-items:flex-end;gap:14px}
 #gtop{position:absolute;inset:0}
+#lab{position:fixed;left:0;right:0;bottom:0;z-index:50;display:flex;gap:6px;overflow-x:auto;padding:8px;background:rgba(10,8,18,.85);pointer-events:auto}
+#lab button{flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;border:0;border-radius:10px;background:#2a2238;color:#fff;font-size:22px;padding:6px 10px;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+#lab small{font-size:10px}
+#lab img{width:40px;height:24px;object-fit:contain}
 .gchip.boom{animation:gboom .7s cubic-bezier(.2,1.6,.4,1)}
 @keyframes gboom{0%{transform:scale(1)}35%{transform:scale(1.45)}100%{transform:scale(1)}}
 /* 軽量モード（スマホの視聴画面）：重いぼかし・影を外す */
@@ -564,6 +568,23 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
   }
   addEventListener("resize", () => DRESS.forEach((d) => dressPlace(d.el, d.e)));
   window.VBUI_DRESS = (list) => dressApply(list);
+  // ---- 演出を試す画面（運営のお試し用）：overlay.html?demo=1&lab=1。YouTubeを読み込まないので軽い ----
+  if (/[?&]lab=1/.test(location.search)) (async () => {
+    document.documentElement.style.background = "repeating-conic-gradient(#3a3f4b 0 25%,#2f333d 0 50%) 0 0/40px 40px";
+    const bar = document.createElement("div"); bar.id = "lab"; document.body.appendChild(bar);
+    const api = (b) => fetch(SB + "/functions/v1/gift", { method: "POST", headers: { apikey: PK, Authorization: "Bearer " + PK, "Content-Type": "application/json" }, body: JSON.stringify(b) }).then((r) => r.json()).catch(() => ({}));
+    const [gc, dc] = await Promise.all([api({ action: "catalog" }), api({ action: "dress_catalog" })]);
+    const gifts = gc.gifts || [], dress = (dc.items || []).filter((x) => x.enabled); CAT = Object.fromEntries(gifts.map((g) => [g.id, g]));
+    const T = {}; const n = (k) => { const now = Date.now(), t = T[k] || { n: 0, at: 0 }; t.n = now - t.at <= 3000 ? t.n + 1 : 1; t.at = now; T[k] = t; return t.n; };
+    bar.innerHTML = gifts.map((g) => `<button data-g="${esc(g.id)}">${esc(g.icon || "🎁")}<small>${esc(g.name)}</small></button>`).join("") +
+      dress.map((d) => `<button data-d="${esc(d.slug)}"><img src="${esc(d.thumb_url || "")}" alt=""><small>${esc(d.name)}</small></button><button data-gold="${esc(d.slug)}">🏆<small>金の${esc(d.name)}</small></button>`).join("");
+    bar.addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return;
+      if (b.dataset.g) VBUI_GIFT(b.dataset.g, "あなた", n("g" + b.dataset.g));
+      const d = dress.find((x) => x.slug === (b.dataset.d || b.dataset.gold));
+      if (b.dataset.d) VBUI_DRESSGIFT(d.name, d.thumb_url, "あなた", n("d" + d.slug), false, d.slug, 1);
+      if (b.dataset.gold) VBUI_DRESSGIFT(d.name, d.gold_thumb_url || d.thumb_url, "あなた", 100, true, d.slug, 1);
+    });
+  })();
   // 100個に届いた：着けているそのアイテムをすぐ金に変える
   function dressGoldNow(slug) {
     if (KEY) { dressLoad(); return; }
