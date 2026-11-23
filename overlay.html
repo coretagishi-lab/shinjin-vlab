@@ -216,16 +216,20 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
   // 画面サイズに合わせて 1920×1080 の座標を縮める
+  // スマホの小さな枠（お試し・視聴画面）では「縮小して描く」のではなく「最初から小さく組む」（zoom）。
+  // 大きく組んでから縮めると、iPhoneは演出1つごとに画面何枚分ものメモリを確保して落ちるため
+  const ZOOM = DEMO || innerWidth < 900;
+  const place = (r, w, h, s) => { r.style.width = w + "px"; r.style.height = h + "px"; if (ZOOM) { r.style.transform = "none"; r.style.zoom = s; } else r.style.transform = `scale(${s})`; };
   function fit() {
     const s = Math.min(innerWidth / W, innerHeight / H) || 1, r = $("#root");
-    r.style.width = innerWidth / s + "px"; r.style.height = innerHeight / s + "px"; r.style.transform = `scale(${s})`;
+    place(r, innerWidth / s, innerHeight / s, s);
   }
   // ギフトの演出は、横長なら1920×1080、縦長なら1080×1920として描く（短い辺を1080にそろえる。1つの演出で縦横どちらにも合う）
   let GW = 1920, GH = 1080;
   function gfit() {
     const port = innerHeight > innerWidth, bw = port ? 1080 : 1920, bh = port ? 1920 : 1080;
     const s = Math.min(innerWidth / bw, innerHeight / bh) || 1, r = $("#groot");
-    GW = innerWidth / s; GH = innerHeight / s; r.style.width = GW + "px"; r.style.height = GH + "px"; r.style.transform = `scale(${s})`;
+    GW = innerWidth / s; GH = innerHeight / s; place(r, GW, GH, s);
   }
   addEventListener("resize", () => { fit(); gfit(); }); fit(); gfit();
   // 軽量モード：視聴画面の小さな枠（スマホ）では、粒の数・ぼかしを減らし、キャンバスも表示サイズに合わせて小さく作る（iPhoneで落ちないように）
