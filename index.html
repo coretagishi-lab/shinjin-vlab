@@ -2429,10 +2429,12 @@ async function giftApi(body) {
 const coinFmt = (n) => Number(n || 0).toLocaleString("ja-JP");
 // 視聴画面の動画の上に、OBSと同じ演出画面を重ねて出す（お試し）。全画面でも出るようにプレーヤーの中に置く
 let gDemoF = null;
-function gDemoFx(g, n) {
+function gDemoFx(g, n) { localFx((w) => { w.VBUI_CAT(G_DEMO_CAT.gifts); w.VBUI_GIFT(g.id, (PROFILE && PROFILE.nickname) || "たぎし", n); }); }
+// 自分の画面の動画の上に、OBSと同じ演出画面を重ねて出す
+function localFx(cb) {
   const host = WP?.el && !WP.el.hidden ? WP.el : $("#wPlayer"); if (!host) return;
   let f = host.querySelector("iframe.gdemo");
-  const fire = () => { try { f.contentWindow.VBUI_CAT(G_DEMO_CAT.gifts); f.contentWindow.VBUI_GIFT(g.id, (PROFILE && PROFILE.nickname) || "たぎし", n); } catch {} };
+  const fire = () => { try { cb(f.contentWindow); } catch {} };
   if (!f) { f = document.createElement("iframe"); f.className = "gdemo"; f.title = "ギフト演出"; f.setAttribute("allowtransparency", "true"); f.src = "overlay.html?demo=1"; host.appendChild(f); f.addEventListener("load", () => setTimeout(fire, 300), { once: true }); }
   else fire();
 }
@@ -2539,7 +2541,11 @@ document.addEventListener("click", async (e) => {
     if (!SESSION) return needLogin("着せ替え");
     if (t._busy) return; t._busy = true; setTimeout(() => (t._busy = false), 800);
     const r = await giftApi({ action: "dress_send", channel_id: gCh, slug: t.dataset.dtap }).catch(() => ({}));
-    if (r.ok) { toast(`${r.item.name}を贈りました！推しのクローゼットに届きます（コインは減りません）`); t.classList.remove("hit"); void t.offsetWidth; t.classList.add("hit"); }
+    if (r.ok) {
+      toast(`${r.item.name}を贈りました！推しのクローゼットに届きます（コインは減りません）`);
+      const it = (DCAT || []).find((x) => x.slug === r.item.slug) || {};
+      closeGift(); fsPanel(null); localFx((w) => w.VBUI_DRESSGIFT(r.item.name, it.thumb_url || "", (PROFILE && PROFILE.nickname) || "あなた"));   // 自分の画面にもプレゼントボックスの演出
+    }
     else toast({ not_ready: "このアイテムは準備中です", banned: "この配信者には贈れません" }[r.error] || "贈れませんでした");
     return;
   }
