@@ -8,7 +8,7 @@
 /* OBSのブラウザソース用。背景は透明。ふだんは何も表示しない（配信画面のレイアウトには一切さわらない） */
 html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100vh;font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif}
 /* 1920×1080 を基準に作って、OBSの画面サイズに合わせて縮める（720pでも1080pでも同じ見え方） */
-html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html{-webkit-text-size-adjust:none;text-size-adjust:none}
 #root{position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:none}
 #stack{position:absolute;width:560px;display:flex;flex-direction:column;gap:10px}
 #stack.bl{left:32px;bottom:32px;transform-origin:0 100%}
