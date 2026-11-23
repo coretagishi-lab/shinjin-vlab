@@ -1108,8 +1108,9 @@ function homeSets() {
 function renderHome() {
   renderRescue();
   const S = homeSets();
-  if (!homeMode) homeMode = S.live.length ? "live" : S.up.length ? "up" : "recent";
-  const chips = [["live", "配信中", S.live.length], ["up", "配信予約", S.up.length], ["first", "初配信", S.first.length], ["recent", "最近の配信", null]];
+  // アーカイブ（終わった配信）はVぶいには出さない（データは残す）。配信中・配信予約・初配信だけ
+  if (!homeMode || homeMode === "recent") homeMode = S.live.length ? "live" : S.up.length ? "up" : "live";
+  const chips = [["live", "配信中", S.live.length], ["up", "配信予約", S.up.length], ["first", "初配信", S.first.length]];
   $("#homeChips").innerHTML = chips.map(([k, l, n]) => `<button class="chip" data-mode="${k}" aria-pressed="${homeMode === k}">${l}${n != null ? `<b>${n}</b>` : ""}</button>`).join("");
   const list = S[homeMode];
   if (!list.length) {
@@ -1356,7 +1357,7 @@ function openWatch(vid, push = true) {
   if (BANNED.has(c.id)) return toast("この配信は見られません");
   fxClear();                                                       // 前の配信の演出・ログは持ち越さない（この配信に入ってから出たものだけ）
   const noEmb = s.embeddable === false;
-  if (noEmb && s.status !== "live") return openExt(ytWatch(vid)); // アーカイブはYouTubeで
+  if (s.status === "ended" || (noEmb && s.status !== "live")) return openExt(ytWatch(vid)); // アーカイブはVぶいでは再生しない（YouTubeで）
 
   watchVid = vid;
   $("#wTitle").textContent = s.title;
