@@ -41,6 +41,8 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
 .cm.gf b i{background:#ff5fa8}
 #gchips{position:absolute;right:40px;bottom:200px;display:flex;flex-direction:column-reverse;align-items:flex-end;gap:14px}
 #gtop{position:absolute;inset:0}
+.gchip.boom{animation:gboom .7s cubic-bezier(.2,1.6,.4,1)}
+@keyframes gboom{0%{transform:scale(1)}35%{transform:scale(1.45)}100%{transform:scale(1)}}
 /* 軽量モード（スマホの視聴画面）：重いぼかし・影を外す */
 .lite .gb-beam,.lite .gb-shadow{filter:none}
 .lite .gb-item img:not(.gold),.lite .gfloat,.lite .gms .gi,.lite .gphx b{filter:none}
@@ -348,7 +350,7 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
   let CAT = {};
   const SES = new Map();                  // 連打のまとまり（同じ人×同じギフト）＝右下の「コンボ札」
   const CHIP_MAX = LITE ? 2 : 4, SES_MAX = LITE ? 8 : 30, COMBO_GAP = 3500;   // 札は同時に4枚まで。3秒（＋通信の遅れ）押さなければコンボ終了
-  const FXQ = []; let fxBusy = false; const FXQ_MAX = LITE ? 2 : 10;  // 中・大ギフトの演出は1つずつ順番に
+  const FXQ = []; let fxBusy = false;   // 真ん中の大きな演出は1つずつ順番に。捨てずに必ず全部出す
   async function loadCatalog() {
     try { const r = await fetch(SB + "/rest/v1/gift_catalog?select=id,name,price,tier,effect,icon", { headers: { apikey: PK, Authorization: "Bearer " + PK } }); const a = await r.json(); if (Array.isArray(a)) a.forEach((g) => (CAT[g.id] = g)); } catch {}
   }
@@ -368,6 +370,9 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
   const lvOf = (n) => Math.min(9, Math.floor(n / 100));   // 100コンボごとに札が豪華になる
 
   const gIc = (g) => (g.img ? `<img class="gim${g.gold ? " gold" : ""}" src="${esc(g.img)}" alt="">` : esc(g.icon || "🎁"));   // 絵（着せ替えのサムネ）か絵文字
+  const isCenter = (g) => g.effect === "phoenix" || /phoenix/.test(g.video_url || "");
+  // 100コンボごと：右下の札が「ドン」と大きく跳ねる（真ん中には出さない）
+  function chipBoom(s) { const c = s.chip; if (!c) return; c.classList.remove("boom"); void c.offsetWidth; c.classList.add("boom"); }
   function giftIn(c) {
     const id = Number(c.id);
     if (c.created_at && Date.now() - Date.parse(c.created_at) > 60e3) { ackIds([id], "dropped"); return; } // つながり直したときの古いギフトは出さない（返金）
@@ -382,7 +387,8 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
     }
     const s = session(key, g, nick, id, combo); SES.set(key, s);
     gLine(c, g, combo);                                            // コメント欄：始まりに1回、連打なら終わりに「×N」でもう1回
-    if (g.tier !== "small") { if (FXQ.length >= FXQ_MAX) FXQ.shift(); FXQ.push(s); if (!fxBusy) fxNext(); }
+    // 真ん中に出すのは今は鳳凰だけ。それ以外は右下の札（〇〇さんから△△ ×N）だけ
+    if (isCenter(g)) { FXQ.push(s); if (!fxBusy) fxNext(); }
     chips();
   }
   function session(key, g, nick, id, combo) {
@@ -392,7 +398,7 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
     s.bump = (n) => {
       if (n <= s.combo) return; const old = s.combo; s.combo = n; s.paint();
       if (s.chip) { clearTimeout(s.t); s.t = setTimeout(() => endSes(s), COMBO_GAP); if (Date.now() - s.lastBurst > (LITE ? 700 : 350)) { s.lastBurst = Date.now(); floatBurst(s); } }
-      if (Math.floor(n / 100) > Math.floor(old / 100) && !(old < 1000 && n >= 1000)) { try { milestone(s, Math.floor(n / 100) * 100); } catch {} }   // 100, 200, 300…
+      if (Math.floor(n / 100) > Math.floor(old / 100) && !(old < 1000 && n >= 1000)) { try { chipBoom(s); } catch {} }   // 100, 200, 300…
       if (old < 1000 && n >= 1000) { try { phoenix(s); } catch {} }                                                   // 1000で鳳凰
     };
     return s;
@@ -455,7 +461,6 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
     if (cur) { cur.bump(combo); return; }
     if (combo <= qty) {                                                       // コンボの始まり：プレゼントボックス
       try { deliver({ id: "d" + Date.now(), nickname: nick }, { cls: "gf", text: `👗 ${g.name}を贈りました（着せ替え）` }); } catch {}
-      if (FXQ.length >= FXQ_MAX) FXQ.pop();
       FXQ.push({ dress: { name: g.name, thumb }, nick }); if (!fxBusy) fxNext();
     }
     if (combo >= 2) { const s2 = session(key, g, nick, NaN, combo); SES.set(key, s2); chips(); }   // 2個目から「×N」
