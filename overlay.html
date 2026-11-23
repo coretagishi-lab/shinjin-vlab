@@ -41,7 +41,10 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
 .cm.gf b i{background:#ff5fa8}
 #gchips{position:absolute;right:40px;bottom:200px;display:flex;flex-direction:column-reverse;align-items:flex-end;gap:14px}
 #gtop{position:absolute;inset:0}
-#lab{position:fixed;left:0;right:0;bottom:0;z-index:50;display:flex;gap:6px;overflow-x:auto;padding:8px;background:rgba(10,8,18,.85);pointer-events:auto}
+#labw{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;background:#0b0a12;pointer-events:auto}
+#labw .lf{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+#labw iframe{border:0;display:block;width:min(100vw,calc((100dvh - 96px) * 16 / 9));aspect-ratio:16/9;max-height:calc(100dvh - 96px)}
+#lab{flex:none;display:flex;gap:6px;overflow-x:auto;padding:8px;background:rgba(10,8,18,.85);pointer-events:auto}
 #lab button{flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;border:0;border-radius:10px;background:#2a2238;color:#fff;font-size:22px;padding:6px 10px;touch-action:manipulation;-webkit-user-select:none;user-select:none}
 #lab small{font-size:10px}
 #lab img{width:40px;height:24px;object-fit:contain}
@@ -575,12 +578,17 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
   addEventListener("resize", () => DRESS.forEach((d) => dressPlace(d.el, d.e)));
   window.VBUI_DRESS = (list) => dressApply(list);
   // ---- 演出を試す画面（運営のお試し用）：overlay.html?demo=1&lab=1。YouTubeを読み込まないので軽い ----
-  if (/[?&]lab=1/.test(location.search)) (async () => {
-    document.documentElement.style.background = "repeating-conic-gradient(#3a3f4b 0 25%,#2f333d 0 50%) 0 0/40px 40px";
-    const bar = document.createElement("div"); bar.id = "lab"; document.body.appendChild(bar);
+  //   スマホを縦にしていても、YouTubeの横長（16:9）の配信画面の中に演出を出す（中の枠＝overlay.html?demo=1&frame=1）
+  if (/[?&]frame=1/.test(location.search)) document.documentElement.style.background = "repeating-conic-gradient(#3a3f4b 0 25%,#2f333d 0 50%) 0 0/40px 40px";
+  if (/[?&]lab=1/.test(location.search) && !/[?&]frame=1/.test(location.search)) (async () => {
+    const wrap = document.createElement("div"); wrap.id = "labw"; document.body.appendChild(wrap);
+    wrap.innerHTML = `<div class="lf"><iframe src="overlay.html?demo=1&frame=1" title="配信画面（16:9）"></iframe></div><div id="lab"></div>`;
+    const bar = wrap.querySelector("#lab"), fr = wrap.querySelector("iframe");
+    await new Promise((ok) => { const ck = () => (fr.contentWindow?.VBUI_GIFT && fr.contentWindow?.VBUI_DRESSGIFT ? ok() : setTimeout(ck, 100)); ck(); });
+    const W = fr.contentWindow, VBUI_GIFT = W.VBUI_GIFT, VBUI_DRESSGIFT = W.VBUI_DRESSGIFT, dressApply = (l) => W.VBUI_DRESS?.(l);
     const api = (b) => fetch(SB + "/functions/v1/gift", { method: "POST", headers: { apikey: PK, Authorization: "Bearer " + PK, "Content-Type": "application/json" }, body: JSON.stringify(b) }).then((r) => r.json()).catch(() => ({}));
     const [gc, dc] = await Promise.all([api({ action: "catalog" }), api({ action: "dress_catalog" })]);
-    const gifts = gc.gifts || [], dress = (dc.items || []).filter((x) => x.enabled); CAT = Object.fromEntries(gifts.map((g) => [g.id, g]));
+    const gifts = gc.gifts || [], dress = (dc.items || []).filter((x) => x.enabled); W.VBUI_CAT?.(gifts);
     const T = {}; const n = (k) => { const now = Date.now(), t = T[k] || { n: 0, at: 0 }; t.n = now - t.at <= 3000 ? t.n + 1 : 1; t.at = now; T[k] = t; return t.n; };
     const GA = dc.settings?.gold_at || 100, TOT = {};             // お試しの中だけで数える（100個で金・それ以上は押せない）
     const lbl = (d) => `${TOT[d.slug] || 0}/${GA}`;
