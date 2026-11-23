@@ -1349,6 +1349,7 @@ function openWatch(vid, push = true) {
   const s = ST.find((x) => x.id === vid); const c = s && byId.get(s.channel_id);
   if (!s || !c) return;
   if (BANNED.has(c.id)) return toast("この配信は見られません");
+  fxClear();                                                       // 前の配信の演出・ログは持ち越さない（この配信に入ってから出たものだけ）
   const noEmb = s.embeddable === false;
   if (noEmb && s.status !== "live") return openExt(ytWatch(vid)); // アーカイブはYouTubeで
 
@@ -1387,6 +1388,7 @@ function openWatch(vid, push = true) {
 }
 function closeWatch(fromPop) {
   if (!watchVid) return;
+  fxClear();
   const w = $("#watch"); w.classList.remove("open"); watchVid = null; closeGift(); fsPanel(null);
   setTimeout(() => { if (!watchVid) { w.hidden = true; $("#wLower").innerHTML = ""; } }, 260);
   if (!fromPop) try { history.pushState({}, "", curId ? `?c=${encodeURIComponent(curId)}` : location.pathname); } catch {}
@@ -2448,6 +2450,8 @@ function tapFly(btn, html) {
   document.body.appendChild(el); setTimeout(() => el.remove(), 900);
 }
 function gDemoFx0(g, n) { localFx((w) => { w.VBUI_CAT(G_DEMO_CAT.gifts); w.VBUI_GIFT(g.id, (PROFILE && PROFILE.nickname) || "たぎし", n); }); }
+// 演出の枠と、押した合図をすべて片づける（配信を閉じた・別の配信に移った時）
+function fxClear() { clearTimeout(localFx.t); document.querySelectorAll("iframe.gdemo,.tfly").forEach((e) => e.remove()); }
 // 自分の画面の動画の上に、OBSと同じ演出画面を重ねて出す
 function localFx(cb) {
   const host = WP?.el && !WP.el.hidden ? WP.el : $("#wPlayer"); if (!host) return;
