@@ -925,8 +925,8 @@ async function load(refresh = false) {
     CH = snap.channels || []; ST = snap.streams || []; DAILY = snap.daily || [];
   }
   CH.forEach((c, i) => { c.no = i + 1; c.subscriber_count = c.subscriber_count == null ? null : Number(c.subscriber_count); c.stream_count = Number(c.stream_count || 0); c.total_stream_sec = Number(c.total_stream_sec || 0); c.viewers_month = Number(c.viewers_month || 0); byId.set(c.id, c); });
-  // 埋め込みOFF（他のサイトで再生できない）配信も一覧には出す。タップするとYouTubeで開く。発掘タブ（その場で再生）だけは出さない
-  ST = ST.filter((s) => byId.has(s.channel_id) && notBanned(s));
+  // 埋め込みOFF（YouTubeでしか再生できない）配信は、Vぶいのどこにも出さない（2026-11-24 本人指示）
+  ST = ST.filter((s) => byId.has(s.channel_id) && notBanned(s) && s.embeddable !== false);
 }
 
 async function loadBanned() {
@@ -3227,7 +3227,7 @@ load().then(() => {
   if (wq) openWatch(wq, false);
   authInit();
   setInterval(() => { if (tab === "home" && !curId && !HP?.target) renderHome(); }, 60000);
-  setInterval(async () => { if (!live) return; try { const s = await rest("streams?select=id,channel_id,title,thumbnail_url,status,scheduled_start_at,actual_start_at,actual_end_at,peak_viewers,last_viewers,is_first_stream,embeddable,is_vertical,chat_enabled&status=neq.none&order=updated_at.desc&limit=3000"); ST = s.filter((x) => byId.has(x.channel_id) && notBanned(x)); if (tab !== "discover") discOrder = null; } catch {} }, 5 * 60000);
+  setInterval(async () => { if (!live) return; try { const s = await rest("streams?select=id,channel_id,title,thumbnail_url,status,scheduled_start_at,actual_start_at,actual_end_at,peak_viewers,last_viewers,is_first_stream,embeddable,is_vertical,chat_enabled&status=neq.none&order=updated_at.desc&limit=3000"); ST = s.filter((x) => byId.has(x.channel_id) && notBanned(x) && x.embeddable !== false); if (tab !== "discover") discOrder = null; } catch {} }, 5 * 60000);
   // 1分ごとに「最近変わった配信」だけ取りに行く（配信が始まったら1〜2分でホームに出す。全部取り直すのは5分ごと）
   setInterval(async () => {
     if (!live || document.hidden) return;
@@ -3239,7 +3239,7 @@ load().then(() => {
       for (const x of s) {
         const was = m.get(x.id)?.status === "live", now = x.status === "live";
         if (was !== now) liveChanged = true;
-        if (x.status === "none" || !byId.has(x.channel_id) || BANNED.has(x.channel_id)) m.delete(x.id); else m.set(x.id, x);
+        if (x.status === "none" || !byId.has(x.channel_id) || BANNED.has(x.channel_id) || x.embeddable === false) m.delete(x.id); else m.set(x.id, x);
       }
       ST = [...m.values()];
       if (liveChanged) { await loadOverlayStatus(); if (tab === "home" && !curId && !watchVid) renderHome(); }
