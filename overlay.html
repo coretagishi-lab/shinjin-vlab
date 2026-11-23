@@ -427,6 +427,7 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
     const thumb = d.thumb_url || it.thumb_url || "", gthumb = d.gold_thumb_url || it.gold_thumb_url || "";
     const g = { id: "dress:" + (d.slug || d.name), name: d.name || "着せ替え", icon: "👗", img: thumb, tier: "small" };
     const key = nick + "|" + g.id;
+    if (d.gold) dressGoldNow(d.slug);                                          // 着けているなら、すぐ金に
     if (d.gold) { FXQ.unshift({ dress: { name: g.name, thumb: gthumb || thumb, gold: true, tinted: !gthumb }, nick }); if (!fxBusy) fxNext(); }
     const cur = SES.get(key);
     if (cur) { cur.bump(combo); return; }
@@ -441,8 +442,7 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
   async function dressBox(s) {
     const d = s.dress, gold = !!d.gold, url = gold ? DSET.present_gold : DSET.present_normal;
     const itemHtml = `${d.thumb ? `<img class="${d.tinted ? "gold" : ""}" src="${esc(d.thumb)}" alt="">` : `<span>👗</span>`}${"<i class='tw'>✦</i>".repeat(6)}`;
-    const text = gold ? `<i class="g100">🏆 100個達成！</i><small><em>${esc(s.nick)}</em> さんのおかげで</small><b>金の${esc(d.name)}</b><span>ゲット！</span>`
-      : `<small><em>${esc(s.nick)}</em> さんから</small><b>${esc(d.name)}</b><span>が届きました！</span>`;
+    const text = gold ? "" : `<small><em>${esc(s.nick)}</em> さんから</small><b>${esc(d.name)}</b><span>が届きました！</span>`;
     const dim = gEl("", "gdim" + (gold ? " gold" : ""));
     // ふわ作の動画があれば動画の箱（開く瞬間にアイテムを出す）
     if (url) {
@@ -451,7 +451,7 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
         const open = (gold ? DSET.present_gold_open : DSET.present_normal_open) || (gold ? 3 : 1.6);
         await wait(open * 1000);
         const box = gEl(`<div class="gb-item">${itemHtml}</div>`, "gbox vid open" + (gold ? " gold" : "")), cf = confetti(gold ? 6000 : 4200, gold);
-        await wait(650); const tx = gEl(text, "gbox-tx" + (gold ? " gold" : ""));
+        await wait(650); const tx = text ? gEl(text, "gbox-tx") : null;
         await wait(Math.max(2500, vid.dur - open * 1000 - 650));
         await gEnd([dim, vid.el, box, tx, cf], 0); return;
       }
@@ -468,7 +468,7 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
     fx.push(confetti(gold ? 6500 : 4200, gold), sparkle(gold ? 6500 : 4200, gold ? ["#ffd25e", "#fff6c8", "#ffb000", "#ffffff"] : ["#ffd25e", "#ff7ab8", "#ffffff", "#8be3ff"], gold ? 1.5 : 1.1));
     if (gold) setTimeout(() => fx.push(confetti(4500, true)), 900);
     await wait(650);
-    const tx = gEl(text, "gbox-tx" + (gold ? " gold" : ""));
+    const tx = text ? gEl(text, "gbox-tx") : null;
     await wait(gold ? 5600 : 3400);
     await gEnd([dim, box, tx, pre, ...fx], 0);
   }
@@ -533,7 +533,13 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
     }
   }
   addEventListener("resize", () => DRESS.forEach((d) => dressPlace(d.el, d.e)));
-  window.VBUI_DRESS = (list) => dressApply(list);                           // お試し用
+  window.VBUI_DRESS = (list) => dressApply(list);
+  // 100個に届いた：着けているそのアイテムをすぐ金に変える
+  function dressGoldNow(slug) {
+    if (KEY) { dressLoad(); return; }
+    const list = [...DRESS.values()].map((x) => ({ ...x.e, gold: x.e.gold || x.e.slug === slug }));
+    dressApply(list);
+  }                           // お試し用
 
   // 1000コンボ：全画面に鳳凰（いちばん上に重ねる。出ている間は次の鳳凰は出さない）
   let phx = false;
