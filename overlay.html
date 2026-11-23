@@ -476,13 +476,13 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
     if (d.gold) { FXQ.unshift({ dress: { name: g.name, thumb: gthumb || thumb, gold: true, tinted: !gthumb }, nick }); if (!fxBusy) fxNext(); }
     const cur = SES.get(key);
     if (cur) { cur.bump(combo); return; }
-    if (combo <= qty) {                                                       // コンボの始まり：プレゼントボックス
-      try { deliver({ id: "d" + Date.now(), nickname: nick }, { cls: "gf", text: `👗 ${g.name}を贈りました（着せ替え）` }); } catch {}
-      FXQ.push({ dress: { name: g.name, thumb }, nick }); if (!fxBusy) fxNext();
-    }
-    if (combo >= 2) { const s2 = session(key, g, nick, NaN, combo); SES.set(key, s2); chips(); }   // 2個目から「×N」
+    // 箱が開くのは、その配信者にこのアイテムが初めて届いた1個目だけ。2個目からはハートなどと同じく右下の札
+    const tot = Number(d.total), first = Number.isFinite(tot) && tot > 0 ? tot - qty < 1 : combo <= qty;
+    if (combo <= qty) try { deliver({ id: "d" + Date.now(), nickname: nick }, { cls: "gf", text: `👗 ${g.name}を贈りました（着せ替え）` }); } catch {}
+    if (first) { FXQ.push({ dress: { name: g.name, thumb }, nick }); if (!fxBusy) fxNext(); }
+    if (combo >= 2 || !first) { const s2 = session(key, g, nick, NaN, combo); SES.set(key, s2); chips(); }   // 2個目から「×N」
   }
-  window.VBUI_DRESSGIFT = (name, thumb, nick, combo, gold, slug, qty) => dressGift({ name, thumb_url: thumb, nick, combo: combo || 1, gold: !!gold, slug: slug || name, qty: qty || 1 });   // 視聴画面・お試し用
+  window.VBUI_DRESSGIFT = (name, thumb, nick, combo, gold, slug, qty, total) => dressGift({ name, thumb_url: thumb, nick, combo: combo || 1, gold: !!gold, slug: slug || name, qty: qty || 1, total });   // 視聴画面・お試し用
   async function dressBox(s) {
     const d = s.dress, gold = !!d.gold, url = gold ? DSET.present_gold : DSET.present_normal;
     const itemHtml = `${d.thumb ? `<img class="${d.tinted ? "gold" : ""}" src="${esc(d.thumb)}" alt="">` : `<span>👗</span>`}${"<i class='tw'>✦</i>".repeat(6)}`;
@@ -604,7 +604,7 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
       if (b.dataset.d) {
         const t = TOT[d.slug] || 0; if (t >= GA) { b.animate([{ transform: "translateX(-4px)" }, { transform: "translateX(4px)" }, { transform: "none" }], 200); return; }
         TOT[d.slug] = t + 1; const gold = t + 1 >= GA; paint(d);
-        VBUI_DRESSGIFT(d.name, gold ? d.gold_thumb_url || d.thumb_url : d.thumb_url, "あなた", n("d" + d.slug), gold, d.slug, 1);
+        VBUI_DRESSGIFT(d.name, gold ? d.gold_thumb_url || d.thumb_url : d.thumb_url, "あなた", n("d" + d.slug), gold, d.slug, 1, t + 1);
       }
       if (b.dataset.gold) { if ((TOT[d.slug] || 0) >= GA) return; TOT[d.slug] = GA; paint(d); VBUI_DRESSGIFT(d.name, d.gold_thumb_url || d.thumb_url, "あなた", GA, true, d.slug, 1); }
     });
