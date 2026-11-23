@@ -217,6 +217,8 @@ a{color:inherit;text-decoration:none}
 .clo-it b{font-size:12.5px}.clo-it small{font-size:10.5px;color:#7a7190;text-align:center}
 .clo-it i{font-style:normal;font-size:10px;background:#eee4f3;border-radius:6px;padding:0 6px;margin-top:2px}
 .clo-it.on i{background:#ff5fa8;color:#fff}
+.clo-it.gold{border-color:#e0a400;background:linear-gradient(160deg,#fffbe6,#ffe9a8);box-shadow:0 0 14px rgba(255,200,60,.5)}
+.clo-it img.tint,.gp-grid .gi img.tint{filter:grayscale(1) sepia(1) saturate(4) hue-rotate(2deg) brightness(1.4) contrast(1.15) drop-shadow(0 0 6px rgba(255,200,60,.8))}
 .clo-n{font-size:11.5px;font-weight:800;color:#ff5fa8}
 .clo-n.gold{color:#c99400}
 .clo-none{font-size:12px;color:#7a7190;margin:0}
@@ -2458,7 +2460,7 @@ function giftHTML() {
   const tabs = `<div class="gp-tabs"><button data-gtab="gift" aria-pressed="${gTab === "gift"}">🎁 ギフト</button><button data-gtab="dress" aria-pressed="${gTab === "dress"}">👗 着せ替え</button></div>`;
   if (gTab === "dress") {
     const slotJ = { head: "頭", hand: "手持ち", back: "背中" }, its = DCAT || [];
-    return `${head}${tabs}<div class="gp-body">${DCAT === null ? `<p class="gp-load">読み込み中…</p>` : its.length ? `<div class="gp-grid">${its.map((x) => `<button class="gi dr${x.enabled ? "" : " off"}" data-dtap="${esc(x.slug)}" ${x.enabled ? "" : "disabled"}>${x.thumb_url ? `<img class="th" src="${esc(x.thumb_url)}" alt="">` : `<span class="ic">👗</span>`}<b>${esc(x.name)}</b><span class="pr">${x.enabled ? `🪙${coinFmt(x.price)}` : "準備中"}</span><i>${slotJ[x.slot] || ""}</i></button>`).join("")}</div>` : `<p class="gp-load">着せ替えアイテムは準備中です。もうすぐ届くよ</p>`}
+    return `${head}${tabs}<div class="gp-body">${DCAT === null ? `<p class="gp-load">読み込み中…</p>` : its.length ? `<div class="gp-grid">${its.map((x) => `<button class="gi dr${x.enabled ? "" : " off"}" data-dtap="${esc(x.slug)}" ${x.enabled ? "" : "disabled"}>${x.thumb_url ? `<img class="th" src="${esc(x.thumb_url)}" alt="">` : `<span class="ic">👗</span>`}<b>${esc(x.name)}</b><span class="pr">${x.enabled ? `🪙${coinFmt(x.price)}` : "準備中"}</span><i>${slotJ[x.slot] || ""}</i><em class="x" hidden></em></button>`).join("")}</div>` : `<p class="gp-load">着せ替えアイテムは準備中です。もうすぐ届くよ</p>`}
       <p class="gp-note">贈ったアイテムは推しのクローゼットに入り、推しが着けると配信画面に出ます。</p>
       ${isAdmin() ? `<button class="sbtn gray" data-closet="${esc(gCh)}" style="margin-top:10px">運営：この配信者のクローゼットを開く</button>` : ""}</div>`;
   }
@@ -2495,7 +2497,7 @@ const TAP = { id: null, n: 0, at: 0 };            // 自分の画面のコンボ
 const GP = { pend: new Map(), busy: false, t: 0 };  // まだサーバーに送っていない数
 const gPendCost = () => { let c = 0; GP.pend.forEach((n, id) => { const g = GCAT?.gifts.find((x) => x.id === id); if (g) c += g.price * n; }); return c; };
 function gTapFx(btn, g, n) {
-  document.querySelectorAll(".gi .x").forEach((x) => { if (x.parentNode.dataset.gtap !== g.id) x.hidden = true; });
+  document.querySelectorAll(".gi .x").forEach((x) => { if ((x.parentNode.dataset.gtap || x.parentNode.dataset.dtap) !== g.id) x.hidden = true; });
   const x = btn?.querySelector(".x"); if (x) { x.hidden = false; x.textContent = "×" + n; x.classList.remove("pop"); void x.offsetWidth; x.classList.add("pop"); clearTimeout(x._t); x._t = setTimeout(() => (x.hidden = true), 3000); }
   if (btn) { btn.classList.remove("hit"); void btn.offsetWidth; btn.classList.add("hit"); }
 }
@@ -2539,22 +2541,9 @@ document.addEventListener("click", async (e) => {
   if (t.dataset.gtap) return gTap(t.dataset.gtap, t);
   if (t.dataset.gtab) { gTab = t.dataset.gtab; gView = "list"; return giftRender(); }
   if (t.dataset.closet) return openCloset(t.dataset.closet);
-  if (t.dataset.dtap) {                                     // 着せ替えを贈る（ふつうのギフトと同じくコインを使う）
+  if (t.dataset.dtap) {                                     // 着せ替えを贈る：押したらすぐ。3秒以内の連打はコンボ（ふつうのギフトと同じくコインを使う）
     if (!SESSION) return needLogin("着せ替え");
-    const it0 = (DCAT || []).find((x) => x.slug === t.dataset.dtap); if (!it0) return;
-    if (gLocal < it0.price) { toast(`${GCAT?.coin || "コイン"}が足りません。＋からチャージしてね`); document.querySelectorAll(".gp-plus").forEach((p) => { p.classList.remove("pulse"); void p.offsetWidth; p.classList.add("pulse"); }); return; }
-    if (t._busy) return; t._busy = true; setTimeout(() => (t._busy = false), 800);
-    const demo = !!GCAT?.demo;
-    const r = await giftApi({ action: "dress_send", channel_id: gCh, slug: t.dataset.dtap, demo }).catch(() => ({}));
-    if (r.ok) {
-      if (demo) { GD.balance -= it0.price; gdSave(); gLocal = GD.balance; } else if (r.balance != null) gLocal = r.balance - gPendCost();
-      gPaintBal(); rankLoad();
-      toast(`${r.item.name}を贈りました！推しのクローゼットに届きます`);
-      const it = (DCAT || []).find((x) => x.slug === r.item.slug) || {};
-      closeGift(); fsPanel(null); localFx((w) => w.VBUI_DRESSGIFT(r.item.name, it.thumb_url || "", (PROFILE && PROFILE.nickname) || "あなた"));   // 自分の画面にもプレゼントボックスの演出
-    }
-    else toast({ not_ready: "このアイテムは準備中です", banned: "この配信者には贈れません", short: `${GCAT?.coin || "コイン"}が足りません` }[r.error] || "贈れませんでした（コインは減っていません）");
-    return;
+    return dTap(t.dataset.dtap, t);
   }
   if ("gcharge" in t.dataset) { if (!GCAT?.demo && !SESSION) return needLogin("チャージ"); gView = "charge"; gPay = null; return giftRender(); }
   if ("gback" in t.dataset) { gView = "list"; gPay = null; return giftRender(); }
@@ -2576,6 +2565,37 @@ document.addEventListener("contextmenu", (e) => { if (e.target.closest(".gfb,.gi
 document.addEventListener("dblclick", (e) => e.preventDefault(), { passive: false });
 document.addEventListener("touchmove", (e) => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });
 
+// ---- 着せ替え：押したらすぐ送る（連打はまとめてサーバーへ） ----
+const DTAP = { slug: null, n: 0, at: 0 }, DSP = { pend: new Map(), busy: false, t: 0 };
+const dPendCost = () => { let c = 0; DSP.pend.forEach((n, sl) => { const it = (DCAT || []).find((x) => x.slug === sl); if (it) c += it.price * n; }); return c; };
+const myNick = () => (PROFILE && PROFILE.nickname) || "あなた";
+function dTap(slug, btn) {
+  const it = (DCAT || []).find((x) => x.slug === slug); if (!it || !it.enabled) return;
+  if (gLocal < it.price) { toast(`${GCAT?.coin || "コイン"}が足りません。＋からチャージしてね`); document.querySelectorAll(".gp-plus").forEach((p) => { p.classList.remove("pulse"); void p.offsetWidth; p.classList.add("pulse"); }); return; }
+  const now = Date.now(); DTAP.n = DTAP.slug === slug && now - DTAP.at <= 3000 ? DTAP.n + 1 : 1; DTAP.slug = slug; DTAP.at = now;
+  gLocal -= it.price; if (GCAT?.demo) { GD.balance = gLocal; gdSave(); } gPaintBal(); gTapFx(btn, { id: slug }, DTAP.n);
+  localFx((w) => w.VBUI_DRESSGIFT(it.name, it.thumb_url || "", myNick(), DTAP.n, false, slug, 1));   // 自分の画面：1個目は箱、2個目からは×N
+  DSP.pend.set(slug, (DSP.pend.get(slug) || 0) + 1); clearTimeout(DSP.t); DSP.t = setTimeout(dFlush, 250);
+}
+async function dFlush() {
+  if (DSP.busy) return; const e = [...DSP.pend.entries()][0]; if (!e) return;
+  const [slug, qty] = e; DSP.pend.delete(slug); DSP.busy = true;
+  const it = (DCAT || []).find((x) => x.slug === slug) || {}, demo = !!GCAT?.demo;
+  let r = {}; try { r = await giftApi({ action: "dress_send", channel_id: gCh, slug, qty, demo, combo: DTAP.slug === slug ? DTAP.n : qty }); } catch {}
+  DSP.busy = false;
+  if (r.ok) {
+    const sent = r.qty || qty;
+    if (!demo && r.balance != null) gLocal = r.balance - gPendCost() - dPendCost();
+    if (sent < qty) { gLocal += (qty - sent) * (it.price || 0); toast(`コインが足りず、${qty - sent}個は送っていません`); }
+    if (r.gold) { toast(`🏆 100個達成！金の${r.item.name}になりました`); localFx((w) => w.VBUI_DRESSGIFT(r.item.name, r.item.gold_thumb_url || r.item.thumb_url || "", myNick(), r.combo, true, slug, sent)); }
+  } else {
+    gLocal += (it.price || 0) * qty; if (demo) { GD.balance = gLocal; gdSave(); }
+    toast({ not_ready: "このアイテムは準備中です", banned: "この配信者には贈れません", short: `${GCAT?.coin || "コイン"}が足りません` }[r.error] || "贈れませんでした（コインは減っていません）");
+  }
+  gPaintBal(); rankLoad();
+  if (DSP.pend.size) dFlush();
+}
+
 // ---- クローゼット（配信者のマイページ）：贈られた着せ替えを着ける・外す・位置を合わせる ----
 const DSLOT = [["head", "頭"], ["hand", "手持ち"], ["back", "背中"]];
 let CLO = null;
@@ -2587,13 +2607,15 @@ async function openCloset(cid) {
 }
 function closetRender() {
   const r = CLO, items = new Map((r.items || []).map((i) => [i.slug, i])), eq = new Map((r.equip || []).map((e) => [e.slot, e]));
-  const own = new Map(); (r.owned || []).forEach((o) => { const g = own.get(o.slug) || { n: 0, from: [] }; g.n++; if (g.from.length < 3 && !g.from.includes(o.from_nick)) g.from.push(o.from_nick); own.set(o.slug, g); });
+  const GA = r.gold_at || 100;
+  const own = new Map(); (r.owned || []).forEach((o) => { const g = own.get(o.slug) || { n: 0, from: [] }; g.n += o.qty || 1; if (g.from.length < 3 && !g.from.includes(o.from_nick)) g.from.push(o.from_nick); own.set(o.slug, g); });
   const c = byId.get(r.cid) || {};
   const sec = DSLOT.map(([slot, lb]) => {
     const list = [...own.entries()].filter(([sl]) => items.get(sl)?.slot === slot), on = eq.get(slot);
     return `<div class="clo-sec"><h5>${lb}<small>${on ? "装着中：" + esc(items.get(on.slug)?.name || "") : "なし"}</small></h5>
       ${list.length ? `<div class="clo-grid">${list.map(([sl, g]) => { const it = items.get(sl) || {}, act = on?.slug === sl;
-        return `<button class="clo-it${act ? " on" : ""}" data-cwear="${esc(sl)}" data-slot="${slot}" ${it.enabled ? "" : "disabled"}>${it.thumb_url ? `<img src="${esc(it.thumb_url)}" alt="">` : `<span class="ic">👗</span>`}<b>${esc(it.name || sl)}</b><span class="clo-n${g.n >= 100 ? " gold" : ""}">${Math.min(g.n, 100)}/100${g.n >= 100 ? " ✨" : ""}</span><small>${esc(g.from.join("・"))}${g.n > g.from.length ? " ほか" : ""}さんから</small><i>${act ? "装着中" : it.enabled ? "タップで着ける" : "準備中"}</i></button>`; }).join("")}</div>` : `<p class="clo-none">まだありません</p>`}
+        const gold = g.n >= GA, img = gold ? it.gold_thumb_url || it.thumb_url : it.thumb_url;
+        return `<button class="clo-it${act ? " on" : ""}${gold ? " gold" : ""}" data-cwear="${esc(sl)}" data-slot="${slot}" ${it.enabled ? "" : "disabled"}>${img ? `<img class="${gold && !it.gold_thumb_url ? "tint" : ""}" src="${esc(img)}" alt="">` : `<span class="ic">👗</span>`}<b>${gold ? "金の" : ""}${esc(it.name || sl)}</b><span class="clo-n${gold ? " gold" : ""}">${Math.min(g.n, GA)}/${GA}${gold ? " ✨" : ""}</span><small>${esc(g.from.join("・"))}${g.n > g.from.length ? " ほか" : ""}さんから</small><i>${act ? "装着中" : it.enabled ? "タップで着ける" : "準備中"}</i></button>`; }).join("")}</div>` : `<p class="clo-none">まだありません</p>`}
       ${on ? `<div class="clo-adj" data-adj="${slot}"><label>左右<input type="range" min="-0.5" max="0.5" step="0.01" value="${on.dx}" data-k="dx"></label><label>上下<input type="range" min="-0.5" max="0.5" step="0.01" value="${on.dy}" data-k="dy"></label><label>大きさ<input type="range" min="0.3" max="3" step="0.05" value="${on.scale}" data-k="scale"></label><button class="sbtn" data-csave="${slot}">位置を保存</button></div>` : ""}</div>`;
   }).join("");
   overlay("closet", `<div class="jn clo"><button class="jx" data-cx aria-label="閉じる">×</button>
