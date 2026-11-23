@@ -226,7 +226,10 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
   // 画面サイズに合わせて 1920×1080 の座標を縮める
   // スマホの小さな枠（お試し・視聴画面）では「縮小して描く」のではなく「最初から小さく組む」（zoom）。
   // 大きく組んでから縮めると、iPhoneは演出1つごとに画面何枚分ものメモリを確保して落ちるため
-  const ZOOM = DEMO || innerWidth < 900;
+  //   ただしiPhone（Safari）は zoom を文字の大きさに効かせない（枠は縮むのに文字だけ元の大きさになる）ので、iPhoneだけは縮小で描く。
+  //   キャンバスはもともと表示サイズに合わせて小さく作っているので、縮小でもメモリは増えない
+  const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const ZOOM = (DEMO || innerWidth < 900) && !IOS;
   const place = (r, w, h, s) => { r.style.width = w + "px"; r.style.height = h + "px"; if (ZOOM) { r.style.transform = "none"; r.style.zoom = s; } else r.style.transform = `scale(${s})`; };
   function fit() {
     const s = Math.min(innerWidth / W, innerHeight / H) || 1, r = $("#root");
