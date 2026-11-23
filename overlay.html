@@ -36,7 +36,8 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
 #groot{position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:none}
 #gfx{position:absolute;inset:0;overflow:hidden}
 #gfx canvas{position:absolute;inset:0;width:100%;height:100%}
-#gfx .gvid{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.gvid{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.gvid canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 .cm.gf b i{background:#ff5fa8}
 #gchips{position:absolute;right:40px;bottom:200px;display:flex;flex-direction:column-reverse;align-items:flex-end;gap:14px}
 #gtop{position:absolute;inset:0}
@@ -356,8 +357,18 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
   }
   // 1000コンボ：全画面に鳳凰（いちばん上に重ねる。出ている間は次の鳳凰は出さない）
   let phx = false;
-  function phoenix(s) {
+  async function phoenix(s) {
     if (phx) return; phx = true;
+    const pv = Object.values(CAT).find((g) => g.video_url && /phoenix/.test(g.video_url));
+    if (pv) {                                                        // 鳳凰の動画があれば動画で
+      const bg = gEl("", "gphx-bg", $("#gtop")); const vid = await gVideo(pv.video_url, $("#gtop"));
+      if (vid) {
+        const tx = gEl(`<b>鳳凰降臨</b><small><em>${esc(s.nick)}</em> さん　${esc(s.g.name)} 1,000コンボ！</small>`, "gphx", $("#gtop"));
+        setTimeout(() => { gEnd([bg, vid.el, tx], 0); setTimeout(() => (phx = false), 700); }, Math.max(4000, vid.dur));
+        return;
+      }
+      bg.remove();
+    }
     const MS = 7500, bg = gEl("", "gphx-bg", $("#gtop"));
     const cv = document.createElement("canvas"); cv.width = Math.round(GW); cv.height = Math.round(GH); $("#gtop").appendChild(cv);
     const tx = gEl(`<b>鳳凰降臨</b><small><em>${esc(s.nick)}</em> さん　${esc(s.g.name)} 1,000コンボ！</small>`, "gphx", $("#gtop"));
@@ -402,13 +413,36 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
     setTimeout(() => { gEnd([bg, cv, tx], 0); setTimeout(() => (phx = false), 700); }, MS);
   }
   // 動画の演出：4秒以内に再生が始まらなければあきらめる（絵の演出に切り替え）
-  function gVideo(url) {
+  // 「.stack.」の付いた動画は、上半分が絵・下半分が透け具合（白＝見える）。iPhoneでもOBSでも背景を透かして出せる
+  function stackGL(v, cv) {
+    const gl = cv.getContext("webgl", { premultipliedAlpha: false, alpha: true }); if (!gl) return null;
+    const sh = (t, src) => { const o = gl.createShader(t); gl.shaderSource(o, src); gl.compileShader(o); return o; };
+    const pr = gl.createProgram();
+    gl.attachShader(pr, sh(gl.VERTEX_SHADER, "attribute vec2 p;varying vec2 u;void main(){u=vec2(p.x*.5+.5,.5-p.y*.5);gl_Position=vec4(p,0,1);}"));
+    gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, "precision mediump float;varying vec2 u;uniform sampler2D t;void main(){vec3 c=texture2D(t,vec2(u.x,u.y*.5)).rgb;float a=texture2D(t,vec2(u.x,.5+u.y*.5)).r;a=smoothstep(.06,.94,a);gl_FragColor=vec4(c*a,a);}"));
+    gl.linkProgram(pr); if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return null; gl.useProgram(pr);
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer()); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(pr, "p"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
+    [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T].forEach((k) => gl.texParameteri(gl.TEXTURE_2D, k, gl.CLAMP_TO_EDGE));
+    [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER].forEach((k) => gl.texParameteri(gl.TEXTURE_2D, k, gl.LINEAR));
+    gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    return () => { if (v.readyState < 2) return; gl.viewport(0, 0, cv.width, cv.height); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, v); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); };
+  }
+  function gVideo(url, parent) {
     return new Promise((res) => {
-      const v = document.createElement("video"); v.className = "gvid"; v.src = url; v.playsInline = true; v.preload = "auto";
-      let done = false; const fin = (ok) => { if (done) return; done = true; if (!ok) { v.remove(); return res(null); } res({ el: v, dur: Math.min(15000, (v.duration || 6) * 1000) }); };
-      v.addEventListener("playing", () => fin(true), { once: true }); v.addEventListener("error", () => fin(false), { once: true });
-      setTimeout(() => fin(false), 4000);
-      $("#gfx").appendChild(v);
+      const stack = /\.stack\./.test(url);
+      const v = document.createElement("video"); v.src = url; v.playsInline = true; v.setAttribute("playsinline", ""); v.preload = "auto"; v.crossOrigin = "anonymous";
+      let box = v, cv = null, draw = null;
+      if (stack) { box = document.createElement("div"); box.className = "gvid"; cv = document.createElement("canvas"); v.style.display = "none"; box.append(cv, v); }
+      else v.className = "gvid";
+      let done = false; const fin = (ok) => { if (done) return; done = true; if (!ok) { box.remove(); return res(null); } res({ el: box, dur: Math.min(15000, (v.duration || 6) * 1000) }); };
+      v.addEventListener("loadedmetadata", () => { if (!cv) return; cv.width = v.videoWidth; cv.height = v.videoHeight / 2; try { draw = stackGL(v, cv); } catch {} if (!draw) fin(false); });
+      v.addEventListener("playing", () => { fin(true); if (draw) { const loop = () => { if (!box.isConnected) { v.pause(); return; } try { draw(); } catch {} requestAnimationFrame(loop); }; loop(); } }, { once: true });
+      v.addEventListener("error", () => fin(false), { once: true });
+      setTimeout(() => fin(false), 5000);
+      (parent || $("#gfx")).appendChild(box);
       v.play().catch(() => { v.muted = true; v.play().catch(() => fin(false)); });
     });
   }
