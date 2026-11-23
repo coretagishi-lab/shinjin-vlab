@@ -2455,6 +2455,7 @@ function giftHTML() {
       <div class="row"><button class="sbtn gray" data-gpcancel>やめる</button><button class="sbtn" data-gpok>支払う</button></div></div>` : "";
     return `${head}<div class="gp-body"><button class="gp-back" data-gback>← ギフトにもどる</button>
       <div class="gp-packs">${cat.packs.map((y) => `<button data-gpack="${y}"><b>${coinFmt(y / cat.yen_per_coin)}</b><small>${esc(cat.coin)}</small><span>${coinFmt(y)}円</span></button>`).join("")}</div>${pay}
+      ${demo ? `<button class="sbtn" data-gmax style="margin-top:10px;width:100%">🧪 お試し：コインを最大（999,999）にする</button>` : ""}
       <p class="gp-note">1枚＝${cat.yen_per_coin}円・購入から${cat.expire_months}か月で使えなくなります${cat.stripe || demo ? "" : "。カード払いはただいま準備中です"}</p></div>${wait}`;
   }
   const tabs = `<div class="gp-tabs"><button data-gtab="gift" aria-pressed="${gTab === "gift"}">🎁 ギフト</button><button data-gtab="dress" aria-pressed="${gTab === "dress"}">👗 着せ替え</button></div>`;
@@ -2534,11 +2535,12 @@ async function gFlush() {
 }
 
 document.addEventListener("click", async (e) => {
-  const t = e.target.closest("[data-gift],[data-gx],[data-gtap],[data-gcharge],[data-gback],[data-gpack],[data-gpok],[data-gpcancel],[data-fsp],[data-fsx],[data-gtab],[data-dtap],[data-closet]");
+  const t = e.target.closest("[data-gift],[data-gx],[data-gtap],[data-gcharge],[data-gback],[data-gpack],[data-gpok],[data-gpcancel],[data-fsp],[data-fsx],[data-gtab],[data-dtap],[data-closet],[data-gmax]");
   if (!t) { if (!e.target.closest("#gp") && $("#gp.on") && !e.target.closest(".toast")) closeGift(); return; }
   if (t.dataset.gift) return openGift(t.dataset.gift);
   if ("gx" in t.dataset) { closeGift(); fsPanel(null); return; }
   if (t.dataset.gtap) return gTap(t.dataset.gtap, t);
+  if ("gmax" in t.dataset && GCAT?.demo) { GD.balance = 999999; gdSave(); gLocal = GD.balance; gView = "list"; toast("コインを最大にしました（お試し）"); return giftRender(); }
   if (t.dataset.gtab) { gTab = t.dataset.gtab; gView = "list"; return giftRender(); }
   if (t.dataset.closet) return openCloset(t.dataset.closet);
   if (t.dataset.dtap) {                                     // 着せ替えを贈る：押したらすぐ。3秒以内の連打はコンボ（ふつうのギフトと同じくコインを使う）
