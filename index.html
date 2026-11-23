@@ -228,6 +228,11 @@ a{color:inherit;text-decoration:none}
 .clo-it img.tint,.gp-grid .gi img.tint{filter:grayscale(1) sepia(1) saturate(4) hue-rotate(2deg) brightness(1.4) contrast(1.15) drop-shadow(0 0 6px rgba(255,200,60,.8))}
 .clo-n{font-size:11.5px;font-weight:800;color:#ff5fa8}
 .clo-n.gold{color:#c99400}
+.clo-it.no{cursor:default;background:#eeeaf2;border-color:#e2dce9}
+.clo-it.no img,.clo-it.no .ic{filter:grayscale(.7) brightness(.45);opacity:.55}
+.clo-it.no b{color:#9a93a8}
+.clo-no{font-size:10.5px;color:#9a93a8}
+.clo-adj b{font-size:12px;color:#5d5370}
 .clo-none{font-size:12px;color:#7a7190;margin:0}
 .clo-adj{display:flex;flex-direction:column;gap:6px;margin-top:8px;background:#f8f4fb;border-radius:12px;padding:10px}
 .clo-adj label{display:flex;align-items:center;gap:8px;font-size:12px;color:#5d5370}
@@ -2482,7 +2487,6 @@ function giftHTML() {
   if (gTab === "dress") {
     const slotJ = { head: "頭", hand: "手持ち", back: "背中" }, its = DCAT || [];
     return `${head}${tabs}<div class="gp-body">${DCAT === null ? `<p class="gp-load">読み込み中…</p>` : its.length ? `<div class="gp-grid">${its.map((x) => { const n = Math.min(DGOLD, DCNT[x.slug] || 0), done = n >= DGOLD, th = done && x.gold_thumb_url ? x.gold_thumb_url : x.thumb_url; return `<button class="gi dr${x.enabled ? "" : " off"}${done ? " gold" : ""}" data-dtap="${esc(x.slug)}" ${x.enabled ? "" : "disabled"}>${th ? `<img class="th" src="${esc(th)}" alt="">` : `<span class="ic">👗</span>`}<b>${esc(x.name)}</b><span class="pr">${!x.enabled ? "準備中" : done ? "金になりました" : `🪙${coinFmt(x.price)}`}</span><i>${slotJ[x.slot] || ""}</i><span class="dn" data-dn="${esc(x.slug)}">${n}/${DGOLD}</span><em class="x" hidden></em></button>`; }).join("")}</div>` : `<p class="gp-load">着せ替えアイテムは準備中です。もうすぐ届くよ</p>`}
-      <p class="gp-note">贈ったアイテムは推しのクローゼットに入り、推しが着けると配信画面に出ます。</p>
       ${isAdmin() ? `<button class="sbtn gray" data-closet="${esc(gCh)}" style="margin-top:10px">運営：この配信者のクローゼットを開く</button>` : ""}</div>`;
   }
   const rf = (GWAL?.refunds || []).length ? `<p class="gp-rf">↩︎ 演出が出なかったため返金しました：${GWAL.refunds.map((r) => `${esc((cat.gifts.find((x) => x.id === r.gift_id) || {}).name || "ギフト")} ${coinFmt(r.price)}`).join("、")}</p>` : "";
@@ -2637,21 +2641,25 @@ async function openCloset(cid) {
   if (!r.ok) { overlay("closet", `<div class="jn"><button class="jx" data-cx aria-label="閉じる">×</button><p class="gp-load">開けませんでした</p></div>`); return; }
   CLO = { cid, ...r }; closetRender();
 }
+const DGENRE = [["clothes", "服"], ["accessory", "アクセサリー"], ["other", "その他アイテム"]];
 function closetRender() {
-  const r = CLO, items = new Map((r.items || []).map((i) => [i.slug, i])), eq = new Map((r.equip || []).map((e) => [e.slot, e]));
-  const GA = r.gold_at || 100;
-  const own = new Map(); (r.owned || []).forEach((o) => { const g = own.get(o.slug) || { n: 0, from: [] }; g.n += o.qty || 1; if (g.from.length < 3 && !g.from.includes(o.from_nick)) g.from.push(o.from_nick); own.set(o.slug, g); });
+  const r = CLO, eq = new Map((r.equip || []).map((e) => [e.slot, e])), GA = r.gold_at || 100;
+  const own = new Map(); (r.owned || []).forEach((o) => own.set(o.slug, (own.get(o.slug) || 0) + (o.qty || 1)));
+  // 一覧に出しているアイテムは全部並べる（持っているものは明るく、まだ持っていないものは薄暗く）
+  const items = (r.items || []).filter((i) => own.has(i.slug) || (i.listed && (i.variant || "2d") === "2d"));
+  const onBy = new Map([...eq.values()].map((e) => [e.slug, e]));
   const c = byId.get(r.cid) || {};
-  const sec = DSLOT.map(([slot, lb]) => {
-    const list = [...own.entries()].filter(([sl]) => items.get(sl)?.slot === slot), on = eq.get(slot);
-    return `<div class="clo-sec"><h5>${lb}<small>${on ? "装着中：" + esc(items.get(on.slug)?.name || "") : "なし"}</small></h5>
-      ${list.length ? `<div class="clo-grid">${list.map(([sl, g]) => { const it = items.get(sl) || {}, act = on?.slug === sl;
-        const gold = g.n >= GA, img = gold ? it.gold_thumb_url || it.thumb_url : it.thumb_url;
-        return `<button class="clo-it${act ? " on" : ""}${gold ? " gold" : ""}" data-cwear="${esc(sl)}" data-slot="${slot}" ${it.enabled ? "" : "disabled"}>${img ? `<img class="${gold && !it.gold_thumb_url ? "tint" : ""}" src="${esc(img)}" alt="">` : `<span class="ic">👗</span>`}<b>${gold ? "金の" : ""}${esc(it.name || sl)}</b><span class="clo-n${gold ? " gold" : ""}">${Math.min(g.n, GA)}/${GA}${gold ? " ✨" : ""}</span><small>${esc(g.from.join("・"))}${g.n > g.from.length ? " ほか" : ""}さんから</small><i>${act ? "装着中" : it.enabled ? "タップで着ける" : "準備中"}</i></button>`; }).join("")}</div>` : `<p class="clo-none">まだありません</p>`}
-      ${on ? `<div class="clo-adj" data-adj="${slot}"><label>左右<input type="range" min="-0.5" max="0.5" step="0.01" value="${on.dx}" data-k="dx"></label><label>上下<input type="range" min="-0.5" max="0.5" step="0.01" value="${on.dy}" data-k="dy"></label><label>大きさ<input type="range" min="0.3" max="3" step="0.05" value="${on.scale}" data-k="scale"></label><button class="sbtn" data-csave="${slot}">位置を保存</button></div>` : ""}</div>`;
+  const sec = DGENRE.map(([g, lb]) => {
+    const list = items.filter((i) => (i.genre || "other") === g);
+    const cards = list.map((it) => {
+      const n = own.get(it.slug) || 0, has = n > 0, act = onBy.has(it.slug), gold = n >= GA, img = gold ? it.gold_thumb_url || it.thumb_url : it.thumb_url;
+      return `<button class="clo-it${act ? " on" : ""}${gold ? " gold" : ""}${has ? "" : " no"}" data-cwear="${esc(it.slug)}" data-slot="${esc(it.slot)}" ${has && it.enabled ? "" : "disabled"}>${img ? `<img class="${gold && !it.gold_thumb_url ? "tint" : ""}" src="${esc(img)}" alt="">` : `<span class="ic">👗</span>`}<b>${gold ? "金の" : ""}${esc(it.name || it.slug)}</b>${has ? `<span class="clo-n${gold ? " gold" : ""}">${Math.min(n, GA)}/${GA}${gold ? " ✨" : ""}</span>` : `<span class="clo-no">まだ持っていない</span>`}${act ? `<i>装着中</i>` : ""}</button>`;
+    }).join("");
+    const adj = list.filter((it) => onBy.has(it.slug)).map((it) => { const on = onBy.get(it.slug); return `<div class="clo-adj" data-adj="${esc(on.slot)}"><b>${esc(it.name)}の位置</b><label>左右<input type="range" min="-0.5" max="0.5" step="0.01" value="${on.dx}" data-k="dx"></label><label>上下<input type="range" min="-0.5" max="0.5" step="0.01" value="${on.dy}" data-k="dy"></label><label>大きさ<input type="range" min="0.3" max="3" step="0.05" value="${on.scale}" data-k="scale"></label><button class="sbtn" data-csave="${esc(on.slot)}">位置を保存</button></div>`; }).join("");
+    return `<div class="clo-sec"><h5>${lb}</h5>${cards ? `<div class="clo-grid">${cards}</div>` : `<p class="clo-none">まだありません</p>`}${adj}</div>`;
   }).join("");
   overlay("closet", `<div class="jn clo"><button class="jx" data-cx aria-label="閉じる">×</button>
-    <div class="jh"><span class="jk">👗 クローゼット</span><b>${esc(c.custom_title || c.title || "")}</b><span class="jf">着けたアイテムは、OBSの演出画面に出しっぱなしになります（頭・手持ち・背中それぞれ1つまで）。OBSにつないでいない時は、つないだ時に出ます。</span></div>${sec}</div>`);
+    <div class="jh"><span class="jk">👗 クローゼット</span><b>${esc(c.custom_title || c.title || "")}</b></div>${sec}</div>`);
 }
 document.addEventListener("click", async (e) => {
   const t = e.target.closest("[data-cx],[data-cwear],[data-csave]"); if (!t || !CLO) return;
