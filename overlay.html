@@ -41,6 +41,11 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
 .cm.gf b i{background:#ff5fa8}
 #gchips{position:absolute;right:40px;bottom:200px;display:flex;flex-direction:column-reverse;align-items:flex-end;gap:14px}
 #gtop{position:absolute;inset:0}
+/* 軽量モード（スマホの視聴画面）：重いぼかし・影を外す */
+.lite .gb-beam,.lite .gb-shadow{filter:none}
+.lite .gb-item img:not(.gold),.lite .gfloat,.lite .gms .gi,.lite .gphx b{filter:none}
+.lite .gb-rays{-webkit-mask:none;mask:none;background:repeating-conic-gradient(rgba(255,230,150,.35) 0 7deg,transparent 7deg 18deg);width:900px;height:900px;margin-left:-450px;bottom:-80px;border-radius:50%}
+.lite .gbox.charge .gb-body,.lite .gbox.gold.charge2 .gb-body{box-shadow:0 0 30px 8px rgba(255,220,120,.8)}
 .gdim{position:absolute;inset:0;background:radial-gradient(circle at 50% 52%,rgba(40,20,60,.35),rgba(0,0,0,.72) 75%);animation:gfade .4s ease both}
 .gbox{position:absolute;left:50%;top:56%;width:360px;height:300px;margin:-150px 0 0 -180px;animation:gbdrop .7s cubic-bezier(.3,1.6,.5,1) both}
 .gbox.charge{animation:gbshake .14s linear infinite}
@@ -216,6 +221,13 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
     GW = innerWidth / s; GH = innerHeight / s; r.style.width = GW + "px"; r.style.height = GH + "px"; r.style.transform = `scale(${s})`;
   }
   addEventListener("resize", () => { fit(); gfit(); }); fit(); gfit();
+  // 軽量モード：視聴画面の小さな枠（スマホ）では、粒の数・ぼかしを減らし、キャンバスも表示サイズに合わせて小さく作る（iPhoneで落ちないように）
+  const LITE = DEMO || innerWidth < 900; if (LITE) document.documentElement.classList.add("lite");
+  function mkCv(parent) {
+    const cs = Math.min(1, (innerWidth * Math.min(devicePixelRatio || 1, 2)) / GW);
+    const cv = document.createElement("canvas"); cv.width = Math.max(1, Math.round(GW * cs)); cv.height = Math.max(1, Math.round(GH * cs)); (parent || $("#gfx")).appendChild(cv);
+    const x = cv.getContext("2d"); x.setTransform(cs, 0, 0, cs, 0, 0); return { cv, x };
+  }
   const vw = () => $("#root").offsetWidth, vh = () => $("#root").offsetHeight;
 
   function applySettings() {
@@ -392,7 +404,7 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
     }
   }
   function floatBurst(s) {
-    if ($("#gfx").querySelectorAll(".gfloat").length > 40) return;     // 浮かぶアイコンは40個まで（連打でも重くならない）
+    if ($("#gfx").querySelectorAll(".gfloat").length > (LITE ? 12 : 40)) return;     // 浮かぶアイコンは40個まで（連打でも重くならない）
     const k = s.combo >= 100 ? 5 : 3;
     for (let i = 0; i < k; i++) { const f = gEl(gIc(s.g), "gfloat"); f.style.right = 60 + Math.random() * 420 + "px"; f.style.bottom = 260 + Math.random() * 80 + "px"; f.style.animationDelay = i * 0.1 + "s"; setTimeout(() => f.remove(), 3200); }
   }
@@ -474,12 +486,11 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
   }
   // 紙吹雪（上にはじけて、ひらひら落ちる）
   function confetti(ms, gold) {
-    const cv = document.createElement("canvas"); cv.width = Math.round(GW); cv.height = Math.round(GH); $("#gfx").appendChild(cv);
-    const x = cv.getContext("2d"), cx = GW / 2, cy = GH * 0.52, cols = gold ? ["#ffd25e", "#ffe9a8", "#ffb000", "#fff6c8", "#e8a800"] : ["#ff5fa8", "#ffd25e", "#8be3ff", "#b6ff8a", "#ffffff", "#c58bff"];
-    const P = Array.from({ length: gold ? 360 : 220 }, () => { const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.2, v = 14 + Math.random() * 22;
+    const { cv, x } = mkCv(); const cx = GW / 2, cy = GH * 0.52, cols = gold ? ["#ffd25e", "#ffe9a8", "#ffb000", "#fff6c8", "#e8a800"] : ["#ff5fa8", "#ffd25e", "#8be3ff", "#b6ff8a", "#ffffff", "#c58bff"];
+    const P = Array.from({ length: (gold ? 360 : 220) * (LITE ? 0.35 : 1) | 0 }, () => { const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.2, v = 14 + Math.random() * 22;
       return { x: cx, y: cy, vx: Math.cos(a) * v, vy: Math.sin(a) * v, r: Math.random() * 6, vr: (Math.random() - 0.5) * 0.4, w: 10 + Math.random() * 12, h: 6 + Math.random() * 8, c: cols[(Math.random() * cols.length) | 0] }; });
     const t0 = performance.now();
-    const step = (now) => { const k = (now - t0) / ms; if (k > 1 || !cv.isConnected) return; x.clearRect(0, 0, cv.width, cv.height); x.globalAlpha = k > 0.8 ? (1 - k) / 0.2 : 1;
+    const step = (now) => { const k = (now - t0) / ms; if (k > 1 || !cv.isConnected) return; x.clearRect(0, 0, GW, GH); x.globalAlpha = k > 0.8 ? (1 - k) / 0.2 : 1;
       for (const p of P) { p.vy += 0.55; p.vx *= 0.985; p.vy *= 0.985; p.x += p.vx; p.y += p.vy; p.r += p.vr;
         x.save(); x.translate(p.x, p.y); x.rotate(p.r); x.scale(1, Math.abs(Math.cos(p.r * 2))); x.fillStyle = p.c; x.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); x.restore(); }
       requestAnimationFrame(step); };
@@ -517,16 +528,16 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
   }
   function dressApply(list) {
     list = Array.isArray(list) ? list : []; const want = new Map(list.map((e) => [e.slot, e]));
-    for (const [slot, d] of DRESS) if (!want.has(slot) || want.get(slot).slug !== d.slug) { try { d.v.pause(); } catch {} d.el.remove(); DRESS.delete(slot); }
+    for (const [slot, d] of DRESS) if (!want.has(slot) || want.get(slot).slug !== d.slug) { d.el.remove(); glFree(d.v, d.el.querySelector("canvas")); DRESS.delete(slot); }
     for (const e of list) {
       const cur = DRESS.get(e.slot); if (cur && cur.gold === !!e.gold) { dressPlace(cur.el, e); cur.e = e; continue; }
-      if (cur) { try { cur.v.pause(); } catch {} cur.el.remove(); DRESS.delete(e.slot); }
+      if (cur) { cur.el.remove(); glFree(cur.v, cur.el.querySelector("canvas")); DRESS.delete(e.slot); }
       if (!e.stack_url) continue;
       const src = e.gold && e.gold_stack_url ? e.gold_stack_url : e.stack_url;
       const box = document.createElement("div"); box.className = "gdi" + (e.gold && !e.gold_stack_url ? " gold" : ""); const cv = document.createElement("canvas"); box.appendChild(cv);
       const v = document.createElement("video"); v.src = src; v.loop = true; v.muted = true; v.playsInline = true; v.setAttribute("playsinline", ""); v.crossOrigin = "anonymous";
       let draw = null; v.addEventListener("loadedmetadata", () => { cv.width = v.videoWidth; cv.height = v.videoHeight / 2; try { draw = stackGL(v, cv); } catch {} });
-      const loop = () => { if (!box.isConnected) { v.pause(); return; } try { draw && draw(); } catch {} requestAnimationFrame(loop); };
+      const loop = () => { if (!box.isConnected) { glFree(v, cv); return; } try { draw && draw(); } catch {} requestAnimationFrame(loop); };
       v.addEventListener("playing", loop, { once: true });
       dressPlace(box, e); $("#gdress").appendChild(box); v.play().catch(() => {});
       DRESS.set(e.slot, { slug: e.slug, el: box, v, e, gold: !!e.gold });
@@ -556,9 +567,9 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
       bg.remove();
     }
     const MS = 7500, bg = gEl("", "gphx-bg", $("#gtop"));
-    const cv = document.createElement("canvas"); cv.width = Math.round(GW); cv.height = Math.round(GH); $("#gtop").appendChild(cv);
+    const { cv, x: px } = mkCv($("#gtop"));
     const tx = gEl(`<b>鳳凰降臨</b><small><em>${esc(s.nick)}</em> さん　${esc(s.g.name)} 1,000コンボ！</small>`, "gphx", $("#gtop"));
-    const x = cv.getContext("2d"), W = cv.width, H = cv.height, U = Math.min(W, H) / 1080, P = [], t0 = performance.now();
+    const x = px, W = GW, H = GH, U = Math.min(W, H) / 1080, P = [], t0 = performance.now();
     const step = (now) => {
       const t = (now - t0) / 1000, k = t * 1000 / MS; if (k > 1.05 || !cv.isConnected) return;
       x.clearRect(0, 0, W, H); x.globalCompositeOperation = "lighter"; x.globalAlpha = k > 0.88 ? Math.max(0, (1 - k) / 0.12) : Math.min(1, t * 1.5);
@@ -600,6 +611,8 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
   }
   // 動画の演出：4秒以内に再生が始まらなければあきらめる（絵の演出に切り替え）
   // 「.stack.」の付いた動画は、上半分が絵・下半分が透け具合（白＝見える）。iPhoneでもOBSでも背景を透かして出せる
+  // 使い終わった動画と描画の場所を手放す（iPhoneは同時に持てる数が少ない）
+  function glFree(v, cv) { try { v.pause(); v.removeAttribute("src"); v.load(); } catch {} try { cv.getContext("webgl")?.getExtension("WEBGL_lose_context")?.loseContext(); } catch {} }
   function stackGL(v, cv) {
     const gl = cv.getContext("webgl", { premultipliedAlpha: false, alpha: true }); if (!gl) return null;
     const sh = (t, src) => { const o = gl.createShader(t); gl.shaderSource(o, src); gl.compileShader(o); return o; };
@@ -625,7 +638,7 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
       else v.className = "gvid";
       let done = false; const fin = (ok) => { if (done) return; done = true; if (!ok) { box.remove(); return res(null); } res({ el: box, dur: Math.min(15000, (v.duration || 6) * 1000) }); };
       v.addEventListener("loadedmetadata", () => { if (!cv) return; cv.width = v.videoWidth; cv.height = v.videoHeight / 2; try { draw = stackGL(v, cv); } catch {} if (!draw) fin(false); });
-      v.addEventListener("playing", () => { fin(true); if (draw) { const loop = () => { if (!box.isConnected) { v.pause(); return; } try { draw(); } catch {} requestAnimationFrame(loop); }; loop(); } }, { once: true });
+      v.addEventListener("playing", () => { fin(true); if (draw) { const loop = () => { if (!box.isConnected) { glFree(v, cv); return; } try { draw(); } catch {} requestAnimationFrame(loop); }; loop(); } }, { once: true });
       v.addEventListener("error", () => fin(false), { once: true });
       setTimeout(() => fin(false), 5000);
       (parent || $("#gfx")).appendChild(box);
@@ -634,13 +647,12 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
   }
   // 粒の演出（キャンバス）。時間が来たら自分で止まる
   function canvasFx(ms, init, draw) {
-    const cv = document.createElement("canvas"); cv.width = Math.round(GW); cv.height = Math.round(GH); $("#gfx").appendChild(cv);
-    const x = cv.getContext("2d"); const P = init(); const t0 = performance.now();
-    const step = (t) => { const k = (t - t0) / ms; if (k > 1.2 || !cv.isConnected) return; x.clearRect(0, 0, cv.width, cv.height); try { draw(x, P, k); } catch { return; } requestAnimationFrame(step); };
+    const { cv, x } = mkCv(); const P = init(); const t0 = performance.now();
+    const step = (t) => { const k = (t - t0) / ms; if (k > 1.2 || !cv.isConnected) return; x.clearRect(0, 0, GW, GH); try { draw(x, P, k); } catch { return; } requestAnimationFrame(step); };
     requestAnimationFrame(step); return cv;
   }
   function sparkle(ms, cols, area) {
-    return canvasFx(ms, () => Array.from({ length: 70 }, () => ({ x: GW / 2 + (Math.random() - 0.5) * Math.min(GW, 1600) * 0.56 * area, y: GH - 320 + (Math.random() - 0.5) * 300, vx: (Math.random() - 0.5) * 6, vy: -2 - Math.random() * 6, r: 3 + Math.random() * 6, c: cols[(Math.random() * cols.length) | 0] })),
+    return canvasFx(ms, () => Array.from({ length: LITE ? 30 : 70 }, () => ({ x: GW / 2 + (Math.random() - 0.5) * Math.min(GW, 1600) * 0.56 * area, y: GH - 320 + (Math.random() - 0.5) * 300, vx: (Math.random() - 0.5) * 6, vy: -2 - Math.random() * 6, r: 3 + Math.random() * 6, c: cols[(Math.random() * cols.length) | 0] })),
       (x, P, k) => { for (const p of P) { p.x += p.vx; p.y += p.vy; p.vy += 0.08; x.globalAlpha = Math.max(0, 1 - k); x.fillStyle = p.c; x.beginPath(); x.arc(p.x, p.y, p.r, 0, 7); x.fill(); } });
   }
   function starfall(ms) {

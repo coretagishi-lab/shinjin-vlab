@@ -2439,6 +2439,8 @@ function localFx(cb) {
   const host = WP?.el && !WP.el.hidden ? WP.el : $("#wPlayer"); if (!host) return;
   let f = host.querySelector("iframe.gdemo");
   const fire = () => { try { cb(f.contentWindow); } catch {} };
+  // しばらく何もなければ演出の枠ごと片づける（スマホのメモリを空ける）
+  clearTimeout(localFx.t); localFx.t = setTimeout(() => { const g = document.querySelector("iframe.gdemo"); if (g) g.remove(); }, 25000);
   if (!f) { f = document.createElement("iframe"); f.className = "gdemo"; f.title = "ギフト演出"; f.setAttribute("allowtransparency", "true"); f.src = "overlay.html?demo=1"; host.appendChild(f); f.addEventListener("load", () => setTimeout(fire, 300), { once: true }); }
   else fire();
 }
