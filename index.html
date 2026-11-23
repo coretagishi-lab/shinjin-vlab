@@ -217,6 +217,8 @@ a{color:inherit;text-decoration:none}
 .clo-it b{font-size:12.5px}.clo-it small{font-size:10.5px;color:#7a7190;text-align:center}
 .clo-it i{font-style:normal;font-size:10px;background:#eee4f3;border-radius:6px;padding:0 6px;margin-top:2px}
 .clo-it.on i{background:#ff5fa8;color:#fff}
+.clo-n{font-size:11.5px;font-weight:800;color:#ff5fa8}
+.clo-n.gold{color:#c99400}
 .clo-none{font-size:12px;color:#7a7190;margin:0}
 .clo-adj{display:flex;flex-direction:column;gap:6px;margin-top:8px;background:#f8f4fb;border-radius:12px;padding:10px}
 .clo-adj label{display:flex;align-items:center;gap:8px;font-size:12px;color:#5d5370}
@@ -2457,7 +2459,7 @@ function giftHTML() {
   if (gTab === "dress") {
     const slotJ = { head: "頭", hand: "手持ち", back: "背中" }, its = DCAT || [];
     return `${head}${tabs}<div class="gp-body">${DCAT === null ? `<p class="gp-load">読み込み中…</p>` : its.length ? `<div class="gp-grid">${its.map((x) => `<button class="gi dr${x.enabled ? "" : " off"}" data-dtap="${esc(x.slug)}" ${x.enabled ? "" : "disabled"}>${x.thumb_url ? `<img class="th" src="${esc(x.thumb_url)}" alt="">` : `<span class="ic">👗</span>`}<b>${esc(x.name)}</b><span class="pr">${x.enabled ? `🪙${coinFmt(x.price)}` : "準備中"}</span><i>${slotJ[x.slot] || ""}</i></button>`).join("")}</div>` : `<p class="gp-load">着せ替えアイテムは準備中です。もうすぐ届くよ</p>`}
-      <p class="gp-note">贈ったアイテムは推しのクローゼットに入り、推しが着けると配信画面に出ます。いまはお試し中なので、押してもコインは減りません。</p>
+      <p class="gp-note">贈ったアイテムは推しのクローゼットに入り、推しが着けると配信画面に出ます。</p>
       ${isAdmin() ? `<button class="sbtn gray" data-closet="${esc(gCh)}" style="margin-top:10px">運営：この配信者のクローゼットを開く</button>` : ""}</div>`;
   }
   const rf = (GWAL?.refunds || []).length ? `<p class="gp-rf">↩︎ 演出が出なかったため返金しました：${GWAL.refunds.map((r) => `${esc((cat.gifts.find((x) => x.id === r.gift_id) || {}).name || "ギフト")} ${coinFmt(r.price)}`).join("、")}</p>` : "";
@@ -2475,7 +2477,7 @@ async function gLoad(cid) {
   gWait = !gDemo() && !vbuiOK(cid);                              // 推しがまだ設定していない：一覧は見られるけど、黒いフェードで「設定待ち」
   if (gDemo()) { GCAT = G_DEMO_CAT; gLocal = GD.balance; GWAL = null; return; }
   if (!GCAT || GCAT.demo) GCAT = { ...G_DEMO_CAT, demo: false, stripe: false };
-  if (gWait) { gLocal = 0; giftApi({ action: "catalog" }).then((r) => { if (r.ok) { GCAT = r; giftRender(); } }).catch(() => {}); return; }
+  if (gWait) { gLocal = 0; if (SESSION) giftApi({ action: "wallet" }).then((w) => { if (w.ok) { GWAL = w; gLocal = w.balance; gPaintBal(); } }).catch(() => {}); giftApi({ action: "catalog" }).then((r) => { if (r.ok) { GCAT = r; giftRender(); } }).catch(() => {}); return; }
   try { const [cat, w] = await Promise.all([giftApi({ action: "catalog" }), giftApi({ action: "wallet" })]); if (cat.ok) GCAT = cat; if (w.ok) { GWAL = w; gLocal = w.balance - gPendCost(); } } catch {}
 }
 // 下から出るギフト画面：名前と「〇人が視聴中」の下までの高さで開く
@@ -2537,16 +2539,21 @@ document.addEventListener("click", async (e) => {
   if (t.dataset.gtap) return gTap(t.dataset.gtap, t);
   if (t.dataset.gtab) { gTab = t.dataset.gtab; gView = "list"; return giftRender(); }
   if (t.dataset.closet) return openCloset(t.dataset.closet);
-  if (t.dataset.dtap) {                                     // 着せ替えを贈る（いまはお試し：コインは減らない）
+  if (t.dataset.dtap) {                                     // 着せ替えを贈る（ふつうのギフトと同じくコインを使う）
     if (!SESSION) return needLogin("着せ替え");
+    const it0 = (DCAT || []).find((x) => x.slug === t.dataset.dtap); if (!it0) return;
+    if (gLocal < it0.price) { toast(`${GCAT?.coin || "コイン"}が足りません。＋からチャージしてね`); document.querySelectorAll(".gp-plus").forEach((p) => { p.classList.remove("pulse"); void p.offsetWidth; p.classList.add("pulse"); }); return; }
     if (t._busy) return; t._busy = true; setTimeout(() => (t._busy = false), 800);
-    const r = await giftApi({ action: "dress_send", channel_id: gCh, slug: t.dataset.dtap }).catch(() => ({}));
+    const demo = !!GCAT?.demo;
+    const r = await giftApi({ action: "dress_send", channel_id: gCh, slug: t.dataset.dtap, demo }).catch(() => ({}));
     if (r.ok) {
-      toast(`${r.item.name}を贈りました！推しのクローゼットに届きます（コインは減りません）`);
+      if (demo) { GD.balance -= it0.price; gdSave(); gLocal = GD.balance; } else if (r.balance != null) gLocal = r.balance - gPendCost();
+      gPaintBal(); rankLoad();
+      toast(`${r.item.name}を贈りました！推しのクローゼットに届きます`);
       const it = (DCAT || []).find((x) => x.slug === r.item.slug) || {};
       closeGift(); fsPanel(null); localFx((w) => w.VBUI_DRESSGIFT(r.item.name, it.thumb_url || "", (PROFILE && PROFILE.nickname) || "あなた"));   // 自分の画面にもプレゼントボックスの演出
     }
-    else toast({ not_ready: "このアイテムは準備中です", banned: "この配信者には贈れません" }[r.error] || "贈れませんでした");
+    else toast({ not_ready: "このアイテムは準備中です", banned: "この配信者には贈れません", short: `${GCAT?.coin || "コイン"}が足りません` }[r.error] || "贈れませんでした（コインは減っていません）");
     return;
   }
   if ("gcharge" in t.dataset) { if (!GCAT?.demo && !SESSION) return needLogin("チャージ"); gView = "charge"; gPay = null; return giftRender(); }
@@ -2586,7 +2593,7 @@ function closetRender() {
     const list = [...own.entries()].filter(([sl]) => items.get(sl)?.slot === slot), on = eq.get(slot);
     return `<div class="clo-sec"><h5>${lb}<small>${on ? "装着中：" + esc(items.get(on.slug)?.name || "") : "なし"}</small></h5>
       ${list.length ? `<div class="clo-grid">${list.map(([sl, g]) => { const it = items.get(sl) || {}, act = on?.slug === sl;
-        return `<button class="clo-it${act ? " on" : ""}" data-cwear="${esc(sl)}" data-slot="${slot}" ${it.enabled ? "" : "disabled"}>${it.thumb_url ? `<img src="${esc(it.thumb_url)}" alt="">` : `<span class="ic">👗</span>`}<b>${esc(it.name || sl)}</b><small>${esc(g.from.join("・"))}${g.n > g.from.length ? " ほか" : ""}さんから${g.n > 1 ? `（${g.n}個）` : ""}</small><i>${act ? "装着中" : it.enabled ? "タップで着ける" : "準備中"}</i></button>`; }).join("")}</div>` : `<p class="clo-none">まだありません</p>`}
+        return `<button class="clo-it${act ? " on" : ""}" data-cwear="${esc(sl)}" data-slot="${slot}" ${it.enabled ? "" : "disabled"}>${it.thumb_url ? `<img src="${esc(it.thumb_url)}" alt="">` : `<span class="ic">👗</span>`}<b>${esc(it.name || sl)}</b><span class="clo-n${g.n >= 100 ? " gold" : ""}">${Math.min(g.n, 100)}/100${g.n >= 100 ? " ✨" : ""}</span><small>${esc(g.from.join("・"))}${g.n > g.from.length ? " ほか" : ""}さんから</small><i>${act ? "装着中" : it.enabled ? "タップで着ける" : "準備中"}</i></button>`; }).join("")}</div>` : `<p class="clo-none">まだありません</p>`}
       ${on ? `<div class="clo-adj" data-adj="${slot}"><label>左右<input type="range" min="-0.5" max="0.5" step="0.01" value="${on.dx}" data-k="dx"></label><label>上下<input type="range" min="-0.5" max="0.5" step="0.01" value="${on.dy}" data-k="dy"></label><label>大きさ<input type="range" min="0.3" max="3" step="0.05" value="${on.scale}" data-k="scale"></label><button class="sbtn" data-csave="${slot}">位置を保存</button></div>` : ""}</div>`;
   }).join("");
   overlay("closet", `<div class="jn clo"><button class="jx" data-cx aria-label="閉じる">×</button>
