@@ -41,6 +41,9 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
 .cm.gf b i{background:#ff5fa8}
 #gchips{position:absolute;right:40px;bottom:200px;display:flex;flex-direction:column-reverse;align-items:flex-end;gap:14px}
 #gtop{position:absolute;inset:0}
+#gdress{position:absolute;inset:0}
+#gdress .gdi{position:absolute;transform:translate(-50%,-50%);aspect-ratio:16/9}
+#gdress .gdi canvas{width:100%;height:100%;display:block}
 #gtop canvas{position:absolute;inset:0;width:100%;height:100%}
 .gchip{position:relative;animation:inr .35s ease both;display:flex;align-items:center;gap:14px;background:rgba(20,16,32,.86);color:#fff;border:3px solid #ff7ab8;border-radius:999px;padding:10px 26px 10px 12px;font-size:30px;font-weight:800;box-shadow:0 8px 24px rgba(0,0,0,.35);animation:inr .4s ease both}
 .gchip .gi{font-size:56px;line-height:1}
@@ -108,7 +111,7 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
 </style>
 </head>
 <body>
-<div id="groot"><div id="gfx"></div><div id="gchips"></div><div id="gtop"></div></div><div id="root"><div id="stack" class="bl"></div><div id="fx"></div></div>
+<div id="groot"><div id="gdress"></div><div id="gfx"></div><div id="gchips"></div><div id="gtop"></div></div><div id="root"><div id="stack" class="bl"></div><div id="fx"></div></div>
 <div id="err"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
@@ -355,6 +358,36 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
     await wait(vid ? Math.max(3000, vid.dur) : 6500);
     await gEnd([el, bg, cv], 0);
   }
+  // ---- 着せ替え：配信者が装着中のアイテムを出しっぱなしにする（ループ再生） ----
+  const DPRE = { head: [0.5, 0.2], hand: [0.8, 0.72], back: [0.5, 0.45] };   // 置き場所の初期値（画面の割合）
+  const DRESS = new Map();                                                  // slot → { slug, el, v }
+  async function dressLoad() {
+    if (!KEY) return;
+    try { const r = await fetch(SB + "/functions/v1/gift", { method: "POST", headers: { apikey: PK, Authorization: "Bearer " + PK, "Content-Type": "application/json" }, body: JSON.stringify({ action: "dress_state", key: KEY }) }); const d = await r.json(); if (d.ok) dressApply(d.equip); } catch {}
+  }
+  function dressPlace(box, e) {
+    const [px, py] = DPRE[e.slot] || [0.5, 0.5], base = (GH > GW ? 0.8 : 0.42) * GW, sc = Number(e.scale) || 1;
+    box.style.width = base * sc + "px"; box.style.left = (px + (Number(e.dx) || 0)) * GW + "px"; box.style.top = (py + (Number(e.dy) || 0)) * GH + "px";
+    box.style.zIndex = e.slot === "back" ? 1 : 2;
+  }
+  function dressApply(list) {
+    list = Array.isArray(list) ? list : []; const want = new Map(list.map((e) => [e.slot, e]));
+    for (const [slot, d] of DRESS) if (!want.has(slot) || want.get(slot).slug !== d.slug) { try { d.v.pause(); } catch {} d.el.remove(); DRESS.delete(slot); }
+    for (const e of list) {
+      const cur = DRESS.get(e.slot); if (cur) { dressPlace(cur.el, e); cur.e = e; continue; }
+      if (!e.stack_url) continue;
+      const box = document.createElement("div"); box.className = "gdi"; const cv = document.createElement("canvas"); box.appendChild(cv);
+      const v = document.createElement("video"); v.src = e.stack_url; v.loop = true; v.muted = true; v.playsInline = true; v.setAttribute("playsinline", ""); v.crossOrigin = "anonymous";
+      let draw = null; v.addEventListener("loadedmetadata", () => { cv.width = v.videoWidth; cv.height = v.videoHeight / 2; try { draw = stackGL(v, cv); } catch {} });
+      const loop = () => { if (!box.isConnected) { v.pause(); return; } try { draw && draw(); } catch {} requestAnimationFrame(loop); };
+      v.addEventListener("playing", loop, { once: true });
+      dressPlace(box, e); $("#gdress").appendChild(box); v.play().catch(() => {});
+      DRESS.set(e.slot, { slug: e.slug, el: box, v, e });
+    }
+  }
+  addEventListener("resize", () => DRESS.forEach((d) => dressPlace(d.el, d.e)));
+  window.VBUI_DRESS = (list) => dressApply(list);                           // お試し用
+
   // 1000コンボ：全画面に鳳凰（いちばん上に重ねる。出ている間は次の鳳凰は出さない）
   let phx = false;
   async function phoenix(s) {
@@ -511,6 +544,8 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
         .on("broadcast", { event: "items" }, (m) => handleItems(m.payload?.items))
         .on("broadcast", { event: "settings" }, (m) => handleSettings(m.payload?.settings, m.payload?.settings_at))
         // 配信者が出入り禁止にした人のコメントは、画面からすぐ消す
+        .on("broadcast", { event: "dress" }, (m) => { try { dressApply(m.payload?.equip); } catch {} })
+        .on("broadcast", { event: "dress_gift" }, (m) => { const d = m.payload || {}; try { deliver({ id: "d" + Date.now(), nickname: d.nick || "リスナー" }, { cls: "gf", text: `👗 ${d.name || "着せ替え"}を贈りました（着せ替え）` }); } catch {} })
         .on("broadcast", { event: "remove" }, (m) => { (m.payload?.ids || []).forEach((id) => { seen.add(id); document.querySelectorAll(`.cm[data-id="${Number(id)}"]`).forEach((el) => el.remove()); }); })
         .subscribe((status) => { const was = rtOK; rtOK = status === "SUBSCRIBED"; if (was && !rtOK) kick(); });
     } catch { rtOK = false; }
@@ -535,7 +570,7 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
     timer = setTimeout(poll, rtOK ? 30000 : 2000);
   }
   applySettings();
-  if (!DEMO) { realtime(); ocInit().then(poll); }
+  if (!DEMO) { realtime(); ocInit().then(poll); dressLoad(); setInterval(dressLoad, 60e3); }
   // わんコメが起動しているかを10秒ごとに確かめる
   //  ・閉じた → Vぶいのコメントは、この画面のすみっこに自動で出す
   //  ・また起動した → すみっこのコメントはすっと消して、また わんコメ（YouTubeのコメント）に混ぜて出す
