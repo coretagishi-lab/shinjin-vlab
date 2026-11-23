@@ -41,6 +41,29 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
 .cm.gf b i{background:#ff5fa8}
 #gchips{position:absolute;right:40px;bottom:200px;display:flex;flex-direction:column-reverse;align-items:flex-end;gap:14px}
 #gtop{position:absolute;inset:0}
+.gdim{position:absolute;inset:0;background:rgba(0,0,0,.5);animation:gfade .4s ease both}
+.gbox{position:absolute;left:50%;top:52%;width:360px;height:300px;margin:-150px 0 0 -180px;animation:gbdrop .6s cubic-bezier(.3,1.5,.5,1) both}
+.gbox.open{animation:none}
+.gbox:not(.open){animation:gbdrop .6s cubic-bezier(.3,1.5,.5,1) both,gbshake .5s .8s ease-in-out 2}
+.gb-body{position:absolute;left:30px;right:30px;bottom:0;height:190px;border-radius:14px;background:linear-gradient(135deg,#ff6fae,#e0407f);box-shadow:inset 0 -14px 0 rgba(0,0,0,.12),0 18px 40px rgba(0,0,0,.35)}
+.gb-body i{position:absolute;left:50%;top:0;bottom:0;width:46px;margin-left:-23px;background:linear-gradient(90deg,#ffd25e,#ffe9a8,#ffd25e)}
+.gb-lid{position:absolute;left:12px;right:12px;bottom:180px;height:62px;border-radius:12px;background:linear-gradient(135deg,#ff86bd,#ee5191);box-shadow:0 8px 16px rgba(0,0,0,.2);transform-origin:20% 100%;z-index:3}
+.gb-lid i{position:absolute;left:50%;top:0;bottom:0;width:46px;margin-left:-23px;background:linear-gradient(90deg,#ffd25e,#ffe9a8,#ffd25e)}
+.gb-lid b{position:absolute;left:50%;top:-58px;width:120px;height:64px;margin-left:-60px;background:radial-gradient(ellipse at 25% 60%,#ffd25e 0 38%,transparent 40%),radial-gradient(ellipse at 75% 60%,#ffd25e 0 38%,transparent 40%),radial-gradient(circle at 50% 85%,#ffb000 0 14%,transparent 15%)}
+.gbox.open .gb-lid{animation:gblid .7s cubic-bezier(.2,.8,.3,1) forwards}
+.gb-item{position:absolute;left:50%;bottom:60px;width:420px;height:236px;margin-left:-210px;display:grid;place-items:center;opacity:0;transform:translateY(60px) scale(.3);z-index:2}
+.gb-item img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 0 30px rgba(255,230,150,.9))}
+.gb-item span{font-size:160px}
+.gbox.open .gb-item{animation:gbitem .9s .15s cubic-bezier(.2,1.4,.4,1) forwards}
+.gb-rays{position:absolute;left:50%;top:-40px;width:700px;height:700px;margin-left:-350px;border-radius:50%;opacity:0;background:repeating-conic-gradient(rgba(255,230,150,.55) 0 8deg,transparent 8deg 22deg);-webkit-mask:radial-gradient(circle,#000 20%,transparent 68%);mask:radial-gradient(circle,#000 20%,transparent 68%)}
+.gbox.open .gb-rays{animation:gbrays 3.2s linear forwards}
+.gbox-tx{position:absolute;left:0;right:0;top:calc(52% + 190px);display:flex;justify-content:center;animation:gmsin .5s 1.7s both}
+.gbox-tx .gname b{color:#ffe27a}
+@keyframes gbdrop{from{opacity:0;transform:translateY(-300px)}to{opacity:1;transform:none}}
+@keyframes gbshake{0%,100%{transform:none}25%{transform:rotate(-6deg)}75%{transform:rotate(6deg)}}
+@keyframes gblid{to{transform:translate(-140px,-260px) rotate(-38deg);opacity:0}}
+@keyframes gbitem{to{opacity:1;transform:translateY(-190px) scale(1.15)}}
+@keyframes gbrays{0%{opacity:0;transform:rotate(0)}15%{opacity:1}100%{opacity:.7;transform:rotate(90deg)}}
 #gdress{position:absolute;inset:0}
 #gdress .gdi{position:absolute;transform:translate(-50%,-50%);aspect-ratio:16/9}
 #gdress .gdi canvas{width:100%;height:100%;display:block}
@@ -341,7 +364,31 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
     await wait(250); fxNext();
   }
   async function gFallback(s) { const el = gEl(`<div class="gname"><em>${esc(s.nick)}</em> さんから ${esc(s.g.name)}</div>`, "gmid"); await gEnd([el], 3500); }
+  // ---- 着せ替えが贈られた：画面中央でプレゼントボックスが開いて、アイテムが出てくる ----
+  let DCAT = null;
+  async function dressCat() {
+    if (DCAT) return DCAT;
+    try { const r = await fetch(SB + "/functions/v1/gift", { method: "POST", headers: { apikey: PK, Authorization: "Bearer " + PK, "Content-Type": "application/json" }, body: JSON.stringify({ action: "dress_catalog" }) }); const d = await r.json(); DCAT = Object.fromEntries((d.items || []).map((i) => [i.slug, i])); } catch { DCAT = {}; }
+    return DCAT;
+  }
+  async function dressGift(d) {
+    try { deliver({ id: "d" + Date.now(), nickname: d.nick || "リスナー" }, { cls: "gf", text: `👗 ${d.name || "着せ替え"}を贈りました（着せ替え）` }); } catch {}
+    const thumb = d.thumb_url || (await dressCat())[d.slug]?.thumb_url || "";
+    if (FXQ.length >= FXQ_MAX) FXQ.shift();
+    FXQ.push({ dress: { name: d.name || "着せ替え", thumb }, nick: d.nick || "リスナー" }); if (!fxBusy) fxNext();
+  }
+  window.VBUI_DRESSGIFT = (name, thumb, nick) => dressGift({ name, thumb_url: thumb, nick });   // 視聴画面・お試し用
+  async function dressBox(s) {
+    const d = s.dress;
+    const dim = gEl("", "gdim");
+    const box = gEl(`<div class="gb-rays"></div><div class="gb-item">${d.thumb ? `<img src="${esc(d.thumb)}" alt="">` : `<span>👗</span>`}</div>
+      <div class="gb-body"><i></i></div><div class="gb-lid"><i></i><b></b></div>`, "gbox");
+    const tx = gEl(`<div class="gname"><em>${esc(s.nick)}</em> さんから <b>${esc(d.name)}</b> が届きました！</div>`, "gbox-tx");
+    await wait(1500); box.classList.add("open"); const cv = sparkle(2600, ["#ffd25e", "#ff7ab8", "#ffffff", "#8be3ff"], 0.9);
+    await wait(3200); await gEnd([dim, box, tx, cv], 0);
+  }
   async function gPlay(s) {
+    if (s.dress) return dressBox(s);
     const g = s.g, ic = esc(g.icon || "🎁");
     if (g.tier === "mid") {
       const cv = sparkle(4200, ["#ff7ab8", "#ffd25e", "#8be3ff"], 0.75);
@@ -545,7 +592,7 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
         .on("broadcast", { event: "settings" }, (m) => handleSettings(m.payload?.settings, m.payload?.settings_at))
         // 配信者が出入り禁止にした人のコメントは、画面からすぐ消す
         .on("broadcast", { event: "dress" }, (m) => { try { dressApply(m.payload?.equip); } catch {} })
-        .on("broadcast", { event: "dress_gift" }, (m) => { const d = m.payload || {}; try { deliver({ id: "d" + Date.now(), nickname: d.nick || "リスナー" }, { cls: "gf", text: `👗 ${d.name || "着せ替え"}を贈りました（着せ替え）` }); } catch {} })
+        .on("broadcast", { event: "dress_gift" }, (m) => { try { dressGift(m.payload || {}); } catch {} })
         .on("broadcast", { event: "remove" }, (m) => { (m.payload?.ids || []).forEach((id) => { seen.add(id); document.querySelectorAll(`.cm[data-id="${Number(id)}"]`).forEach((el) => el.remove()); }); })
         .subscribe((status) => { const was = rtOK; rtOK = status === "SUBSCRIBED"; if (was && !rtOK) kick(); });
     } catch { rtOK = false; }
