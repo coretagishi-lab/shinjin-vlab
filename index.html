@@ -2600,7 +2600,7 @@ function dTap(slug, btn) {
   gLocal -= it.price; if (GCAT?.demo) { GD.balance = gLocal; gdSave(); } gPaintBal(); gTapFx(btn, { id: slug }, DTAP.n);
   tapFly(btn, it.thumb_url ? `<img src="${esc(it.thumb_url)}" alt="">` : "👗");   // 自分の画面は軽い合図だけ（箱の演出は配信画面に出る）、2個目からは×N
   DCNT[slug] = (DCNT[slug] || 0) + 1; dPaintN(slug);
-  if (gLab) { const gold = DCNT[slug] >= DGOLD, n = DTAP.n; localFx((w) => w.VBUI_DRESSGIFT(it.name, gold ? it.gold_thumb_url || it.thumb_url : it.thumb_url, myNick(), n, gold, slug, 1)); }
+  if (gLab) { const gold = DCNT[slug] >= DGOLD, n = DTAP.n, tot = DCNT[slug]; localFx((w) => w.VBUI_DRESSGIFT(it.name, gold ? it.gold_thumb_url || it.thumb_url : it.thumb_url, myNick(), n, gold, slug, 1, tot)); }
   DSP.pend.set(slug, (DSP.pend.get(slug) || 0) + 1); clearTimeout(DSP.t); DSP.t = setTimeout(dFlush, 250);
 }
 async function dFlush() {
