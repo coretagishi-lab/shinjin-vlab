@@ -46,6 +46,11 @@ html,body{margin:0;background:transparent;overflow:hidden;width:100vw;height:100
 .lite .gb-item img:not(.gold),.lite .gfloat,.lite .gms .gi,.lite .gphx b{filter:none}
 .lite .gb-rays{-webkit-mask:none;mask:none;background:repeating-conic-gradient(rgba(255,230,150,.35) 0 7deg,transparent 7deg 18deg);width:900px;height:900px;margin-left:-450px;bottom:-80px;border-radius:50%}
 .lite .gbox.charge .gb-body,.lite .gbox.gold.charge2 .gb-body{box-shadow:0 0 30px 8px rgba(255,220,120,.8)}
+.lite .gb-beam,.lite .gb-halo,.lite .gring,.lite .gb-item .tw{display:none}
+.lite .gflash{animation-duration:.4s}
+.lite .gdim{background:rgba(0,0,0,.55)}
+.lite .gchip.lv4,.lite .gchip.lv5,.lite .gchip.lv6,.lite .gchip.lv7,.lite .gchip.lv8,.lite .gchip.lv9{animation:none;background:rgba(25,15,40,.95);border:4px solid #ffd25e}
+.lite .gbox-tx .g100{animation:none}
 .gdim{position:absolute;inset:0;background:radial-gradient(circle at 50% 52%,rgba(40,20,60,.35),rgba(0,0,0,.72) 75%);animation:gfade .4s ease both}
 .gbox{position:absolute;left:50%;top:56%;width:360px;height:300px;margin:-150px 0 0 -180px;animation:gbdrop .7s cubic-bezier(.3,1.6,.5,1) both}
 .gbox.charge{animation:gbshake .14s linear infinite}
@@ -189,7 +194,7 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
 <body>
 <div id="groot"><div id="gdress"></div><div id="gfx"></div><div id="gchips"></div><div id="gtop"></div></div><div id="root"><div id="stack" class="bl"></div><div id="fx"></div></div>
 <div id="err"></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>if (!/[?&]demo=1/.test(location.search)) document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"><\/script>');</script>
 <script>
 (() => {
   const SB = "https://sgmzyhvhwbqyudayboes.supabase.co";
@@ -223,9 +228,12 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
   addEventListener("resize", () => { fit(); gfit(); }); fit(); gfit();
   // 軽量モード：視聴画面の小さな枠（スマホ）では、粒の数・ぼかしを減らし、キャンバスも表示サイズに合わせて小さく作る（iPhoneで落ちないように）
   const LITE = DEMO || innerWidth < 900; if (LITE) document.documentElement.classList.add("lite");
+  let CV_LIVE = 0;
   function mkCv(parent) {
-    const cs = Math.min(1, (innerWidth * Math.min(devicePixelRatio || 1, 2)) / GW);
+    if (LITE && CV_LIVE >= 2) { const d = document.createElement("canvas"); d.width = d.height = 1; (parent || $("#gfx")).appendChild(d); return { cv: d, x: d.getContext("2d"), dummy: true }; }   // 同時に描く粒の画面は2枚まで
+    CV_LIVE++; const cs = Math.min(1, (innerWidth * Math.min(devicePixelRatio || 1, 2)) / GW);
     const cv = document.createElement("canvas"); cv.width = Math.max(1, Math.round(GW * cs)); cv.height = Math.max(1, Math.round(GH * cs)); (parent || $("#gfx")).appendChild(cv);
+    new MutationObserver((_, ob) => { if (!cv.isConnected) { CV_LIVE--; cv.width = cv.height = 1; ob.disconnect(); } }).observe(cv.parentNode, { childList: true });
     const x = cv.getContext("2d"); x.setTransform(cs, 0, 0, cs, 0, 0); return { cv, x };
   }
   const vw = () => $("#root").offsetWidth, vh = () => $("#root").offsetHeight;
@@ -339,8 +347,8 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
   //  ・素材が出せないときは、名前の帯だけ出す
   let CAT = {};
   const SES = new Map();                  // 連打のまとまり（同じ人×同じギフト）＝右下の「コンボ札」
-  const CHIP_MAX = 4, SES_MAX = 30, COMBO_GAP = 3500;   // 札は同時に4枚まで。3秒（＋通信の遅れ）押さなければコンボ終了
-  const FXQ = []; let fxBusy = false; const FXQ_MAX = 10;  // 中・大ギフトの演出は1つずつ順番に
+  const CHIP_MAX = LITE ? 2 : 4, SES_MAX = LITE ? 8 : 30, COMBO_GAP = 3500;   // 札は同時に4枚まで。3秒（＋通信の遅れ）押さなければコンボ終了
+  const FXQ = []; let fxBusy = false; const FXQ_MAX = LITE ? 2 : 10;  // 中・大ギフトの演出は1つずつ順番に
   async function loadCatalog() {
     try { const r = await fetch(SB + "/rest/v1/gift_catalog?select=id,name,price,tier,effect,icon", { headers: { apikey: PK, Authorization: "Bearer " + PK } }); const a = await r.json(); if (Array.isArray(a)) a.forEach((g) => (CAT[g.id] = g)); } catch {}
   }
@@ -383,7 +391,7 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
       const cb = s.chip.querySelector(".cb"); cb.classList.remove("hit"); void cb.offsetWidth; cb.classList.add("hit"); };
     s.bump = (n) => {
       if (n <= s.combo) return; const old = s.combo; s.combo = n; s.paint();
-      if (s.chip) { clearTimeout(s.t); s.t = setTimeout(() => endSes(s), COMBO_GAP); if (Date.now() - s.lastBurst > 350) { s.lastBurst = Date.now(); floatBurst(s); } }
+      if (s.chip) { clearTimeout(s.t); s.t = setTimeout(() => endSes(s), COMBO_GAP); if (Date.now() - s.lastBurst > (LITE ? 700 : 350)) { s.lastBurst = Date.now(); floatBurst(s); } }
       if (Math.floor(n / 100) > Math.floor(old / 100) && !(old < 1000 && n >= 1000)) { try { milestone(s, Math.floor(n / 100) * 100); } catch {} }   // 100, 200, 300…
       if (old < 1000 && n >= 1000) { try { phoenix(s); } catch {} }                                                   // 1000で鳳凰
     };
@@ -427,7 +435,9 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
   async function gFallback(s) { const el = gEl(`<div class="gname"><em>${esc(s.nick)}</em> さんから ${esc(s.g.name)}</div>`, "gmid"); await gEnd([el], 3500); }
   // ---- 着せ替えが贈られた：画面中央でプレゼントボックスが開いて、アイテムが出てくる ----
   let DCAT = null, DSET = {};
-  async function dressCat() {
+  let DCATP = null;
+  function dressCat() { return DCAT ? Promise.resolve(DCAT) : (DCATP ||= dressCat0()); }   // 連打しても読み込みは1回だけ
+  async function dressCat0() {
     if (DCAT) return DCAT;
     try { const r = await fetch(SB + "/functions/v1/gift", { method: "POST", headers: { apikey: PK, Authorization: "Bearer " + PK, "Content-Type": "application/json" }, body: JSON.stringify({ action: "dress_catalog" }) }); const d = await r.json(); DCAT = Object.fromEntries((d.items || []).map((i) => [i.slug, i])); DSET = d.settings || {}; } catch { DCAT = {}; }
     return DCAT;
