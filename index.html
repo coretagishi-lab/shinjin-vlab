@@ -1240,6 +1240,7 @@ class Player {
   destroy() { this.fr?.remove(); this.fr = null; this.vid = null; this.target = null; this.state = -1; this.el.hidden = true; }
   sound(on) { if (!this.fr) return; if (on) { ytCmd(this.fr, "unMute"); ytCmd(this.fr, "setVolume", [80]); ytCmd(this.fr, "playVideo"); } else ytCmd(this.fr, "mute"); this.muted = !on; this.paint(); }
 }
+const DRESS_ON = false;   // 着せ替え・クローゼット：いったん休止（導入予定）
 let HP = null, DP = null, WP = null;
 // Vぶいの中でどれだけ見たか（再生中の秒数だけ数える。1分ごとにまとめて送る。YouTubeの枠は使わない）
 const WATCH = new Map();
@@ -2484,7 +2485,9 @@ function giftHTML() {
       ${demo ? `<button class="sbtn" data-gmax style="margin-top:10px;width:100%">🧪 お試し：コインを最大（999,999）にする</button>` : ""}
       <p class="gp-note">1枚＝${cat.yen_per_coin}円・購入から${cat.expire_months}か月で使えなくなります${cat.stripe || demo ? "" : "。カード払いはただいま準備中です"}</p></div>${wait}`;
   }
-  const tabs = `<div class="gp-tabs"><button data-gtab="gift" aria-pressed="${gTab === "gift"}">🎁 ギフト</button><button data-gtab="dress" aria-pressed="${gTab === "dress"}">👗 着せ替え</button></div>`;
+  // 着せ替えはいったん休止（2026-11-24 本人決定・導入予定）。DRESS_ON を true にすればタブが戻る
+  if (!DRESS_ON) gTab = "gift";
+  const tabs = DRESS_ON ? `<div class="gp-tabs"><button data-gtab="gift" aria-pressed="${gTab === "gift"}">🎁 ギフト</button><button data-gtab="dress" aria-pressed="${gTab === "dress"}">👗 着せ替え</button></div>` : "";
   if (gTab === "dress") {
     const slotJ = { head: "頭", hand: "手持ち", back: "背中" }, its = DCAT || [];
     return `${head}${tabs}<div class="gp-body">${DCAT === null ? `<p class="gp-load">読み込み中…</p>` : its.length ? `<div class="gp-grid">${its.map((x) => { const n = Math.min(DGOLD, DCNT[x.slug] || 0), done = n >= DGOLD, th = done && x.gold_thumb_url ? x.gold_thumb_url : x.thumb_url; return `<button class="gi dr${x.enabled ? "" : " off"}${done ? " gold" : ""}" data-dtap="${esc(x.slug)}" ${x.enabled ? "" : "disabled"}>${th ? `<img class="th" src="${esc(th)}" alt="">` : `<span class="ic">👗</span>`}<b>${esc(x.name)}</b><span class="pr">${!x.enabled ? "準備中" : done ? "金になりました" : `🪙${coinFmt(x.price)}`}</span><i>${slotJ[x.slot] || ""}</i><span class="dn" data-dn="${esc(x.slug)}">${n}/${DGOLD}</span><em class="x" hidden></em></button>`; }).join("")}</div>` : `<p class="gp-load">着せ替えアイテムは準備中です。もうすぐ届くよ</p>`}
@@ -2674,6 +2677,7 @@ document.addEventListener("click", async (e) => {
   if (r.ok) { CLO = { cid: CLO.cid, ...r }; toast(t.dataset.csave ? "位置を保存しました" : body.slug ? "着けました" : "外しました"); closetRender(); } else { t.disabled = false; toast("できませんでした"); }
 });
 function closetBlock(m) {
+  if (!DRESS_ON) return `<section class="sbox"><h4>👗 クローゼット<small class="note2">（導入予定）</small></h4><p class="note2">リスナーから着せ替えアイテムを贈ってもらえる機能を準備中です。</p></section>`;
   return `<section class="sbox"><h4>👗 クローゼット${MINE.length > 1 ? `<small class="note2">（${esc(m.custom_title || m.title)}）</small>` : ""}</h4>
     <p class="note2">リスナーから贈られた着せ替えアイテムが届きます。着けると、OBSの演出画面に出ます。</p>
     <button class="sbtn" data-closet="${esc(m.id)}">クローゼットを開く</button></section>`;
