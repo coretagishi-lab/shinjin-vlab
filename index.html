@@ -2465,7 +2465,7 @@ function localFx(cb) {
   const fire = () => { try { cb(f.contentWindow); } catch {} };
   // しばらく何もなければ演出の枠ごと片づける（スマホのメモリを空ける）
   clearTimeout(localFx.t); localFx.t = setTimeout(() => { const g = document.querySelector("iframe.gdemo"); if (g) g.remove(); }, 25000);
-  if (!f) { f = document.createElement("iframe"); f.className = "gdemo"; f.title = "ギフト演出"; f.setAttribute("allowtransparency", "true"); f.src = "overlay.html?demo=1&v=20261124c" /* 版の印：直した演出画面がすぐ反映されるように */; host.appendChild(f); f.addEventListener("load", () => setTimeout(fire, 300), { once: true }); }
+  if (!f) { f = document.createElement("iframe"); f.className = "gdemo"; f.title = "ギフト演出"; f.setAttribute("allowtransparency", "true"); f.src = "overlay.html?demo=1&v=20261124d" /* 版の印：直した演出画面がすぐ反映されるように */; host.appendChild(f); f.addEventListener("load", () => setTimeout(fire, 300), { once: true }); }
   else fire();
 }
 

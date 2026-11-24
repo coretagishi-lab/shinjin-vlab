@@ -228,7 +228,20 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
   // 大きく組んでから縮めると、iPhoneは演出1つごとに画面何枚分ものメモリを確保して落ちるため
   //   （iPhoneで縮小方式にすると、着せ替えの箱1つで落ちた。2026-11-24）
   const ZOOM = DEMO || innerWidth < 900;
-  const place = (r, w, h, s) => { r.style.width = w + "px"; r.style.height = h + "px"; if (ZOOM) { r.style.transform = "none"; r.style.zoom = s; } else r.style.transform = `scale(${s})`; };
+  // iPhone（Safari）は zoom を枠には効かせるのに、文字の大きさには効かせない。
+  //   実際に測って、文字だけ縮んでいなければ、文字の大きさをこちらで掛け算して縮める（--fz）
+  let FZ = null;
+  function fontFix(r) {
+    if (FZ !== null) return FZ;
+    const pr = document.createElement("div"); pr.style.cssText = "position:absolute;left:0;top:0;width:100px;height:100px;font-size:100px;line-height:1;visibility:hidden";
+    pr.innerHTML = "<span>あ</span>"; r.appendChild(pr);
+    const bh = pr.getBoundingClientRect().height, th = pr.firstChild.getBoundingClientRect().height; pr.remove();
+    FZ = bh > 0 && th > bh * 1.6;
+    if (FZ) for (const ss of document.styleSheets) { let rules; try { rules = ss.cssRules; } catch { continue; }
+      for (const ru of rules || []) { const m = ru.style && /^([\d.]+)px$/.exec(ru.style.fontSize || ""); if (m) ru.style.fontSize = `calc(${m[1]}px * var(--fz, 1))`; } }
+    return FZ;
+  }
+  const place = (r, w, h, s) => { r.style.width = w + "px"; r.style.height = h + "px"; if (ZOOM) { r.style.transform = "none"; r.style.zoom = s; if (fontFix(r)) r.style.setProperty("--fz", s); } else r.style.transform = `scale(${s})`; };
   function fit() {
     const s = Math.min(innerWidth / W, innerHeight / H) || 1, r = $("#root");
     place(r, innerWidth / s, innerHeight / s, s);
