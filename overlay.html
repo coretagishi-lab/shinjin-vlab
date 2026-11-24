@@ -396,7 +396,7 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
   const lvOf = (n) => Math.min(9, Math.floor(n / 100));   // 100コンボごとに札が豪華になる
 
   const gIc = (g) => (g.img ? `<img class="gim${g.gold ? " gold" : ""}" src="${esc(g.img)}" alt="">` : esc(g.icon || "🎁"));   // 絵（着せ替えのサムネ）か絵文字
-  const isCenter = (g) => g.effect === "phoenix" || /phoenix/.test(g.video_url || "");
+  const isCenter = (g) => g.effect === "phoenix" || !!g.video_url;   // 動画のギフト（鳳凰・ガラスのお城など）は真ん中に大きく出す
   // 100コンボごと：右下の札が「ドン」と大きく跳ねる（真ん中には出さない）
   function chipBoom(s) { const c = s.chip; if (!c) return; c.classList.remove("boom"); void c.offsetWidth; c.classList.add("boom"); }
   const DRESS_BUSY = () => !!document.querySelector(".gbox,#gtop canvas,#gtop .gvid");
