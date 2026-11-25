@@ -798,6 +798,7 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
   }
   async function randFinish(s, label, big) {
     const fx = [];
+    if (label === "はずれ") { await wait(1200); return fx; }   // はずれは文字を出さない（サイコロが止まったところを少し見せて終わる）
     if (big) { fx.push(gEl("", "gflash gold"), confetti(LITE ? 3000 : 4800, true), sparkle(4200, ["#ffd25e", "#fff6c8", "#ff7ab8", "#ffffff"], 1.3)); }
     if (big === 2) { fx.push(gEl("", "gflash gold"), starfall(LITE ? 3000 : 4500), confetti(LITE ? 3000 : 5200, true)); }   // 大当たりはさらに派手に
     const bn = gEl(`<b>${esc(label)}</b>`, "grb" + (big === 2 ? " big super" : big ? " big" : "")); fx.push(bn);   // だれのかは上の札に出ている
