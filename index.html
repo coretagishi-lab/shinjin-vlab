@@ -601,6 +601,16 @@ button.me{width:100%;text-align:left;font:inherit;color:inherit}
 .gen .gadd{border-style:dashed}
 .sbox{display:flex;flex-direction:column;gap:8px;background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:14px;text-align:left;width:100%;box-sizing:border-box;font:inherit;color:inherit}
 .sbox h4{margin:0 0 2px;font-size:15px}
+.earn .er-sum{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:6px 0}
+.earn .er-sum div{background:var(--chip);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:2px}
+.earn .er-sum small{color:var(--muted);font-size:12px}.earn .er-sum b{font-size:22px}
+.earn .er-ref{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.earn .er-ref b{font-size:18px;letter-spacing:.12em;font-variant-numeric:tabular-nums}
+.earn .er-head,.earn .er-row{display:grid;grid-template-columns:64px minmax(0,1fr) 62px 44px 62px 64px;gap:6px;align-items:center;font-size:12px}
+.earn .er-head{color:var(--muted);font-size:11px;border-bottom:1px solid var(--line);padding-bottom:4px}
+.earn .er-row{padding:6px 0;border-bottom:1px dashed var(--line)}.earn .er-g{min-width:0;overflow-wrap:anywhere}
+.earn .er-y,.earn .er-s{text-align:right;font-variant-numeric:tabular-nums}.earn .er-r{text-align:right;color:var(--muted)}
+.earn .er-p{font-size:11px;color:#b5651d;text-align:right}.earn .er-p.paid{color:#2f8f5b}
+@media (max-width:480px){.earn .er-head{display:none}.earn .er-row{grid-template-columns:1fr auto;grid-template-areas:"g s" "d p"}.earn .er-y,.earn .er-r{display:none}.earn .er-g{grid-area:g}.earn .er-s{grid-area:s}.earn .er-d{grid-area:d;color:var(--muted)}.earn .er-p{grid-area:p}}
 .sbox.addch{font-weight:700;font-size:14px;border-style:dashed}
 .sbox.addch small{font-weight:400;color:var(--muted);font-size:12px}
 .sl{font-size:12.5px;font-weight:700;color:var(--muted);margin-top:4px}
@@ -1652,9 +1662,13 @@ async function authInit() {
   if (go) try { history.replaceState({}, "", location.pathname); } catch {}
   const { data } = await AUTH.auth.getSession(); SESSION = data.session;
   AUTH.auth.onAuthStateChange((_e, s) => { if (s) SESSION = s; });
+  // 紹介リンク（?ref=コード）から来たら覚えておき、本人登録が終わったときに自動で結びつける（30日間有効）
+  const refc = (q.get("ref") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 16);
+  if (refc) store.set("vbuiRef", { code: refc, at: Date.now() });
+  const payoutBack = q.get("payout");
   const charged = q.get("charged");
   if (charged) setTimeout(() => toast(charged === "1" ? "チャージありがとうございます！ 反映まで少しかかることがあります" : "チャージをやめました"), 800);
-  if (claim || reg || login || ytl || charged) try { history.replaceState({}, "", location.pathname); } catch {}
+  if (claim || reg || login || ytl || charged || refc || payoutBack) try { history.replaceState({}, "", location.pathname); } catch {}
   if (!SESSION && go === "listener") return listenerLogin();
   if (!SESSION && go === "vtuber") return vtuberLogin();
   if (SESSION && go === "vtuber") { myRole = "vtuber"; store.set("myRole", "vtuber"); }
@@ -1672,11 +1686,14 @@ async function authInit() {
           const taken = (r.results || []).some((x) => x.result === "taken"), added = (r.results || []).some((x) => x.result === "added");
           ownMsg = taken ? "このチャンネルは、すでに別のアカウントで登録されています。お心当たりがない場合は公式Xまでご連絡ください。" : added ? "本人登録が完了しました🎉 チャンネルの情報を取り込んで、名鑑に登録しました。" : "本人登録が完了しました🎉";
           myRole = "vtuber"; store.set("myRole", "vtuber");
+          const rf = store.get("vbuiRef", null);
+          if (rf?.code && Date.now() - (rf.at || 0) < 30 * 864e5) { await earnApi({ action: "referral_claim", code: rf.code }).catch(() => {}); store.set("vbuiRef", null); }
         }
       }
     }
     const { data: p } = await AUTH.from("profiles").select("*").maybeSingle(); PROFILE = p || null;
     await refreshMine();
+    if (payoutBack && MINE.length) setTimeout(() => openEarn(MINE[0].id, true), 600);   // 口座登録のページから戻ってきた
     if (login && MINE.length) { myRole = "vtuber"; store.set("myRole", "vtuber"); }
     if (go === "vtuber" && !MINE.length) return vtuberLogin();
     if (PROFILE) { await oshiLoad(); await oshiMigrate(); if (MINE.length) await collabLoad(); }
@@ -1841,7 +1858,7 @@ function ytBox() {
 const setAsVtuber = () => viewAs() === "vtuber" && MINE.length > 0;
 function settingsHTML() {
   const vt = setAsVtuber();
-  const chs = MINE.map((m) => channelSettings(m) + obsBlock(m) + closetBlock(m)).join("");
+  const chs = MINE.map((m) => channelSettings(m) + obsBlock(m) + earnBlock(m) + closetBlock(m)).join("");
   const addCh = `<button class="sbox addch" data-own="login">＋ 別のチャンネルも本人登録する<small>Googleの画面で、登録したいチャンネルを選んでください</small></button>`;
   const beVt = `<button class="sbox addch" data-own="login">🎙 VTuberとして本人登録する<small>YouTubeで本人確認すると、救援やコラボ申請が使えます</small></button>`;
   return `<div class="jn"><button class="jx" data-set="close" aria-label="閉じる">×</button>
@@ -2442,13 +2459,17 @@ let GD = { balance: 0, hist: [] };
 try { GD = JSON.parse(localStorage.getItem("vbui_gift_demo")) || GD; } catch {}
 const gdSave = () => { try { localStorage.setItem("vbui_gift_demo", JSON.stringify(GD)); } catch {} };
 const gdRank = (sid, cid, n) => { GD.rank = GD.rank || {}; GD.rank[sid] = (GD.rank[sid] || 0) + n; GD.rank["c:" + cid] = (GD.rank["c:" + cid] || 0) + n; gdSave(); };
+async function earnApi(body) {
+  const r = await fetch(`${SB_URL}/functions/v1/earn`, { method: "POST", headers: { apikey: SB_KEY, Authorization: `Bearer ${SESSION.access_token}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  return r.json();
+}
 async function giftApi(body) {
   const r = await fetch(`${SB_URL}/functions/v1/gift`, { method: "POST", headers: { apikey: SB_KEY, Authorization: `Bearer ${SESSION ? SESSION.access_token : SB_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
   return r.json();
 }
 const coinFmt = (n) => Number(n || 0).toLocaleString("ja-JP");
 // 視聴画面の動画の上に、OBSと同じ演出画面を重ねて出す（お試し）。全画面でも出るようにプレーヤーの中に置く
-let gDemoF = null, gLab = false;   // gLab：お試し中は、押したギフトの演出を動画の上に重ねて出す（配信画面と同じ見え方）
+let gDemoF = null, gLab = false, gCard = undefined;   // gCard：保存したカード（次回からワンタップ）   // gLab：お試し中は、押したギフトの演出を動画の上に重ねて出す（配信画面と同じ見え方）
 // スマホの自分の画面では、重い演出（配信画面と同じもの）は出さず、押したアイコンがふわっと浮く軽い合図だけにする（iPhoneで落ちないように）
 function tapFly(btn, html) {
   if (!btn || document.querySelectorAll(".tfly").length >= 8) return;
@@ -2478,8 +2499,11 @@ function giftHTML() {
     <button class="gp-plus" data-gcharge aria-label="チャージ">＋</button></div>${demo ? `<button class="gp-demo${gLab ? " on" : ""}" data-glab aria-pressed="${gLab}">🧪 ${gLab ? "お試し中" : "演出を試す"}</button>` : ""}<button class="gp-x" data-gx aria-label="閉じる">×</button></div>`;
   const wait = gWait && gTab === "gift" ? `<div class="gwait"><span class="z">💤</span><b>VTuberの設定待ち</b><span>推しがVぶいの設定をすると、<br>ギフトを送れるようになるよ</span></div>` : "";
   if (gView === "charge") {
-    const pay = gPay ? `<div class="gp-pay"><b>${coinFmt(gPay)}円で ${coinFmt(gPay / cat.yen_per_coin)} ${esc(cat.coin)}</b><span>${demo ? "お試し：本物のお金は動きません" : ""}</span>
-      <div class="row"><button class="sbtn gray" data-gpcancel>やめる</button><button class="sbtn" data-gpok>支払う</button></div></div>` : "";
+    const pay = !gPay ? "" : demo ? `<div class="gp-pay"><b>${coinFmt(gPay)}円で ${coinFmt(gPay / cat.yen_per_coin)} ${esc(cat.coin)}</b><span>お試し：本物のお金は動きません</span>
+      <div class="row"><button class="sbtn gray" data-gpcancel>やめる</button><button class="sbtn" data-gpok>支払う</button></div></div>`
+      : `<div class="gp-pay"><b>${coinFmt(gPay)}円で ${coinFmt(gPay / cat.yen_per_coin)} ${esc(cat.coin)}</b>
+      <div class="row">${gCard ? `<button class="sbtn" data-gquick>💳 ${esc(gCard.brand || "カード")} •••• ${esc(gCard.last4 || "")} で支払う</button>` : ""}<button class="sbtn ${gCard ? "gray" : ""}" data-gcheckout>${gCard ? "別の方法で支払う" : "支払いへ進む"}</button></div>
+      <button class="gp-back" data-gpcancel>やめる</button></div>`;
     return `${head}<div class="gp-body"><button class="gp-back" data-gback>← ギフトにもどる</button>
       <div class="gp-packs">${cat.packs.map((y) => `<button data-gpack="${y}"><b>${coinFmt(y / cat.yen_per_coin)}</b><small>${esc(cat.coin)}</small><span>${coinFmt(y)}円</span></button>`).join("")}</div>${pay}
       ${demo ? `<button class="sbtn" data-gmax style="margin-top:10px;width:100%">🧪 お試し：コインを最大（999,999）にする</button>` : ""}
@@ -2559,14 +2583,14 @@ async function gFlush() {
   } else {
     gLocal += g.price * qty;                                   // 送れなかった分は表示を戻す（サーバーでは減っていない）
     if (r.error === "not_connected") { OVL.set(gCh, { ...(OVL.get(gCh) || {}), connected: false }); gWait = true; giftRender(); }
-    toast({ not_connected: "配信者がギフト受付をつないでいないため、送れませんでした", not_live: "配信が終わっています", short: "コインが足りません", banned: "この配信にはギフトを送れません", no_profile: "先にニックネームを決めてください" }[r.error] || "送れませんでした（コインは減っていません）");
+    toast({ not_connected: "配信者がギフト受付をつないでいないため、送れませんでした", not_live: "配信が終わっています", short: "コインが足りません", debt: "返金・取り消しになった支払いの分が残っているため、いまはギフトを送れません。次のチャージで差し引かれます", banned: "この配信にはギフトを送れません", no_profile: "先にニックネームを決めてください" }[r.error] || "送れませんでした（コインは減っていません）");
   }
   gPaintBal(); rankLoad();
   if (GP.pend.size) gFlush();
 }
 
 document.addEventListener("click", async (e) => {
-  const t = e.target.closest("[data-gift],[data-gx],[data-gtap],[data-gcharge],[data-gback],[data-gpack],[data-gpok],[data-gpcancel],[data-fsp],[data-fsx],[data-gtab],[data-dtap],[data-closet],[data-gmax],[data-glab]");
+  const t = e.target.closest("[data-gift],[data-gx],[data-gtap],[data-gcharge],[data-gback],[data-gpack],[data-gpok],[data-gpcancel],[data-fsp],[data-fsx],[data-gtab],[data-dtap],[data-closet],[data-gmax],[data-glab],[data-gquick],[data-gcheckout]");
   if (!t) { if (!e.target.closest("#gp") && $("#gp.on") && !e.target.closest(".toast")) closeGift(); return; }
   if (t.dataset.gift) return openGift(t.dataset.gift);
   if ("gx" in t.dataset) { closeGift(); fsPanel(null); return; }
@@ -2579,14 +2603,34 @@ document.addEventListener("click", async (e) => {
     if (!SESSION) return needLogin("着せ替え");
     return dTap(t.dataset.dtap, t);
   }
-  if ("gcharge" in t.dataset) { if (!GCAT?.demo && !SESSION) return needLogin("チャージ"); gView = "charge"; gPay = null; return giftRender(); }
+  if ("gcharge" in t.dataset) {
+    if (!GCAT?.demo && !SESSION) return needLogin("チャージ"); gView = "charge"; gPay = null;
+    if (!GCAT?.demo && GCAT?.stripe && gCard === undefined) giftApi({ action: "card" }).then((r) => { gCard = r.card || null; if (gView === "charge") giftRender(); }).catch(() => (gCard = null));
+    return giftRender();
+  }
   if ("gback" in t.dataset) { gView = "list"; gPay = null; return giftRender(); }
   if (t.dataset.gpack) {
-    if (GCAT?.demo) { gPay = Number(t.dataset.gpack); return giftRender(); }
-    if (!GCAT?.stripe) return toast("チャージはただいま準備中です");
-    t.disabled = true; const r = await giftApi({ action: "checkout", yen: Number(t.dataset.gpack) }).catch(() => ({}));
+    if (!GCAT?.demo && !GCAT?.stripe) return toast("チャージはただいま準備中です");
+    gPay = Number(t.dataset.gpack); return giftRender();
+  }
+  if ("gcheckout" in t.dataset && gPay) {
+    t.disabled = true; const r = await giftApi({ action: "checkout", yen: gPay }).catch(() => ({}));
     if (r.url) location.href = r.url; else { toast("支払いページを開けませんでした"); t.disabled = false; }
     return;
+  }
+  // 保存したカードでワンタップ。コインはStripeの「支払い成功」の知らせが届いてから入る（画面では入れない）
+  if ("gquick" in t.dataset && gPay) {
+    t.disabled = true; const yenAmt = gPay;
+    const r = await giftApi({ action: "quick_charge", yen: yenAmt, nonce: `${yenAmt}-${Date.now()}` }).catch(() => ({}));
+    if (r.status === "redirect" && r.url) { location.href = r.url; return; }       // カード会社の本人確認へ
+    if (r.ok) {
+      gPay = null; gView = "list"; giftRender(); toast("支払いました！ コインの反映まで数秒かかります");
+      for (let i = 0; i < 6; i++) { await new Promise((ok) => setTimeout(ok, 2500)); const w = await giftApi({ action: "wallet" }).catch(() => ({})); if (w.ok && w.balance !== gLocal) { gLocal = w.balance; gPaintBal?.(); break; } }
+      return;
+    }
+    t.disabled = false;
+    if (r.error === "need_checkout" || r.error === "no_card") { const c = await giftApi({ action: "checkout", yen: yenAmt }).catch(() => ({})); if (c.url) { location.href = c.url; return; } }
+    return toast(r.error === "card_declined" ? "カードで支払えませんでした。別の方法でお試しください" : "支払いできませんでした");
   }
   if ("gpcancel" in t.dataset) { gPay = null; return giftRender(); }
   if ("gpok" in t.dataset && GCAT?.demo) { const n = gPay / GCAT.yen_per_coin; GD.balance += n; gLocal = GD.balance; gdSave(); gPay = null; gView = "list"; toast("チャージしました！（お試し）"); return giftRender(); }
@@ -2675,6 +2719,54 @@ document.addEventListener("click", async (e) => {
   t.disabled = true;
   const r = await giftApi({ action: "equip", channel_id: CLO.cid, ...body }).catch(() => ({}));
   if (r.ok) { CLO = { cid: CLO.cid, ...r }; toast(t.dataset.csave ? "位置を保存しました" : body.slug ? "着けました" : "外しました"); closetRender(); } else { t.disabled = false; toast("できませんでした"); }
+});
+// ---- 収益・払い出し（配信者にだけ見える） ----
+function earnBlock(m) {
+  return `<section class="sbox"><h4>💰 収益・払い出し</h4><small class="note2">ギフトの明細、未払いの残高、払い出しの口座、紹介コードを確認できます。</small><div><button class="sbtn" data-earn="${esc(m.id)}">収益を見る</button></div></section>`;
+}
+let EARN = null;
+const yen = (n) => Math.floor(Number(n || 0)).toLocaleString("ja-JP") + "円";
+const pct = (r) => Math.round(Number(r || 0) * 1000) / 10 + "%";
+async function openEarn(ch, refresh) {
+  if (!SESSION) return;
+  overlay("earn", `<div class="jn"><button class="jx" data-ex aria-label="閉じる">×</button><p class="gp-load">読み込み中…</p></div>`);
+  if (refresh) await earnApi({ action: "connect_refresh", channel_id: ch }).catch(() => {});
+  const r = await earnApi({ action: "earnings", channel_id: ch }).catch(() => ({}));
+  if (!r.ok) return overlay("earn", `<div class="jn"><button class="jx" data-ex aria-label="閉じる">×</button><p>収益を読み込めませんでした。</p></div>`);
+  EARN = r; earnRender();
+}
+function earnRender() {
+  const r = EARN, rf = r.referral || {}, a = r.account, nx = rf.next_tier;
+  const stTxt = { pending: "払い出し待ち", transferred: "振込手続き中", paid: "振込済み", failed: "振込できませんでした", canceled: "取りやめ" };
+  const acct = !r.stripe ? `<p class="note2">口座の登録は、ただいま準備中です。</p>`
+    : a?.payouts_enabled ? `<p class="okc">● 受け取り口座は登録済みです</p><div><button class="sbtn gray" data-eacct>口座を変更する</button></div>`
+    : `<p class="ngc">● ${a?.details_submitted ? "Stripeで確認中です" : "まだ受け取り口座が登録されていません"}</p><div><button class="sbtn" data-eacct>${a ? "口座登録の続きをする" : "口座を登録する"}</button></div><small class="note2">口座番号や本人確認の情報は、決済会社Stripeの画面で入力します（Vぶいには保存されません）。</small>`;
+  const link = rf.code ? `${r.referral.link}${rf.code}` : "";
+  const items = (r.items || []).map((x) => `<div class="er-row"><span class="er-d">${new Date(x.at).toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+    <span class="er-g">${esc(x.icon)} ${esc(x.gift)}${x.qty > 1 ? ` ×${x.qty}` : ""}</span><span class="er-y">${yen(x.yen)}</span><span class="er-r">${pct(x.rate)}</span><b class="er-s">${yen(x.share)}</b><span class="er-p ${x.paid ? "paid" : ""}">${x.paid ? "払い出し済み" : "未払い"}</span></div>`).join("");
+  const pays = (r.payouts || []).map((p) => `<div class="er-row"><span class="er-d">${String(p.period_month).slice(0, 7).replace("-", "年")}月分</span><span class="er-g">取り分 ${yen(p.gross)} − 振込手数料 ${yen(p.fee)}</span><b class="er-s">${yen(p.net)}</b><span class="er-p ${p.status === "paid" ? "paid" : ""}">${stTxt[p.status] || p.status}</span></div>`).join("");
+  overlay("earn", `<div class="jn earn"><button class="jx" data-ex aria-label="閉じる">×</button>
+    <div class="jh"><span class="jk">💰 収益・払い出し</span><b>${esc(r.channel?.title || "")}</b></div>
+    <div class="er-sum"><div><small>未払いの残高</small><b>${yen(r.unpaid)}</b></div><div><small>いまの還元率</small><b>${pct(rf.rate_now)}</b></div></div>
+    <p class="note2">毎月末に締めて、未払いの残高が${yen(r.min_yen)}以上なら翌月${r.pay_day}日に口座へ振り込みます（振込手数料${yen(r.fee_yen)}は差し引き）。${yen(r.min_yen)}未満は翌月へ繰り越します。</p>
+    <section class="sbox"><h4>🏦 受け取り口座</h4>${acct}</section>
+    <section class="sbox"><h4>🤝 紹介</h4>
+      <p class="note2">あなたの紹介でVTuberが本人登録すると、紹介した人数に応じて還元率が上がります（最大${pct(rf.tiers?.max ?? 0.4)}・翌月1日から）。</p>
+      <div class="er-ref"><span>紹介コード</span><b>${esc(rf.code || "—")}</b>${link ? `<button class="sbtn gray" data-ecopy="${esc(link)}">紹介リンクをコピー</button>` : ""}</div>
+      <p class="note2">紹介した人数：${rf.referred_total || 0}人${nx ? `／あと${nx.remaining}人で還元率${pct(nx.rate)}` : ""}${Number(rf.rate_next_month) > Number(rf.rate_now) ? `（来月から${pct(rf.rate_next_month)}）` : ""}</p></section>
+    <section class="sbox"><h4>📤 払い出しの履歴</h4>${pays || `<p class="note2">まだありません</p>`}</section>
+    <section class="sbox"><h4>🧾 明細</h4><div class="er-head"><span>日時</span><span>ギフト</span><span>金額</span><span>還元率</span><span>取り分</span><span>状態</span></div>${items || `<p class="note2">まだギフトは届いていません</p>`}</section></div>`);
+}
+document.addEventListener("click", async (e) => {
+  const t = e.target.closest("[data-earn],[data-ex],[data-eacct],[data-ecopy]"); if (!t) return;
+  if (t.dataset.earn) return openEarn(t.dataset.earn);
+  if ("ex" in t.dataset) return closeOv("earn");
+  if ("eacct" in t.dataset) {
+    t.disabled = true; const r = await earnApi({ action: "connect_onboard", channel_id: EARN?.channel?.id }).catch(() => ({}));
+    if (r.url) location.href = r.url; else { toast(r.error === "stripe_not_ready" ? "口座の登録はただいま準備中です" : "口座登録のページを開けませんでした"); t.disabled = false; }
+    return;
+  }
+  if (t.dataset.ecopy) { try { await navigator.clipboard.writeText(t.dataset.ecopy); toast("紹介リンクをコピーしました"); } catch { toast(t.dataset.ecopy); } }
 });
 function closetBlock(m) {
   if (!DRESS_ON) return `<section class="sbox"><h4>👗 クローゼット<small class="note2">（導入予定）</small></h4><p class="note2">リスナーから着せ替えアイテムを贈ってもらえる機能を準備中です。</p></section>`;
