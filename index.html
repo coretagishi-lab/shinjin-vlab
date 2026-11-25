@@ -2518,7 +2518,7 @@ function localFx(cb) {
 function giftHTML() {
   const cat = GCAT; if (!cat) return `<p class="gp-load">読み込み中…</p>`;
   const demo = !!cat.demo, bal = gLocal;
-  const head = `<div class="gp-head"><div class="gp-bal"><span class="coin">🪙</span><b data-gbal>${coinFmt(bal)}</b><small>${esc(cat.coin)}</small>
+  const head = `<div class="gp-head"><div class="gp-bal"><b data-gbal>${coinFmt(bal)}</b><small>${esc(cat.coin)}</small>
     <button class="gp-plus" data-gcharge aria-label="チャージ">＋</button></div>${demo ? `<button class="gp-demo${gLab ? " on" : ""}" data-glab aria-pressed="${gLab}">🧪 ${gLab ? "お試し中" : "演出を試す"}</button>` : ""}<button class="gp-x" data-gx aria-label="閉じる">×</button></div>`;
   const wait = gWait && gTab === "gift" ? `<div class="gwait"><span class="z">💤</span><b>VTuberの設定待ち</b><span>推しがVぶいの設定をすると、<br>ギフトを送れるようになるよ</span></div>` : "";
   if (gView === "charge") {
@@ -2538,12 +2538,12 @@ function giftHTML() {
   const tabs = DRESS_ON ? `<div class="gp-tabs"><button data-gtab="gift" aria-pressed="${gTab === "gift"}">🎁 ギフト</button><button data-gtab="dress" aria-pressed="${gTab === "dress"}">👗 着せ替え</button></div>` : "";
   if (gTab === "dress") {
     const slotJ = { head: "頭", hand: "手持ち", back: "背中" }, its = DCAT || [];
-    return `${head}${tabs}<div class="gp-body">${DCAT === null ? `<p class="gp-load">読み込み中…</p>` : its.length ? `<div class="gp-grid">${its.map((x) => { const n = Math.min(DGOLD, DCNT[x.slug] || 0), done = n >= DGOLD, th = done && x.gold_thumb_url ? x.gold_thumb_url : x.thumb_url; return `<button class="gi dr${x.enabled ? "" : " off"}${done ? " gold" : ""}" data-dtap="${esc(x.slug)}" ${x.enabled ? "" : "disabled"}>${th ? `<img class="th" src="${esc(th)}" alt="">` : `<span class="ic">👗</span>`}<b>${esc(x.name)}</b><span class="pr">${!x.enabled ? "準備中" : done ? "金になりました" : `🪙${coinFmt(x.price)}`}</span><i>${slotJ[x.slot] || ""}</i><span class="dn" data-dn="${esc(x.slug)}">${n}/${DGOLD}</span><em class="x" hidden></em></button>`; }).join("")}</div>` : `<p class="gp-load">着せ替えアイテムは準備中です。もうすぐ届くよ</p>`}
+    return `${head}${tabs}<div class="gp-body">${DCAT === null ? `<p class="gp-load">読み込み中…</p>` : its.length ? `<div class="gp-grid">${its.map((x) => { const n = Math.min(DGOLD, DCNT[x.slug] || 0), done = n >= DGOLD, th = done && x.gold_thumb_url ? x.gold_thumb_url : x.thumb_url; return `<button class="gi dr${x.enabled ? "" : " off"}${done ? " gold" : ""}" data-dtap="${esc(x.slug)}" ${x.enabled ? "" : "disabled"}>${th ? `<img class="th" src="${esc(th)}" alt="">` : `<span class="ic">👗</span>`}<b>${esc(x.name)}</b><span class="pr">${!x.enabled ? "準備中" : done ? "金になりました" : `${coinFmt(x.price)}`}</span><i>${slotJ[x.slot] || ""}</i><span class="dn" data-dn="${esc(x.slug)}">${n}/${DGOLD}</span><em class="x" hidden></em></button>`; }).join("")}</div>` : `<p class="gp-load">着せ替えアイテムは準備中です。もうすぐ届くよ</p>`}
       ${isAdmin() ? `<button class="sbtn gray" data-closet="${esc(gCh)}" style="margin-top:10px">運営：この配信者のクローゼットを開く</button>` : ""}</div>`;
   }
   const rf = (GWAL?.refunds || []).length ? `<p class="gp-rf">↩︎ 演出が出なかったため返金しました：${GWAL.refunds.map((r) => `${esc((cat.gifts.find((x) => x.id === r.gift_id) || {}).name || "ギフト")} ${coinFmt(r.price)}`).join("、")}</p>` : "";
   const tier = { small: "小", mid: "中", large: "全画面" };
-  return `${head}${tabs}<div class="gp-body">${rf}<div class="gp-grid">${cat.gifts.map((x) => `<button class="gi" data-gtap="${esc(x.id)}"><span class="ic">${esc(x.icon || "🎁")}</span><b>${esc(x.name)}</b><span class="pr">🪙${coinFmt(x.price)}</span><i>${tier[x.tier] || ""}</i><em class="x" hidden></em></button>`).join("")}</div></div>${wait}`;
+  return `${head}${tabs}<div class="gp-body">${rf}<div class="gp-grid">${cat.gifts.map((x) => `<button class="gi" data-gtap="${esc(x.id)}"><span class="ic">${esc(x.icon || "🎁")}</span><b>${esc(x.name)}</b><span class="pr">${coinFmt(x.price)}</span><i>${tier[x.tier] || ""}</i><em class="x" hidden></em></button>`).join("")}</div></div>${wait}`;
 }
 // いま開いているギフト画面（全画面中は右のパネル、ふだんは下から出る画面）
 const gHosts = () => [$("#gp:not([hidden]) .gp-in"), WP?.fs ? WP.el.querySelector(".pl-panel[data-mode='gift'] .pp-body") : null].filter(Boolean);
@@ -2767,7 +2767,7 @@ async function openEarn(ch, refresh) {
 function earnRender() {
   const r = EARN, rf = r.referral || {}, a = r.account, nx = rf.next_tier;
   const dmax = Math.max(1, ...(r.daily || []).map((d) => d.coins));
-  const days = (r.daily || []).map((d) => `<div class="er-day"><span>${Number(d.d.slice(5, 7))}/${Number(d.d.slice(8, 10))}</span><i style="width:${Math.max(2, Math.round((d.coins / dmax) * 100))}%"></i><b>🪙 ${coinFmt(d.coins)}</b><small>${d.n}件</small></div>`).join("");
+  const days = (r.daily || []).map((d) => `<div class="er-day"><span>${Number(d.d.slice(5, 7))}/${Number(d.d.slice(8, 10))}</span><i style="width:${Math.max(2, Math.round((d.coins / dmax) * 100))}%"></i><b>${coinFmt(d.coins)}<small>コイン</small></b><small>${d.n}件</small></div>`).join("");
   const stTxt = { pending: "払い出し待ち", transferred: "振込手続き中", paid: "振込済み", failed: "振込できませんでした", canceled: "取りやめ" };
   const acct = !r.stripe ? `<p class="note2">口座の登録は、ただいま準備中です。</p>`
     : a?.payouts_enabled ? `<p class="okc">● 受け取り口座は登録済みです</p><div><button class="sbtn gray" data-eacct>口座を変更する</button></div>`
@@ -2778,9 +2778,9 @@ function earnRender() {
   const pays = (r.payouts || []).map((p) => `<div class="er-row"><span class="er-d">${String(p.period_month).slice(0, 7).replace("-", "年")}月分</span><span class="er-g">取り分 ${yen(p.gross)} − 振込手数料 ${yen(p.fee)}</span><b class="er-s">${yen(p.net)}</b><span class="er-p ${p.status === "paid" ? "paid" : ""}">${stTxt[p.status] || p.status}</span></div>`).join("");
   overlay("earn", `<div class="jn earn"><button class="jx" data-ex aria-label="閉じる">×</button>
     <div class="jh"><span class="jk">💰 収益・払い出し</span><b>${esc(r.channel?.title || "")}</b></div>
-    <div class="er-sum"><div><small>今月のコイン</small><b>🪙 ${coinFmt(r.month_coins || 0)}</b></div><div><small>未払いの残高</small><b>${yen(r.unpaid)}</b></div><div><small>いまの還元率</small><b>${pct(rf.rate_now)}</b></div></div>
+    <div class="er-sum"><div><small>今月のコイン</small><b>${coinFmt(r.month_coins || 0)}<small>コイン</small></b></div><div><small>未払いの残高</small><b>${yen(r.unpaid)}</b></div><div><small>いまの還元率</small><b>${pct(rf.rate_now)}</b></div></div>
     <p class="note2">毎月末に締めて、未払いの残高が${yen(r.min_yen)}以上なら翌月${r.pay_day}日に口座へ振り込みます（振込手数料${yen(r.fee_yen)}は差し引き）。${yen(r.min_yen)}未満は翌月へ繰り越します。</p>
-    <section class="sbox"><h4>🪙 獲得コイン（日ごと・今月）</h4>${days || `<p class="note2">今月はまだギフトが届いていません</p>`}</section>
+    <section class="sbox"><h4>獲得コイン（日ごと・今月）</h4>${days || `<p class="note2">今月はまだギフトが届いていません</p>`}</section>
     <section class="sbox"><h4>🏦 受け取り口座</h4>${acct}</section>
     <section class="sbox"><h4>🤝 紹介</h4>
       <p class="note2">あなたの紹介でVTuberが本人登録すると、紹介した人数に応じて還元率が上がります（最大${pct(rf.tiers?.max ?? 0.4)}・翌月1日から）。</p>
