@@ -2450,7 +2450,9 @@ document.addEventListener("submit", async (e) => {
 // 押したらすぐ送る。3秒以内に続けて押すとコンボ（×N）。連打は数件ずつまとめてサーバーへ（100回押しても通信は数回）
 let GCAT = null, GWAL = null, gCh = null, gSid = null, gWait = false, gView = "list", gPay = null, gLocal = 0, gWhere = "sheet", gTab = "gift", DCAT = null, DCNT = {}, DGOLD = 100;
 // お試しモード：core.tagishi でログインした時だけ。お金もサーバーも動かさず、この端末の中だけで残高と演出を試す
-const gDemo = () => !!(SESSION && SESSION.user?.email === "core.tagishi@gmail.com");
+const gAdminDemo = () => !!(SESSION && SESSION.user?.email === "core.tagishi@gmail.com");
+// お試しモード（運営だけ）。本物の決済を試すときは切れる（この端末だけ・あとで戻せる）
+const gDemo = () => gAdminDemo() && !store.get("gDemoOff", false);
 const G_DEMO_CAT = { ok: true, demo: true, coin: "ぶいコイン", packs: [500, 1000, 3000], yen_per_coin: 1, expire_months: 6, stripe: true, gifts: [
   { id: "clap", name: "拍手", price: 10, tier: "small", icon: "👏" }, { id: "heart", name: "ハート", price: 30, tier: "small", icon: "💗" },
   { id: "ribbon", name: "リボン", price: 100, tier: "mid", icon: "🎀" }, { id: "bouquet", name: "花束", price: 300, tier: "mid", icon: "💐" },
@@ -2506,8 +2508,9 @@ function giftHTML() {
       <button class="gp-back" data-gpcancel>やめる</button></div>`;
     return `${head}<div class="gp-body"><button class="gp-back" data-gback>← ギフトにもどる</button>
       <div class="gp-packs">${cat.packs.map((y) => `<button data-gpack="${y}"><b>${coinFmt(y / cat.yen_per_coin)}</b><small>${esc(cat.coin)}</small><span>${coinFmt(y)}円</span></button>`).join("")}</div>${pay}
-      ${demo ? `<button class="sbtn" data-gmax style="margin-top:10px;width:100%">🧪 お試し：コインを最大（999,999）にする</button>` : ""}
-      <p class="gp-note">1枚＝${cat.yen_per_coin}円・購入から${cat.expire_months}か月で使えなくなります${cat.stripe || demo ? "" : "。カード払いはただいま準備中です"}</p></div>${wait}`;
+      ${demo ? `<button class="sbtn" data-gmax style="margin-top:10px;width:100%">🧪 お試し：コインを最大（999,999）にする</button>
+      <button class="sbtn gray" data-greal style="margin-top:8px;width:100%">💳 本物の決済でチャージする（お試しを止める）</button>` : gAdminDemo() ? `<button class="sbtn gray" data-gdemo style="margin-top:10px;width:100%">🧪 お試しモードに戻す</button>` : ""}
+      <p class="gp-note">1枚＝${cat.yen_per_coin}円・購入から${cat.expire_months}か月で使えなくなります${cat.stripe || demo ? "" : "。カード払いはただいま準備中です"}</p></div>`;   // チャージは推しの設定に関係なくできる（「設定待ち」で覆わない）
   }
   // 着せ替えはいったん休止（2026-11-24 本人決定・導入予定）。DRESS_ON を true にすればタブが戻る
   if (!DRESS_ON) gTab = "gift";
@@ -2590,11 +2593,16 @@ async function gFlush() {
 }
 
 document.addEventListener("click", async (e) => {
-  const t = e.target.closest("[data-gift],[data-gx],[data-gtap],[data-gcharge],[data-gback],[data-gpack],[data-gpok],[data-gpcancel],[data-fsp],[data-fsx],[data-gtab],[data-dtap],[data-closet],[data-gmax],[data-glab],[data-gquick],[data-gcheckout]");
+  const t = e.target.closest("[data-gift],[data-gx],[data-gtap],[data-gcharge],[data-gback],[data-gpack],[data-gpok],[data-gpcancel],[data-fsp],[data-fsx],[data-gtab],[data-dtap],[data-closet],[data-gmax],[data-glab],[data-gquick],[data-gcheckout],[data-greal],[data-gdemo]");
   if (!t) { if (!e.target.closest("#gp") && $("#gp.on") && !e.target.closest(".toast")) closeGift(); return; }
   if (t.dataset.gift) return openGift(t.dataset.gift);
   if ("gx" in t.dataset) { closeGift(); fsPanel(null); return; }
   if (t.dataset.gtap) return gTap(t.dataset.gtap, t);
+  if ("greal" in t.dataset || "gdemo" in t.dataset) {               // 運営：お試し ⇄ 本物の決済 を切りかえ
+    const off = "greal" in t.dataset; store.set("gDemoOff", off); GCAT = null; gLab = false;
+    await gLoad(gCh); gView = "charge"; gPay = null; giftRender();
+    return toast(off ? "お試しを止めました。ここからは本物の決済です（いまはテスト用の鍵）" : "お試しモードに戻しました");
+  }
   if ("gmax" in t.dataset && GCAT?.demo) { GD.balance = 999999; gdSave(); gLocal = GD.balance; gView = "list"; toast("コインを最大にしました（お試し）"); return giftRender(); }
   if ("glab" in t.dataset) { gLab = !gLab; if (!gLab) document.querySelectorAll("iframe.gdemo").forEach((f) => f.remove()); toast(gLab ? "押したギフトの演出を、配信画面と同じように動画の上に出します" : "演出のお試しを終わりました"); return giftRender(); }
   if (t.dataset.gtab) { gTab = t.dataset.gtab; gView = "list"; return giftRender(); }
