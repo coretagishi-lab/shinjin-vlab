@@ -58,6 +58,8 @@ html{-webkit-text-size-adjust:none;text-size-adjust:none}
 .grb em{font-style:normal;color:#ffd25e}
 .grb.big b{font-size:132px;color:#ffe27a;-webkit-text-stroke:8px #7a1f22;animation:grbig .9s ease-in-out infinite alternate}
 .grb.sub{top:6%}
+.grb.super b{font-size:150px;color:#fff3a0;-webkit-text-stroke:9px #b3232a}
+.gcv3{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .grb.mini{top:auto;bottom:10%}.grb.mini b{font-size:56px}
 @keyframes grbig{from{transform:scale(1)}to{transform:scale(1.08)}}
 /* ---- 覗き演出：画面の右下から小さく（画面幅の15%くらい） ---- */
@@ -225,6 +227,7 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
 <body>
 <div id="groot"><div id="gdress"></div><div id="gfx"></div><div id="gchips"></div><div id="gtop"></div></div><div id="root"><div id="stack" class="bl"></div><div id="fx"></div></div>
 <div id="err"></div>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script>if (!/[?&]demo=1/.test(location.search)) document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"><\/script>');</script>
 <script>
 (() => {
@@ -776,15 +779,16 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
   const RL_LABELS = ["大当たり", "あたり", "ナイス！", "ラッキー", "おしい！", "はずれ", "ドンマイ", "奇跡"];   // 仮の文言（あとで調整）
   const RL_BIG = new Set([0, 7]);
   function rrnd(n) { const lim = 256 - (256 % n), b = new Uint8Array(1); do crypto.getRandomValues(b); while (b[0] >= lim); return b[0] % n; }
-  function yakuOf(d) { const s = [...d].sort((a, b) => a - b), k = s.join(""); if (k === "111") return "pin"; if (s[0] === s[2]) return "z" + s[0]; if (k === "456") return "shigoro"; if (k === "123") return "hifumi"; if (s[0] === s[1]) return "m" + s[2]; if (s[1] === s[2]) return "m" + s[0]; return null; }
+  // チンチロ（かんたんルール・一投勝負）：3つとも同じ目＝当たり、1のゾロ目（ピンゾロ）＝大当たり、それ以外＝はずれ
+  function yakuOf(d) { return d[0] === d[1] && d[1] === d[2] ? (d[0] === 1 ? "pin" : "z" + d[0]) : "hazure"; }
   // お試し（どこにもつながない画面）用：結果が来なかったときだけ、ここで決める
   function localResult(gid) {
     if (gid === "roulette") return "r" + rrnd(8);
-    const rolls = []; for (let t = 0; t < 3; t++) { if (rrnd(100) < 2) { rolls.push("000"); return rolls.join("_") + "~shon"; } const d = [rrnd(6) + 1, rrnd(6) + 1, rrnd(6) + 1]; rolls.push(d.join("")); const y = yakuOf(d); if (y) return rolls.join("_") + "~" + y; }
-    return rolls.join("_") + "~none";
+    const d = [rrnd(6) + 1, rrnd(6) + 1, rrnd(6) + 1]; return d.join("") + "~" + yakuOf(d);
   }
-  const yakuName = (y) => y === "pin" ? "ピンゾロ！" : /^z\d$/.test(y) ? `${y[1]}のゾロ目！` : y === "shigoro" ? "シゴロ！" : /^m\d$/.test(y) ? `${y[1]}の目` : y === "hifumi" ? "ヒフミ…" : y === "shon" ? "ションベン…" : "目なし…";
-  const yakuBig = (y) => y === "pin" || /^z\d$/.test(y) || y === "shigoro";
+
+  const yakuName = (y) => y === "pin" ? "ピンゾロ！！大当たり" : /^z\d$/.test(y) ? "ゾロ目！当たり" : "はずれ";
+  const yakuBig = (y) => (y === "pin" ? 2 : /^z\d$/.test(y) ? 1 : 0);   // 2＝大当たり（いちばん派手）、1＝当たり
   function randIn(c, gid, g, code) {
     const id = Number(c.id), nick = c.nickname || "リスナー";
     if (!code) code = localResult(gid);
@@ -795,7 +799,8 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
   async function randFinish(s, label, big) {
     const fx = [];
     if (big) { fx.push(gEl("", "gflash gold"), confetti(LITE ? 3000 : 4800, true), sparkle(4200, ["#ffd25e", "#fff6c8", "#ff7ab8", "#ffffff"], 1.3)); }
-    const bn = gEl(`<b>${esc(label)}</b>`, "grb" + (big ? " big" : "")); fx.push(bn);   // だれのかは上の札に出ている
+    if (big === 2) { fx.push(gEl("", "gflash gold"), starfall(LITE ? 3000 : 4500), confetti(LITE ? 3000 : 5200, true)); }   // 大当たりはさらに派手に
+    const bn = gEl(`<b>${esc(label)}</b>`, "grb" + (big === 2 ? " big super" : big ? " big" : "")); fx.push(bn);   // だれのかは上の札に出ている
     try { deliver({ id: "r" + Date.now() + Math.random(), nickname: s.nick }, { cls: "gf", text: `${s.rand.gid === "roulette" ? "🎡" : "🎲"} ${s.g.name}：${label}` }); } catch {}
     await wait(big ? 3800 : 2600); return fx;
   }
@@ -811,8 +816,8 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
     for (const [px, py] of P) { x.fillStyle = face === 1 ? "#e0283c" : "#1d1a26"; x.beginPath(); x.arc(px * sp, py * sp, face === 1 ? size * 0.14 : size * 0.085, 0, 7); x.fill(); }
     x.restore();
   }
-  // チンチロ：丼の中でサイコロ3個が転がって、決まった目で止まる（役なしなら最大三投まで振り直す）
-  async function chinchiroPlay(s) {
+  // チンチロ（2D版）：WebGLが使えないときだけ。丼の中でサイコロ3個が転がって、決まった目で止まる
+  async function chinchiro2D(s) {
     const [rs, yaku] = String(s.rand.code).split("~"); const rolls = (rs || "").split("_").filter(Boolean);
     const dim = gEl("", "gdim");
     const { cv, x } = mkCv(); const U = Math.min(GW, GH) / 1080, cx = GW / 2, cy = GH * 0.56, RX = 340 * U, RY = 130 * U, DS = 74 * U;
@@ -850,6 +855,109 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
     await wait(350);
     const fx = await randFinish(s, yakuName(yaku), yakuBig(yaku));
     await gEnd([dim, cv, tx, ...fx], 0);
+  }
+  // ===== チンチロの3D（Three.js）=====
+  //  サーバーで決まった出目を受け取り、丼の中で転がって「ちょうどその目が上」で止まる。WebGLが使えないときは2D版
+  const CC_FAST = q.get("ccfast") === "1";                          // 確認用：速回し（ふだんは使わない）
+  let THREE_P = null;
+  const loadThree = () => (THREE_P ||= Promise.all([import("three"), import("three/addons/geometries/RoundedBoxGeometry.js")]).then(([T, R]) => ({ T, RBG: R.RoundedBoxGeometry })));
+  let GL_OK = null;
+  function webglOK() { if (GL_OK != null) return GL_OK; try { const c = document.createElement("canvas"); GL_OK = !!(c.getContext("webgl2") || c.getContext("webgl")); } catch { GL_OK = false; } return GL_OK; }
+  // サイコロの面の向き（向かい合う面の合計は7）。BoxGeometryの面の順は +x,-x,+y,-y,+z,-z
+  const DIE_N = { 1: [0, 1, 0], 6: [0, -1, 0], 3: [1, 0, 0], 4: [-1, 0, 0], 2: [0, 0, 1], 5: [0, 0, -1] };
+  const FACE_ORDER = [3, 4, 1, 6, 2, 5];
+  const PIPS = { 1: [[0, 0]], 2: [[-1, -1], [1, 1]], 3: [[-1, -1], [0, 0], [1, 1]], 4: [[-1, -1], [1, -1], [-1, 1], [1, 1]], 5: [[-1, -1], [1, -1], [0, 0], [-1, 1], [1, 1]], 6: [[-1, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [1, 1]] };
+  let DIE_TEX = null;
+  function dieTextures(T) {
+    if (DIE_TEX) return DIE_TEX;
+    DIE_TEX = FACE_ORDER.map((f) => {
+      const c = document.createElement("canvas"); c.width = c.height = 256; const x = c.getContext("2d");
+      x.fillStyle = "#fbf9f4"; x.fillRect(0, 0, 256, 256);
+      for (const [px, py] of PIPS[f]) {
+        const cx = 128 + px * 66, cy = 128 + py * 66, r = f === 1 ? 52 : 23;          // 1の目は赤く大きく（日本のサイコロ）
+        const g = x.createRadialGradient(cx - r * 0.3, cy - r * 0.35, r * 0.1, cx, cy, r);
+        if (f === 1) { g.addColorStop(0, "#ff5a5f"); g.addColorStop(0.7, "#d1121c"); g.addColorStop(1, "#8e0710"); }
+        else { g.addColorStop(0, "#4a4756"); g.addColorStop(0.75, "#16141c"); g.addColorStop(1, "#000"); }
+        x.fillStyle = g; x.beginPath(); x.arc(cx, cy, r, 0, 7); x.fill();
+      }
+      const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; t.anisotropy = 4; return t;
+    });
+    return DIE_TEX;
+  }
+  async function chinchiro3D(s, faces, yaku) {
+    const { T, RBG } = await loadThree();
+    const cv = document.createElement("canvas"); cv.className = "gcv3"; $("#gfx").appendChild(cv);
+    const W = innerWidth, H = innerHeight;
+    const R = new T.WebGLRenderer({ canvas: cv, alpha: true, antialias: true, powerPreference: "high-performance" });
+    R.setPixelRatio(Math.min(devicePixelRatio || 1, LITE ? 1 : 1.5)); R.setSize(W, H, false);
+    R.shadowMap.enabled = true; R.shadowMap.type = T.PCFSoftShadowMap; R.outputColorSpace = T.SRGBColorSpace; R.toneMapping = T.ACESFilmicToneMapping; R.toneMappingExposure = 1.05;
+    const sc = new T.Scene(), keep = [];
+    const cam = new T.PerspectiveCamera(30, W / H, 0.1, 100);
+    const far = W / H < 1 ? 34 : 25; cam.position.set(0, far * 0.78, far * 0.66); cam.lookAt(0, 3.4, 0);   // 縦長の画面は少し引く
+    sc.add(new T.HemisphereLight(0xfff4e6, 0x40344f, 1.1));
+    const key = new T.DirectionalLight(0xffffff, 2.4); key.position.set(5, 14, 7); key.castShadow = true;
+    key.shadow.mapSize.set(1024, 1024); Object.assign(key.shadow.camera, { left: -7, right: 7, top: 7, bottom: -7, near: 1, far: 40 }); key.shadow.bias = -0.0004; key.shadow.radius = 5; sc.add(key);
+    const rim = new T.PointLight(0xffe2c0, 40, 40); rim.position.set(-7, 7, -5); sc.add(rim);
+    const V2 = (a) => a.map(([x, y]) => new T.Vector2(x, y));
+    // 丼（陶器）：内側は白、外側は藍の釉薬、ふちに赤い線
+    const add = (geo, mat, o = {}) => { const m = new T.Mesh(geo, mat); m.castShadow = o.cast !== false; m.receiveShadow = true; if (o.rx) m.rotation.x = o.rx; if (o.y != null) m.position.y = o.y; sc.add(m); keep.push(geo, mat); return m; };
+    add(new T.LatheGeometry(V2([[0, 0], [2.4, 0], [3.3, 0.7], [3.9, 1.7], [4.15, 2.6], [4.38, 2.66], [4.2, 1.5], [3.45, 0.2], [2.2, -0.5], [1.75, -0.55], [1.75, -0.85], [0, -0.85]]), 72),
+      new T.MeshPhysicalMaterial({ color: 0xf4ecdc, roughness: 0.3, clearcoat: 0.9, clearcoatRoughness: 0.12, side: T.DoubleSide }));
+    add(new T.LatheGeometry(V2([[4.4, 2.45], [4.22, 1.5], [3.47, 0.2], [2.22, -0.49]]), 72), new T.MeshPhysicalMaterial({ color: 0x1f3266, roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.1, side: T.DoubleSide }));
+    add(new T.TorusGeometry(4.27, 0.075, 10, 96), new T.MeshPhysicalMaterial({ color: 0xb3232a, roughness: 0.35, clearcoat: 1 }), { rx: Math.PI / 2, y: 2.645 });
+    add(new T.PlaneGeometry(40, 40), new T.ShadowMaterial({ opacity: 0.3 }), { rx: -Math.PI / 2, y: -0.86, cast: false });
+    // サイコロ（光沢のある樹脂）
+    const geo = new RBG(1.15, 1.15, 1.15, 4, 0.17), mats = dieTextures(T).map((t) => new T.MeshPhysicalMaterial({ map: t, roughness: 0.2, clearcoat: 1, clearcoatRoughness: 0.06 }));
+    keep.push(geo, ...mats);
+    const UP = new T.Vector3(0, 1, 0), base = Math.random() * Math.PI * 2, from = Math.PI / 2 + (Math.random() - 0.5) * 1.4;   // 手前側から投げ込む
+    const dice = faces.map((f, i) => {
+      const m = new T.Mesh(geo, mats); m.castShadow = true; m.receiveShadow = true; sc.add(m);
+      // 止まる場所：中心から少し離れた3か所（120度ずつ）。重ならず、丼の底からはみ出さない
+      const a = base + (i * Math.PI * 2) / 3 + (Math.random() - 0.5) * 0.3, rr = 1.05 + Math.random() * 0.15;
+      const end = new T.Vector3(Math.cos(a) * rr, 0.575, Math.sin(a) * rr);
+      // 決まった目を真上に向け、真上を軸にランダムに回す
+      const qEnd = new T.Quaternion().setFromAxisAngle(UP, Math.random() * Math.PI * 2).multiply(new T.Quaternion().setFromUnitVectors(new T.Vector3(...DIE_N[f]), UP));
+      const start = new T.Vector3(Math.cos(from) * 6 + (Math.random() - 0.5) * 1.6, 7 + Math.random() * 2.2, Math.sin(from) * 6 + (Math.random() - 0.5) * 1.6);
+      return { m, end, qEnd, start, axis: new T.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize(),
+        spin: (9 + Math.random() * 9) * Math.PI, dur: CC_FAST ? 0.25 : 2.1 + Math.random() * 0.7, delay: CC_FAST ? 0 : i * 0.09 + Math.random() * 0.06,
+        hop: 1.6 + Math.random() * 1.4, nb: 2 + Math.random() * 1.5, q: new T.Quaternion() };
+    });
+    const tx = gEl(`<small><em>${esc(s.nick)}</em> さんのチンチロ</small>`, "grb sub");
+    const T0 = performance.now(), total = Math.max(...dice.map((d) => d.delay + d.dur)) + (CC_FAST ? 0.05 : 0.35);
+    await new Promise((ok) => {
+      const frame = (now) => {
+        if (!cv.isConnected) return ok();
+        const t = (now - T0) / 1000;
+        for (const d of dice) {
+          const k = Math.min(1, Math.max(0, (t - d.delay) / d.dur)), e = 1 - Math.pow(1 - k, 3);
+          d.m.position.lerpVectors(d.start, d.end, e);
+          // 落ちてきて、何度か跳ねて止まる
+          d.m.position.y = k < 0.22 ? d.start.y + (d.end.y - d.start.y) * Math.pow(k / 0.22, 2) : d.end.y + d.hop * Math.abs(Math.sin(((k - 0.22) / 0.78) * Math.PI * d.nb)) * Math.pow(1 - (k - 0.22) / 0.78, 2.4);
+          // 回転は勢いよく → だんだん弱まって、決まった向きにぴたりと止まる
+          d.q.setFromAxisAngle(d.axis, d.spin * Math.pow(1 - e, 1.6)); d.m.quaternion.copy(d.qEnd).multiply(d.q);
+        }
+        R.render(sc, cam);
+        if (t < total) requestAnimationFrame(frame); else ok();
+      };
+      requestAnimationFrame(frame);
+    });
+    for (const d of dice) { d.m.position.copy(d.end); d.m.quaternion.copy(d.qEnd); }
+    R.render(sc, cam);
+    // 確認用：上を向いている面（サーバーの出目と同じか）と、止まった位置
+    window.__ccLast = dice.map((d, i) => {
+      let got = 0, best = -2; for (const f in DIE_N) { const v = new T.Vector3(...DIE_N[f]).applyQuaternion(d.m.quaternion); if (v.y > best) { best = v.y; got = Number(f); } }
+      return { want: faces[i], got, x: +d.end.x.toFixed(3), z: +d.end.z.toFixed(3) };
+    });
+    const fx = await randFinish(s, yakuName(yaku), yakuBig(yaku));
+    await gEnd([tx, ...fx], 0);
+    try { R.dispose(); R.forceContextLoss(); } catch {}
+    keep.forEach((o) => o.dispose && o.dispose()); cv.remove();
+  }
+  async function chinchiroPlay(s) {
+    const [rs, yaku] = String(s.rand.code).split("~"), first = (rs || "").split("_")[0] || "";
+    const faces = [...first].map(Number).filter((n) => n >= 1 && n <= 6);
+    if (faces.length === 3 && webglOK()) { try { return await chinchiro3D(s, faces, yaku || yakuOf(faces)); } catch (e) { console.warn("3Dが使えないので2Dで出します", e); } }
+    return chinchiro2D(s);
   }
   // ルーレット：盤が回って、決まったマスで止まる
   async function roulettePlay(s) {
