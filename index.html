@@ -2474,7 +2474,7 @@ let GCAT = null, GWAL = null, gCh = null, gSid = null, gWait = false, gView = "l
 const gAdminDemo = () => !!(SESSION && SESSION.user?.email === "core.tagishi@gmail.com");
 // お試しモード（運営だけ）。本物の決済を試すときは切れる（この端末だけ・あとで戻せる）
 const gDemo = () => gAdminDemo() && !store.get("gDemoOff", false);
-const G_DEMO_CAT = { ok: true, demo: true, coin: "ぶいコイン", packs: [500, 1000, 3000, 10000, 30000, 50000], pack_coins: { 500: 150, 1000: 300, 3000: 920, 10000: 3180, 30000: 9720, 50000: 16500 }, yen_per_coin: 10 / 3, expire_months: 6, stripe: true, gifts: [
+const G_DEMO_CAT = { ok: true, demo: true, coin: "Vコイン", packs: [500, 1000, 3000, 10000, 30000, 50000], pack_coins: { 500: 150, 1000: 300, 3000: 920, 10000: 3180, 30000: 9720, 50000: 16500 }, yen_per_coin: 10 / 3, expire_months: 6, stripe: true, gifts: [
   { id: "clap", name: "拍手", price: 100, tier: "small", icon: "👏" }, { id: "heart", name: "ハート", price: 100, tier: "small", icon: "💗" },
   { id: "ribbon", name: "リボン", price: 100, tier: "mid", icon: "🎀" }, { id: "bouquet", name: "花束", price: 100, tier: "mid", icon: "💐" },
   { id: "chinchiro", name: "チンチロ", price: 100, tier: "mid", effect: "chinchiro", icon: "🎲" }, { id: "roulette", name: "ルーレット", price: 100, tier: "mid", effect: "roulette", icon: "🎡" },
@@ -2522,8 +2522,8 @@ function localFx(cb) {
 function giftHTML() {
   const cat = GCAT; if (!cat) return `<p class="gp-load">読み込み中…</p>`;
   const demo = !!cat.demo, bal = gLocal;
-  const head = `<div class="gp-head"><div class="gp-bal"><b data-gbal>${coinFmt(bal)}</b><small>${esc(cat.coin)}</small>
-    <button class="gp-plus" data-gcharge aria-label="チャージ">＋</button></div>${demo ? `<button class="gp-demo${gLab ? " on" : ""}" data-glab aria-pressed="${gLab}">🧪 ${gLab ? "お試し中" : "演出を試す"}</button>` : ""}<button class="gp-x" data-gx aria-label="閉じる">×</button></div>`;
+  const head = `<div class="gp-head"><div class="gp-bal"><b data-gbal>${demo ? "使い放題" : coinFmt(bal)}</b><small>${demo ? "お試し" : esc(cat.coin)}</small>
+    <button class="gp-plus" data-gcharge aria-label="チャージ">＋</button></div>${gAdminDemo() ? `<button class="gp-demo${demo ? " on" : ""}" data-gtry aria-pressed="${demo}">🧪 ${demo ? "お試し中" : "お試し"}</button>` : ""}<button class="gp-x" data-gx aria-label="閉じる">×</button></div>`;
   const wait = gWait && gTab === "gift" ? `<div class="gwait"><span class="z">💤</span><b>VTuberの設定待ち</b><span>推しがVぶいの設定をすると、<br>ギフトを送れるようになるよ</span></div>` : "";
   if (gView === "charge") {
     const pay = !gPay ? "" : demo ? `<div class="gp-pay"><b>${coinFmt(gPay)}円で ${coinFmt(gCoins(cat, gPay))} ${esc(cat.coin)}</b><span>お試し：本物のお金は動きません</span>
@@ -2552,7 +2552,7 @@ function giftHTML() {
 // いま開いているギフト画面（全画面中は右のパネル、ふだんは下から出る画面）
 const gHosts = () => [$("#gp:not([hidden]) .gp-in"), WP?.fs ? WP.el.querySelector(".pl-panel[data-mode='gift'] .pp-body") : null].filter(Boolean);
 const giftRender = () => gHosts().forEach((h) => (h.innerHTML = giftHTML()));
-const gPaintBal = () => document.querySelectorAll("[data-gbal]").forEach((e) => (e.textContent = coinFmt(gLocal)));
+const gPaintBal = () => document.querySelectorAll("[data-gbal]").forEach((e) => (e.textContent = GCAT?.demo ? "使い放題" : coinFmt(gLocal)));
 
 async function gLoad(cid) {
   gCh = cid; gView = "list"; gPay = null;
@@ -2587,11 +2587,11 @@ function gTap(gid, btn) {
   if (gWait) return;
   const g = GCAT?.gifts.find((x) => x.id === gid); if (!g) return;
   // 残高が足りない時は送らない（勢いで押しても、持っている分しか送れない）
-  if (gLocal < g.price) { toast(`${GCAT.coin}が足りません。＋からチャージしてね`); document.querySelectorAll(".gp-plus").forEach((p) => { p.classList.remove("pulse"); void p.offsetWidth; p.classList.add("pulse"); }); return; }
+  if (!GCAT.demo && gLocal < g.price) { toast(`${GCAT.coin}が足りません。＋からチャージしてね`); document.querySelectorAll(".gp-plus").forEach((p) => { p.classList.remove("pulse"); void p.offsetWidth; p.classList.add("pulse"); }); return; }
   const now = Date.now(); TAP.n = TAP.id === gid && now - TAP.at <= 3000 ? TAP.n + 1 : 1; TAP.id = gid; TAP.at = now;
-  gLocal -= g.price; gPaintBal(); gTapFx(btn, g, TAP.n);
+  if (!GCAT.demo) gLocal -= g.price; gPaintBal(); gTapFx(btn, g, TAP.n);   // お試し中はコインを減らさない（押し放題）
   tapFly(btn, esc(g.icon || "🎁"));
-  if (gLab) { const n = TAP.n; localFx((w) => { w.VBUI_CAT(GCAT.gifts); w.VBUI_GIFT(g.id, myNick(), n); }); }
+  if (gLab || GCAT.demo) { const n = TAP.n; localFx((w) => { w.VBUI_CAT(GCAT.gifts); w.VBUI_GIFT(g.id, myNick(), n); }); }
   if (GCAT.demo) { GD.balance = gLocal; gdRank(gSid, gCh, g.price); gdSave(); return; }
   GP.pend.set(g.id, (GP.pend.get(g.id) || 0) + 1);
   clearTimeout(GP.t); GP.t = setTimeout(gFlush, 250);
@@ -2618,7 +2618,7 @@ async function gFlush() {
 }
 
 document.addEventListener("click", async (e) => {
-  const t = e.target.closest("[data-gift],[data-gx],[data-gtap],[data-gcharge],[data-gback],[data-gpack],[data-gpok],[data-gpcancel],[data-fsp],[data-fsx],[data-gtab],[data-dtap],[data-closet],[data-gmax],[data-glab],[data-gquick],[data-gcheckout],[data-greal],[data-gdemo]");
+  const t = e.target.closest("[data-gift],[data-gx],[data-gtap],[data-gcharge],[data-gback],[data-gpack],[data-gpok],[data-gpcancel],[data-fsp],[data-fsx],[data-gtab],[data-dtap],[data-closet],[data-gmax],[data-glab],[data-gquick],[data-gcheckout],[data-greal],[data-gdemo],[data-gtry]");
   if (!t) { if (!e.target.closest("#gp") && $("#gp.on") && !e.target.closest(".toast")) closeGift(); return; }
   if (t.dataset.gift) return openGift(t.dataset.gift);
   if ("gx" in t.dataset) { closeGift(); fsPanel(null); return; }
@@ -2629,6 +2629,13 @@ document.addEventListener("click", async (e) => {
     return toast(off ? "お試しを止めました。ここからは本物の決済です（いまはテスト用の鍵）" : "お試しモードに戻しました");
   }
   if ("gmax" in t.dataset && GCAT?.demo) { GD.balance = 999999; gdSave(); gLocal = GD.balance; gView = "list"; toast("コインを最大にしました（お試し）"); return giftRender(); }
+  // 運営（core.tagishi）だけ：ギフト画面の「🧪 お試し」。押すとお試し中＝ギフト押し放題・演出は動画の上に出る（コインもお金も動かない・配信者には届かない）
+  if ("gtry" in t.dataset && gAdminDemo()) {
+    const on = !gDemo(); store.set("gDemoOff", !on); GCAT = null; gLab = on;
+    if (!on) document.querySelectorAll("iframe.gdemo").forEach((f) => f.remove());
+    await gLoad(gCh); gView = "list"; giftRender();
+    return toast(on ? "お試し中：ギフト押し放題です（コインは減らず、配信者には届きません）" : "お試しを終わりました");
+  }
   if ("glab" in t.dataset) { gLab = !gLab; if (!gLab) document.querySelectorAll("iframe.gdemo").forEach((f) => f.remove()); toast(gLab ? "押したギフトの演出を、配信画面と同じように動画の上に出します" : "演出のお試しを終わりました"); return giftRender(); }
   if (t.dataset.gtab) { gTab = t.dataset.gtab; gView = "list"; return giftRender(); }
   if (t.dataset.closet) return openCloset(t.dataset.closet);
