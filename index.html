@@ -1451,7 +1451,7 @@ function renderDir() {
   if (sortMode === "gift") { if (!GIFTM || Date.now() - giftmAt >= 60000) { loadGiftMonth().then(() => { if (sortMode === "gift") renderDir(); }); if (!GIFTM) { $("#dirCount").textContent = ""; $("#dirGrid").innerHTML = `<div class="empty" style="grid-column:1/-1">読み込み中…</div>`; return; } } list = list.filter((c) => GIFTM.get(c.id) > 0); }
   list = [...list].sort(by);
   $("#dirCount").textContent = sortMode === "live" ? `いま配信中 ${list.length}人 / 全${CH.length}人` : `${list.length}人 / 全${CH.length}人`;
-  $("#dirGrid").innerHTML = list.length ? list.map((c, i) => (sortMode === "gift" ? miniCard(c, false, `${i + 1}位・🪙 ${coinFmt(GIFTM.get(c.id))}`) : miniCard(c))).join("") : `<div class="empty" style="grid-column:1/-1">${sortMode === "live" ? `<strong>いま配信中の子はいません</strong>配信が始まると、ここに出ます。` : sortMode === "gift" ? `<strong>今月はまだギフトが届いていません</strong>ギフトが届くと、多い順にここに並びます。` : `<strong>見つかりませんでした</strong>名前の一部だけでも探せます。`}</div>`;
+  $("#dirGrid").innerHTML = list.length ? list.map((c, i) => (sortMode === "gift" ? miniCard(c, false, `${i + 1}位・${coinFmt(GIFTM.get(c.id))}コイン`) : miniCard(c))).join("") : `<div class="empty" style="grid-column:1/-1">${sortMode === "live" ? `<strong>いま配信中の子はいません</strong>配信が始まると、ここに出ます。` : sortMode === "gift" ? `<strong>今月はまだギフトが届いていません</strong>ギフトが届くと、多い順にここに並びます。` : `<strong>見つかりませんでした</strong>名前の一部だけでも探せます。`}</div>`;
 }
 
 /* ---------- DIRECTORY: 同期ランキング / コラボ相手 ---------- */
@@ -1496,7 +1496,7 @@ function renderRank() {
     cnt: ["配信回数", (c) => c.stream_count, (v) => `${v}<small>回</small>`],
     subs: ["登録者", (c) => (c.subscriber_hidden ? null : c.subscriber_count), (v) => `${v.toLocaleString("ja-JP")}<small>人</small>`],
     gain: ["登録者の伸び(30日)", subGain, (v) => `${v > 0 ? "+" : ""}${v.toLocaleString("ja-JP")}<small>人</small>`],
-    gift: ["今月のギフト", (c) => (GIFTM?.get(c.id) > 0 ? GIFTM.get(c.id) : null), (v) => `🪙${coinFmt(v)}`] };
+    gift: ["今月のギフト", (c) => (GIFTM?.get(c.id) > 0 ? GIFTM.get(c.id) : null), (v) => `${coinFmt(v)}<small>コイン</small>`] };
   if (rkMetric === "gift" && (!GIFTM || Date.now() - giftmAt >= 60000)) loadGiftMonth().then(() => { if (dirSeg === "rank" && rkMetric === "gift") renderRank(); });
   const [, get, fmt] = M[rkMetric];
   const list = groups.get(rkCohort).map((c) => ({ c, v: get(c) })).filter((x) => x.v != null).sort((a, b) => b.v - a.v);
