@@ -1420,15 +1420,22 @@ function closeWatch(fromPop) {
 document.addEventListener("click", (e) => { const b = e.target.closest("[data-wopen]"); if (!b) return; e.stopPropagation(); openProfile(b.dataset.wopen); }, true);
 
 /* ---------- MINI CARD ---------- */
-function miniCard(c, noLive) {
+function miniCard(c, noLive, sub) {
   const lv = !noLive && liveOf(c.id) ? `<span class="lv">LIVE</span>` : "";
   return `<button class="mini" data-open="${esc(c.id)}"><div class="in"><div class="art">${img(c.thumbnail_url, c)}<span class="n">${noStr(c)}</span>${lv}${tops.has(c.id) ? `<span class="tp">★最推し</span>` : ""}</div>
-    <div class="tx"><div class="nm">${esc(c.title)}${c.registered ? `<span class="regm" title="本人登録">✓</span>` : ""}</div><div class="s"><span>登録 ${fmtSubs(c)}</span><span>${c.stream_count}回・${hours(c.total_stream_sec)}h</span></div></div></div></button>`;
+    <div class="tx"><div class="nm">${esc(c.title)}${c.registered ? `<span class="regm" title="本人登録">✓</span>` : ""}</div><div class="s"><span>登録 ${fmtSubs(c)}</span><span>${sub || `${c.stream_count}回・${hours(c.total_stream_sec)}h`}</span></div></div></div></button>`;
 }
 
 /* ---------- DIRECTORY ---------- */
 let sortMode = "new";
-const SORTS = [["new", "新しい順"], ["time", "配信時間"], ["count", "配信回数"], ["small", "登録者が少ない"], ["live", "配信中"]];
+const SORTS = [["new", "新しい順"], ["time", "配信時間"], ["count", "配信回数"], ["gift", "今月のギフト"], ["live", "配信中"]];
+// 今月のギフト合計（配信者ごと・コイン）。合計だけで、誰が贈ったかは出さない。1分ごとに取り直す
+let GIFTM = null, giftmAt = 0;
+async function loadGiftMonth() {
+  if (GIFTM && Date.now() - giftmAt < 60000) return;
+  try { const r = await fetch(`${SB_URL}/rest/v1/rpc/gift_month_rank`, { method: "POST", headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, "Content-Type": "application/json" }, body: "{}" }); const d = await r.json(); GIFTM = new Map((Array.isArray(d) ? d : []).map((x) => [x.channel_id, Number(x.coins)])); giftmAt = Date.now(); }
+  catch { GIFTM = GIFTM || new Map(); }
+}
 function renderDir() {
   $("#sortChips").innerHTML = SORTS.map(([k, l]) => `<button class="chip" data-sort="${k}" aria-pressed="${sortMode === k}">${l}</button>`).join("");
   const q = $("#q").value.trim().toLowerCase();
@@ -1437,13 +1444,14 @@ function renderDir() {
     new: (a, b) => Date.parse(debutBase(b) || 0) - Date.parse(debutBase(a) || 0),
     time: (a, b) => b.total_stream_sec - a.total_stream_sec,
     count: (a, b) => b.stream_count - a.stream_count,
-    small: (a, b) => (a.subscriber_count ?? 1e9) - (b.subscriber_count ?? 1e9),
+    gift: (a, b) => (GIFTM?.get(b.id) || 0) - (GIFTM?.get(a.id) || 0),
     live: (a, b) => (liveOf(b.id) ? 1 : 0) - (liveOf(a.id) ? 1 : 0),
   }[sortMode];
   if (sortMode === "live") list = list.filter((c) => liveOf(c.id)); // 「配信中」は配信中の子だけ
+  if (sortMode === "gift") { if (!GIFTM || Date.now() - giftmAt >= 60000) { loadGiftMonth().then(() => { if (sortMode === "gift") renderDir(); }); if (!GIFTM) { $("#dirCount").textContent = ""; $("#dirGrid").innerHTML = `<div class="empty" style="grid-column:1/-1">読み込み中…</div>`; return; } } list = list.filter((c) => GIFTM.get(c.id) > 0); }
   list = [...list].sort(by);
   $("#dirCount").textContent = sortMode === "live" ? `いま配信中 ${list.length}人 / 全${CH.length}人` : `${list.length}人 / 全${CH.length}人`;
-  $("#dirGrid").innerHTML = list.length ? list.map((c) => miniCard(c)).join("") : `<div class="empty" style="grid-column:1/-1">${sortMode === "live" ? `<strong>いま配信中の子はいません</strong>配信が始まると、ここに出ます。` : `<strong>見つかりませんでした</strong>名前の一部だけでも探せます。`}</div>`;
+  $("#dirGrid").innerHTML = list.length ? list.map((c, i) => (sortMode === "gift" ? miniCard(c, false, `${i + 1}位・🪙 ${coinFmt(GIFTM.get(c.id))}`) : miniCard(c))).join("") : `<div class="empty" style="grid-column:1/-1">${sortMode === "live" ? `<strong>いま配信中の子はいません</strong>配信が始まると、ここに出ます。` : sortMode === "gift" ? `<strong>今月はまだギフトが届いていません</strong>ギフトが届くと、多い順にここに並びます。` : `<strong>見つかりませんでした</strong>名前の一部だけでも探せます。`}</div>`;
 }
 
 /* ---------- DIRECTORY: 同期ランキング / コラボ相手 ---------- */
