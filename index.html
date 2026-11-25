@@ -608,6 +608,7 @@ button.me{width:100%;text-align:left;font:inherit;color:inherit}
 .earn .er-sum b{white-space:nowrap}
 .earn .er-sum div{background:var(--chip);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:2px}
 .earn .er-sum small{color:var(--muted);font-size:12px}.earn .er-sum b{font-size:clamp(15px,4.4vw,22px)}
+.earn .er-in{display:flex;flex-direction:column;gap:6px;border-top:1px dashed var(--line);padding-top:10px;margin-top:2px}.earn .er-inrow{display:flex;gap:8px}.earn .er-inrow input{flex:1;min-width:0;font:inherit;font-size:16px;letter-spacing:.1em;text-transform:uppercase;padding:9px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:inherit}
 .earn .er-ref{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.earn .er-ref b{font-size:18px;letter-spacing:.12em;font-variant-numeric:tabular-nums}
 .earn .er-head,.earn .er-row{display:grid;grid-template-columns:64px minmax(0,1fr) 62px 44px 62px 64px;gap:6px;align-items:center;font-size:12px}
 .earn .er-head{color:var(--muted);font-size:11px;border-bottom:1px solid var(--line);padding-bottom:4px}
@@ -2768,18 +2769,29 @@ function earnRender() {
     <section class="sbox"><h4>🤝 紹介</h4>
       <p class="note2">あなたの紹介でVTuberが本人登録すると、紹介した人数に応じて還元率が上がります（最大${pct(rf.tiers?.max ?? 0.4)}・翌月1日から）。</p>
       <div class="er-ref"><span>紹介コード</span><b>${esc(rf.code || "—")}</b>${link ? `<button class="sbtn gray" data-ecopy="${esc(link)}">紹介リンクをコピー</button>` : ""}</div>
-      <p class="note2">紹介した人数：${rf.referred_total || 0}人${nx ? `／あと${nx.remaining}人で還元率${pct(nx.rate)}` : ""}${Number(rf.rate_next_month) > Number(rf.rate_now) ? `（来月から${pct(rf.rate_next_month)}）` : ""}</p></section>
+      <p class="note2">紹介した人数：${rf.referred_total || 0}人${nx ? `／あと${nx.remaining}人で還元率${pct(nx.rate)}` : ""}${Number(rf.rate_next_month) > Number(rf.rate_now) ? `（来月から${pct(rf.rate_next_month)}）` : ""}</p>
+      ${rf.referred_by ? `<p class="okc">● ${esc(rf.referred_by.title || "ほかのVTuber")}さんの紹介で登録しました</p>`
+        : rf.can_enter ? `<div class="er-in"><b>紹介してくれた人のコード</b><div class="er-inrow"><input id="erCode" inputmode="text" autocomplete="off" autocapitalize="characters" maxlength="16" placeholder="例：AB12CD34"><button class="sbtn" data-erclaim>登録する</button></div><p class="note2">${rf.enter_until ? `${new Date(rf.enter_until).getMonth() + 1}月${new Date(rf.enter_until).getDate()}日まで` : "本人登録から30日以内"}に入力できます（1回だけ・あとから変更はできません）。</p></div>` : ""}</section>
     <section class="sbox"><h4>📤 払い出しの履歴</h4>${pays || `<p class="note2">まだありません</p>`}</section>
     <section class="sbox"><h4>🧾 明細</h4><div class="er-head"><span>日時</span><span>ギフト</span><span>金額</span><span>還元率</span><span>取り分</span><span>状態</span></div>${items || `<p class="note2">まだギフトは届いていません</p>`}</section></div>`);
 }
 document.addEventListener("click", async (e) => {
-  const t = e.target.closest("[data-earn],[data-ex],[data-eacct],[data-ecopy]"); if (!t) return;
+  const t = e.target.closest("[data-earn],[data-ex],[data-eacct],[data-ecopy],[data-erclaim]"); if (!t) return;
   if (t.dataset.earn) return openEarn(t.dataset.earn);
   if ("ex" in t.dataset) return closeOv("earn");
   if ("eacct" in t.dataset) {
     t.disabled = true; const r = await earnApi({ action: "connect_onboard", channel_id: EARN?.channel?.id }).catch(() => ({}));
     if (r.url) location.href = r.url; else { toast(r.error === "stripe_not_ready" ? "口座の登録はただいま準備中です" : "口座登録のページを開けませんでした"); t.disabled = false; }
     return;
+  }
+  // 紹介してくれた人のコードを手で入れる（本人登録から30日以内・1回だけ）
+  if ("erclaim" in t.dataset) {
+    const code = ($("#erCode")?.value || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (!code) return toast("紹介コードを入れてください");
+    t.disabled = true; const r = await earnApi({ action: "referral_claim", code, channel_id: EARN?.channel?.id }).catch(() => ({}));
+    t.disabled = false;
+    if (!r.ok) return toast({ bad_code: "その紹介コードは見つかりませんでした", own_code: "自分の紹介コードは使えません", too_late: "入力できる期間（本人登録から30日）を過ぎています", already: "すでに紹介コードが登録されています", mutual: "おたがいに紹介しあうことはできません" }[r.error] || "登録できませんでした");
+    toast(`${r.referrer || "紹介した人"}さんの紹介として登録しました`); return openEarn(EARN.channel.id);
   }
   if (t.dataset.ecopy) { try { await navigator.clipboard.writeText(t.dataset.ecopy); toast("紹介リンクをコピーしました"); } catch { toast(t.dataset.ecopy); } }
 });
