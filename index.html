@@ -170,7 +170,7 @@ a{color:inherit;text-decoration:none}
 .gp-back{border:0;background:none;color:#7a7190;font:inherit;font-size:13px;padding:4px 0 10px;cursor:pointer}
 .gp-packs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .gp-packs button{border:1.5px solid #e0d4ea;background:#fff;border-radius:14px;padding:12px 4px;font:inherit;color:#2a2238;display:flex;flex-direction:column;align-items:center;cursor:pointer}
-.gp-packs b{font-size:18px}.gp-packs small{font-size:10px;color:#7a7190}.gp-packs span{margin-top:4px;font-weight:700;color:#ff5fa8}
+.gp-packs button{position:relative}.gp-packs button[aria-pressed="true"]{border-color:#ff5fa8;background:#fff3f9}.gp-packs em{position:absolute;top:-8px;right:-4px;font-style:normal;font-size:10px;font-weight:800;color:#fff;background:#ff5fa8;border-radius:999px;padding:2px 6px}.gp-packs b{font-size:18px}.gp-packs small{font-size:10px;color:#7a7190}.gp-packs span{margin-top:4px;font-weight:700;color:#ff5fa8}
 .gp-pay{border:2px dashed #d9c3ea;border-radius:14px;padding:12px;margin-top:10px;display:flex;flex-direction:column;gap:6px}
 .gp-pay span{font-size:12px;color:#7a7190}.gp-pay .row{display:flex;gap:8px}.gp-pay .row button{flex:1}
 .gp-note{font-size:11.5px;color:#7a7190;margin:10px 0 0;line-height:1.6}
@@ -2471,10 +2471,10 @@ let GCAT = null, GWAL = null, gCh = null, gSid = null, gWait = false, gView = "l
 const gAdminDemo = () => !!(SESSION && SESSION.user?.email === "core.tagishi@gmail.com");
 // お試しモード（運営だけ）。本物の決済を試すときは切れる（この端末だけ・あとで戻せる）
 const gDemo = () => gAdminDemo() && !store.get("gDemoOff", false);
-const G_DEMO_CAT = { ok: true, demo: true, coin: "ぶいコイン", packs: [500, 1000, 3000], yen_per_coin: 1, expire_months: 6, stripe: true, gifts: [
-  { id: "clap", name: "拍手", price: 10, tier: "small", icon: "👏" }, { id: "heart", name: "ハート", price: 30, tier: "small", icon: "💗" },
-  { id: "ribbon", name: "リボン", price: 100, tier: "mid", icon: "🎀" }, { id: "bouquet", name: "花束", price: 300, tier: "mid", icon: "💐" },
-  { id: "star", name: "流れ星", price: 1000, tier: "large", icon: "🌠" }, { id: "galaxy", name: "鳳凰", price: 3000, tier: "large", effect: "phoenix", icon: "🐦‍🔥", video_url: "fx/phoenix4.stack.mp4?v=4" }, { id: "catfamily", name: "猫家族", price: 5000, tier: "large", effect: "catfamily", icon: "🐱", video_url: "fx/cat.stack.mp4?v=1" }, { id: "cake", name: "甘〜いケーキ", price: 7800, tier: "large", effect: "cake", icon: "🎂", video_url: "fx/cake.stack.mp4?v=1" }, { id: "meteor", name: "隕石", price: 15000, tier: "large", effect: "meteor", icon: "☄️", video_url: "fx/meteor.stack.mp4?v=2" }, { id: "unicorn", name: "ユニコーン", price: 23000, tier: "large", effect: "unicorn", icon: "🦄", video_url: "fx/unicorn.stack.mp4?v=2" }, { id: "castle", name: "ガラスのお城", price: 50000, tier: "large", effect: "castle", icon: "🏰", video_url: "fx/castle.stack.mp4?v=2" }] };
+const G_DEMO_CAT = { ok: true, demo: true, coin: "ぶいコイン", packs: [500, 1000, 3000, 10000, 30000, 50000], pack_coins: { 500: 150, 1000: 300, 3000: 920, 10000: 3180, 30000: 9720, 50000: 16500 }, yen_per_coin: 10 / 3, expire_months: 6, stripe: true, gifts: [
+  { id: "clap", name: "拍手", price: 3, tier: "small", icon: "👏" }, { id: "heart", name: "ハート", price: 9, tier: "small", icon: "💗" },
+  { id: "ribbon", name: "リボン", price: 30, tier: "mid", icon: "🎀" }, { id: "bouquet", name: "花束", price: 90, tier: "mid", icon: "💐" },
+  { id: "star", name: "流れ星", price: 300, tier: "large", icon: "🌠" }, { id: "galaxy", name: "鳳凰", price: 900, tier: "large", effect: "phoenix", icon: "🐦‍🔥", video_url: "fx/phoenix4.stack.mp4?v=4" }, { id: "catfamily", name: "猫家族", price: 1500, tier: "large", effect: "catfamily", icon: "🐱", video_url: "fx/cat.stack.mp4?v=1" }, { id: "cake", name: "甘〜いケーキ", price: 2340, tier: "large", effect: "cake", icon: "🎂", video_url: "fx/cake.stack.mp4?v=1" }, { id: "meteor", name: "隕石", price: 4500, tier: "large", effect: "meteor", icon: "☄️", video_url: "fx/meteor.stack.mp4?v=2" }, { id: "unicorn", name: "ユニコーン", price: 6900, tier: "large", effect: "unicorn", icon: "🦄", video_url: "fx/unicorn.stack.mp4?v=2" }, { id: "castle", name: "ガラスのお城", price: 15000, tier: "large", effect: "castle", icon: "🏰", video_url: "fx/castle.stack.mp4?v=2" }] };
 let GD = { balance: 0, hist: [] };
 try { GD = JSON.parse(localStorage.getItem("vbui_gift_demo")) || GD; } catch {}
 const gdSave = () => { try { localStorage.setItem("vbui_gift_demo", JSON.stringify(GD)); } catch {} };
@@ -2488,6 +2488,9 @@ async function giftApi(body) {
   return r.json();
 }
 const coinFmt = (n) => Number(n || 0).toLocaleString("ja-JP");
+// チャージパックの付与コイン（まとめ買いボーナス込み）と、基準（1コイン＝10/3円）に比べたボーナス率
+const gCoins = (cat, y) => Number(cat?.pack_coins?.[y]) || Math.floor(y / (cat?.yen_per_coin || 1));
+const gBonus = (cat, y) => { const base = Math.floor((y * 3) / 10), c = gCoins(cat, y); return c > base && base > 0 ? Math.round(((c - base) / base) * 100) : 0; };
 // 視聴画面の動画の上に、OBSと同じ演出画面を重ねて出す（お試し）。全画面でも出るようにプレーヤーの中に置く
 let gDemoF = null, gLab = false, gCard = undefined;   // gCard：保存したカード（次回からワンタップ）   // gLab：お試し中は、押したギフトの演出を動画の上に重ねて出す（配信画面と同じ見え方）
 // スマホの自分の画面では、重い演出（配信画面と同じもの）は出さず、押したアイコンがふわっと浮く軽い合図だけにする（iPhoneで落ちないように）
@@ -2519,16 +2522,16 @@ function giftHTML() {
     <button class="gp-plus" data-gcharge aria-label="チャージ">＋</button></div>${demo ? `<button class="gp-demo${gLab ? " on" : ""}" data-glab aria-pressed="${gLab}">🧪 ${gLab ? "お試し中" : "演出を試す"}</button>` : ""}<button class="gp-x" data-gx aria-label="閉じる">×</button></div>`;
   const wait = gWait && gTab === "gift" ? `<div class="gwait"><span class="z">💤</span><b>VTuberの設定待ち</b><span>推しがVぶいの設定をすると、<br>ギフトを送れるようになるよ</span></div>` : "";
   if (gView === "charge") {
-    const pay = !gPay ? "" : demo ? `<div class="gp-pay"><b>${coinFmt(gPay)}円で ${coinFmt(gPay / cat.yen_per_coin)} ${esc(cat.coin)}</b><span>お試し：本物のお金は動きません</span>
+    const pay = !gPay ? "" : demo ? `<div class="gp-pay"><b>${coinFmt(gPay)}円で ${coinFmt(gCoins(cat, gPay))} ${esc(cat.coin)}</b><span>お試し：本物のお金は動きません</span>
       <div class="row"><button class="sbtn gray" data-gpcancel>やめる</button><button class="sbtn" data-gpok>支払う</button></div></div>`
-      : `<div class="gp-pay"><b>${coinFmt(gPay)}円で ${coinFmt(gPay / cat.yen_per_coin)} ${esc(cat.coin)}</b>
+      : `<div class="gp-pay"><b>${coinFmt(gPay)}円で ${coinFmt(gCoins(cat, gPay))} ${esc(cat.coin)}</b>
       <div class="row">${gCard ? `<button class="sbtn" data-gquick>💳 ${esc(gCard.brand || "カード")} •••• ${esc(gCard.last4 || "")} で支払う</button>` : ""}<button class="sbtn ${gCard ? "gray" : ""}" data-gcheckout>${gCard ? "別の方法で支払う" : "支払いへ進む"}</button></div>
       <button class="gp-back" data-gpcancel>やめる</button></div>`;
     return `${head}<div class="gp-body"><button class="gp-back" data-gback>← ギフトにもどる</button>
-      <div class="gp-packs">${cat.packs.map((y) => `<button data-gpack="${y}"><b>${coinFmt(y / cat.yen_per_coin)}</b><small>${esc(cat.coin)}</small><span>${coinFmt(y)}円</span></button>`).join("")}</div>${pay}
+      <div class="gp-packs">${cat.packs.map((y) => { const bo = gBonus(cat, y); return `<button data-gpack="${y}"${gPay === y ? ' aria-pressed="true"' : ""}>${bo ? `<em>＋${bo}%</em>` : ""}<b>${coinFmt(gCoins(cat, y))}</b><small>${esc(cat.coin)}</small><span>${coinFmt(y)}円</span></button>`; }).join("")}</div>${pay}
       ${demo ? `<button class="sbtn" data-gmax style="margin-top:10px;width:100%">🧪 お試し：コインを最大（999,999）にする</button>
       <button class="sbtn gray" data-greal style="margin-top:8px;width:100%">💳 本物の決済でチャージする（お試しを止める）</button>` : gAdminDemo() ? `<button class="sbtn gray" data-gdemo style="margin-top:10px;width:100%">🧪 お試しモードに戻す</button>` : ""}
-      <p class="gp-note">1枚＝${cat.yen_per_coin}円・購入から${cat.expire_months}か月で使えなくなります${cat.stripe || demo ? "" : "。カード払いはただいま準備中です"}</p></div>`;   // チャージは推しの設定に関係なくできる（「設定待ち」で覆わない）
+      <p class="gp-note">まとめて買うとボーナスつき・購入から${cat.expire_months}か月で使えなくなります${cat.stripe || demo ? "" : "。カード払いはただいま準備中です"}</p></div>`;   // チャージは推しの設定に関係なくできる（「設定待ち」で覆わない）
   }
   // 着せ替えはいったん休止（2026-11-24 本人決定・導入予定）。DRESS_ON を true にすればタブが戻る
   if (!DRESS_ON) gTab = "gift";
@@ -2659,7 +2662,7 @@ document.addEventListener("click", async (e) => {
     return toast(r.error === "card_declined" ? "カードで支払えませんでした。別の方法でお試しください" : "支払いできませんでした");
   }
   if ("gpcancel" in t.dataset) { gPay = null; return giftRender(); }
-  if ("gpok" in t.dataset && GCAT?.demo) { const n = gPay / GCAT.yen_per_coin; GD.balance += n; gLocal = GD.balance; gdSave(); gPay = null; gView = "list"; toast("チャージしました！（お試し）"); return giftRender(); }
+  if ("gpok" in t.dataset && GCAT?.demo) { const n = gCoins(GCAT, gPay); GD.balance += n; gLocal = GD.balance; gdSave(); gPay = null; gView = "list"; toast("チャージしました！（お試し）"); return giftRender(); }
   if (t.dataset.fsp) return fsPanel(t.dataset.fsp);
   if ("fsx" in t.dataset) return fsPanel(null);
 });
