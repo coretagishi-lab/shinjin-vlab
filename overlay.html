@@ -51,6 +51,27 @@ html{-webkit-text-size-adjust:none;text-size-adjust:none}
 #lab img{width:40px;height:24px;object-fit:contain}
 .gchip.boom{animation:gboom .7s cubic-bezier(.2,1.6,.4,1)}
 @keyframes gboom{0%{transform:scale(1)}35%{transform:scale(1.45)}100%{transform:scale(1)}}
+/* ---- ランダムギフト（チンチロ・ルーレット）の結果の帯 ---- */
+.grb{position:absolute;left:0;right:0;top:13%;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;color:#fff;animation:pop .45s cubic-bezier(.2,1.4,.4,1) both;white-space:nowrap}
+.grb b{font-size:96px;font-weight:900;letter-spacing:.04em;-webkit-text-stroke:6px #2a1838;paint-order:stroke fill;text-shadow:0 8px 0 rgba(0,0,0,.35)}
+.grb small{font-size:30px;font-weight:800;background:rgba(20,16,32,.78);border-radius:999px;padding:6px 22px}
+.grb em{font-style:normal;color:#ffd25e}
+.grb.big b{font-size:132px;color:#ffe27a;-webkit-text-stroke:8px #7a1f22;animation:grbig .9s ease-in-out infinite alternate}
+.grb.sub{top:6%}
+.grb.mini{top:auto;bottom:10%}.grb.mini b{font-size:56px}
+@keyframes grbig{from{transform:scale(1)}to{transform:scale(1.08)}}
+/* ---- 覗き演出：画面の右下から小さく（画面幅の15%くらい） ---- */
+.gpeek{position:absolute;right:2%;bottom:0;width:15%;aspect-ratio:1/1;animation:gpk .9s cubic-bezier(.2,1.3,.4,1) both}
+.gpeek.vid .gvid{position:absolute;inset:0}
+.gpeek.ph .pk{position:absolute;left:10%;right:10%;bottom:-12%;height:80%;background:#ffd9ec;border:6px solid #2a1838;border-radius:50% 50% 30% 30%}
+.gpeek .ear{position:absolute;top:-14%;width:26%;height:30%;background:#ffd9ec;border:6px solid #2a1838;border-bottom:0;border-radius:60% 60% 0 0}
+.gpeek .ear.l{left:8%;transform:rotate(-18deg)}.gpeek .ear.r{right:8%;transform:rotate(18deg)}
+.gpeek .face{position:absolute;left:0;right:0;top:26%;display:flex;justify-content:center;gap:22%}
+.gpeek .face i{width:12%;aspect-ratio:1;background:#2a1838;border-radius:50%;animation:gpkeye 2.2s infinite}
+.gpeek .face b{position:absolute;top:120%;width:10%;height:6px;background:#2a1838;border-radius:4px}
+.gpeek .pk em{position:absolute;right:92%;top:-30%;font-style:normal;font-weight:900;font-size:26px;color:#2a1838;background:#fff;border:4px solid #2a1838;border-radius:18px;padding:4px 12px;white-space:nowrap}
+@keyframes gpk{from{transform:translateY(100%)}to{transform:none}}
+@keyframes gpkeye{0%,90%,100%{transform:none}95%{transform:scaleY(.1)}}
 /* 軽量モード（スマホの視聴画面）：重いぼかし・影を外す */
 .lite .gb-beam,.lite .gb-shadow{filter:none}
 .lite .gb-item img:not(.gold),.lite .gfloat,.lite .gms .gi,.lite .gphx b{filter:none}
@@ -217,7 +238,7 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
   const SHOW_URL = q.get("show");                 // URLで指定があればそれを優先（"1"/"0"）
   const W = 1920, H = 1080;
   let started = false, after = 0, ack = null, onecomme = null, ocService = q.get("ocsvc") || null, failCount = 0;
-  let S = { pos: "bl", size: "m", show: "auto", side: "r", hero: true, oc: "" }, settingsAt = undefined;
+  let S = { pos: "bl", size: "m", show: "auto", side: "r", hero: true, peek: true, oc: "" }, settingsAt = undefined;
   const $ = (s) => document.querySelector(s);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const err = (t) => { const e = $("#err"); e.textContent = t; e.style.display = t ? "block" : "none"; };
@@ -408,6 +429,8 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
     if (c.created_at && Date.now() - Date.parse(c.created_at) > 60e3) { ackIds([id], "dropped"); return; } // つながり直したときの古いギフトは出さない（返金）
     const [, gid, cb] = String(c.body || "").split(":"); const combo = Number(cb) || 1;
     const g = CAT[gid] || { id: gid, name: "ギフト", tier: "small", effect: "", icon: "🎁" };
+    peekReset();                                                   // ギフトが来たら「静かな時間」を数え直す
+    if (RAND_FX.has(g.effect) || RAND_FX.has(gid)) return randIn(c, RAND_FX.has(g.effect) ? g.effect : gid, g, String(c.body || "").split(":")[4]);   // チンチロ・ルーレットは1回ずつ真ん中で
     const nick = c.nickname || "リスナー", key = nick + "|" + gid;
     const cur = SES.get(key);
     if (cur) { cur.ids.push(id); if (cur.chip) ackIds([id], "shown"); cur.bump(combo); return; }
@@ -480,6 +503,7 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
   }
   // 着せ替えが届いた：1個目はプレゼントボックス、続けて贈られたら「×N」のコンボ札。合計100個に届いたら金のプレゼントボックス
   async function dressGift(d) {
+    peekReset();
     let cat = await dressCat();
     if (d.slug && !cat[d.slug] && KEY) { DCAT = null; DCATP = null; cat = await dressCat(); }   // 新しく追加されたアイテムなら読み直す
     const it = cat[d.slug] || {};
@@ -545,6 +569,7 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
   }
   async function gPlay(s) {
     if (s.dress) return dressBox(s);
+    if (s.rand) return s.rand.gid === "roulette" ? roulettePlay(s) : chinchiroPlay(s);
     const g = s.g, ic = esc(g.icon || "🎁");
     if (g.tier === "mid") {
       const cv = sparkle(4200, ["#ff7ab8", "#ffd25e", "#8be3ff"], 0.75);
@@ -744,8 +769,149 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
       (x, P, k) => { const spin = k * 3; x.globalAlpha = k > 0.85 ? Math.max(0, (1 - k) / 0.15) : Math.min(1, k * 4);
         for (const p of P) { const a = p.a + spin * (1.2 - p.d / 1000) + p.arm * 2.09 + p.d / 260; const sx = Math.min(1, GW / 1920), sy = GH > GW ? 0.9 : 0.45, px = GW / 2 + Math.cos(a) * p.d * sx * Math.min(1, k * 3), py = GH * 0.46 + Math.sin(a) * p.d * sy * Math.min(1, k * 3); x.fillStyle = p.c; x.beginPath(); x.arc(px, py, p.r, 0, 7); x.fill(); } });
   }
+  // ===== ランダムギフト（チンチロ・ルーレット） =====
+  //  結果はVぶいのサーバーで決まっている（コメントの本文の5つ目に入っている）。ここでは決まった結果を見せるだけ
+  //  ※ 出目やマスでコインが戻ったり増えたりすることはない（演出だけ）
+  const RAND_FX = new Set(["chinchiro", "roulette"]);
+  const RL_LABELS = ["大当たり", "あたり", "ナイス！", "ラッキー", "おしい！", "はずれ", "ドンマイ", "奇跡"];   // 仮の文言（あとで調整）
+  const RL_BIG = new Set([0, 7]);
+  function rrnd(n) { const lim = 256 - (256 % n), b = new Uint8Array(1); do crypto.getRandomValues(b); while (b[0] >= lim); return b[0] % n; }
+  function yakuOf(d) { const s = [...d].sort((a, b) => a - b), k = s.join(""); if (k === "111") return "pin"; if (s[0] === s[2]) return "z" + s[0]; if (k === "456") return "shigoro"; if (k === "123") return "hifumi"; if (s[0] === s[1]) return "m" + s[2]; if (s[1] === s[2]) return "m" + s[0]; return null; }
+  // お試し（どこにもつながない画面）用：結果が来なかったときだけ、ここで決める
+  function localResult(gid) {
+    if (gid === "roulette") return "r" + rrnd(8);
+    const rolls = []; for (let t = 0; t < 3; t++) { if (rrnd(100) < 2) { rolls.push("000"); return rolls.join("_") + "~shon"; } const d = [rrnd(6) + 1, rrnd(6) + 1, rrnd(6) + 1]; rolls.push(d.join("")); const y = yakuOf(d); if (y) return rolls.join("_") + "~" + y; }
+    return rolls.join("_") + "~none";
+  }
+  const yakuName = (y) => y === "pin" ? "ピンゾロ！" : /^z\d$/.test(y) ? `${y[1]}のゾロ目！` : y === "shigoro" ? "シゴロ！" : /^m\d$/.test(y) ? `${y[1]}の目` : y === "hifumi" ? "ヒフミ…" : y === "shon" ? "ションベン…" : "目なし…";
+  const yakuBig = (y) => y === "pin" || /^z\d$/.test(y) || y === "shigoro";
+  function randIn(c, gid, g, code) {
+    const id = Number(c.id), nick = c.nickname || "リスナー";
+    if (!code) code = localResult(gid);
+    if (Number.isFinite(id)) ackIds([id], "shown");                 // 結果はもう決まっているので、受け取ったらすぐ「出ました」
+    gLine(c, g, 1);
+    FXQ.push({ rand: { gid, code }, g, nick, ids: [id] }); if (!fxBusy) fxNext();
+  }
+  async function randFinish(s, label, big) {
+    const fx = [];
+    if (big) { fx.push(gEl("", "gflash gold"), confetti(LITE ? 3000 : 4800, true), sparkle(4200, ["#ffd25e", "#fff6c8", "#ff7ab8", "#ffffff"], 1.3)); }
+    const bn = gEl(`<b>${esc(label)}</b>`, "grb" + (big ? " big" : "")); fx.push(bn);   // だれのかは上の札に出ている
+    try { deliver({ id: "r" + Date.now() + Math.random(), nickname: s.nick }, { cls: "gf", text: `${s.rand.gid === "roulette" ? "🎡" : "🎲"} ${s.g.name}：${label}` }); } catch {}
+    await wait(big ? 3800 : 2600); return fx;
+  }
+  // サイコロ1個を描く（目の数の点）
+  function drawDie(x, cx, cy, size, rot, face) {
+    const h = size / 2, r = size * 0.18;
+    x.fillStyle = "rgba(0,0,0,.22)"; x.beginPath(); x.ellipse(cx + 4, cy + h * 0.9, h * 0.95, size * 0.12, 0, 0, 7); x.fill();   // 影（回さない）
+    x.save(); x.translate(cx, cy); x.rotate(rot);
+    x.fillStyle = "#fffdf6"; x.strokeStyle = "#d9cdb8"; x.lineWidth = size * 0.04;
+    x.beginPath(); x.moveTo(-h + r, -h); x.arcTo(h, -h, h, h, r); x.arcTo(h, h, -h, h, r); x.arcTo(-h, h, -h, -h, r); x.arcTo(-h, -h, h, -h, r); x.closePath(); x.fill(); x.stroke();
+    const P = { 1: [[0, 0]], 2: [[-1, -1], [1, 1]], 3: [[-1, -1], [0, 0], [1, 1]], 4: [[-1, -1], [1, -1], [-1, 1], [1, 1]], 5: [[-1, -1], [1, -1], [0, 0], [-1, 1], [1, 1]], 6: [[-1, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [1, 1]] }[face] || [];
+    const sp = size * 0.27;
+    for (const [px, py] of P) { x.fillStyle = face === 1 ? "#e0283c" : "#1d1a26"; x.beginPath(); x.arc(px * sp, py * sp, face === 1 ? size * 0.14 : size * 0.085, 0, 7); x.fill(); }
+    x.restore();
+  }
+  // チンチロ：丼の中でサイコロ3個が転がって、決まった目で止まる（役なしなら最大三投まで振り直す）
+  async function chinchiroPlay(s) {
+    const [rs, yaku] = String(s.rand.code).split("~"); const rolls = (rs || "").split("_").filter(Boolean);
+    const dim = gEl("", "gdim");
+    const { cv, x } = mkCv(); const U = Math.min(GW, GH) / 1080, cx = GW / 2, cy = GH * 0.56, RX = 340 * U, RY = 130 * U, DS = 74 * U;
+    let state = { dice: [], msg: "" };
+    const bowl = () => {
+      // 丼：外側の胴 → ふち → 内側（底）
+      x.fillStyle = "#7a1f22"; x.beginPath(); x.ellipse(cx, cy, RX * 1.08, RY * 1.08, 0, 0, Math.PI); x.lineTo(cx - RX * 0.7, cy + 230 * U); x.quadraticCurveTo(cx, cy + 270 * U, cx + RX * 0.7, cy + 230 * U); x.closePath(); x.fill();
+      const g1 = x.createLinearGradient(cx - RX, cy, cx + RX, cy); g1.addColorStop(0, "#5c1416"); g1.addColorStop(0.5, "#a8302f"); g1.addColorStop(1, "#5c1416");
+      x.fillStyle = g1; x.beginPath(); x.ellipse(cx, cy, RX * 1.08, RY * 1.08, 0, 0, Math.PI); x.lineTo(cx - RX * 0.7, cy + 230 * U); x.quadraticCurveTo(cx, cy + 270 * U, cx + RX * 0.7, cy + 230 * U); x.closePath(); x.fill();
+      x.fillStyle = "#f3e7cf"; x.beginPath(); x.ellipse(cx, cy, RX * 1.08, RY * 1.08, 0, 0, 7); x.fill();
+      const g2 = x.createRadialGradient(cx, cy + RY * 0.2, 10, cx, cy, RX); g2.addColorStop(0, "#fffaf0"); g2.addColorStop(1, "#d8c7a6");
+      x.fillStyle = g2; x.beginPath(); x.ellipse(cx, cy, RX, RY, 0, 0, 7); x.fill();
+    };
+    const draw = () => { if (!cv.isConnected) return; x.clearRect(0, 0, GW, GH); bowl(); for (const d of state.dice) drawDie(x, d.x, d.y, DS, d.r, d.f); requestAnimationFrame(draw); };
+    requestAnimationFrame(draw);
+    const tx = gEl(`<small><em>${esc(s.nick)}</em> さんのチンチロ</small>`, "grb sub");
+    for (let ti = 0; ti < rolls.length; ti++) {
+      const t = rolls[ti], shon = t === "000", faces = shon ? [rrnd(6) + 1, rrnd(6) + 1, rrnd(6) + 1] : [...t].map(Number);
+      const ends = [[-120, -6], [8, 30], [128, -18]].map(([dx, dy]) => [cx + (dx + (Math.random() - 0.5) * 40) * U, cy + (dy + (Math.random() - 0.5) * 24) * U]);
+      if (shon) ends[2] = [cx + RX * 1.45, cy + 250 * U];             // 1個が丼の外へ
+      const starts = ends.map(([ex]) => [ex + (Math.random() - 0.5) * 300 * U, cy - 420 * U - Math.random() * 120 * U]);
+      const spin = faces.map(() => (Math.random() < 0.5 ? -1 : 1) * (6 + Math.random() * 6)), rot0 = faces.map(() => Math.random() * 6);
+      const T0 = performance.now(), DUR = 1500;
+      await new Promise((ok) => {
+        const step = (now) => {
+          const k = Math.min(1, (now - T0) / DUR), b = k < 1 ? 1 - Math.pow(1 - k, 2) * Math.abs(Math.cos(k * 9)) : 1;   // 跳ねながら落ちる
+          state.dice = faces.map((f, i) => ({ x: starts[i][0] + (ends[i][0] - starts[i][0]) * Math.min(1, k * 1.15), y: starts[i][1] + (ends[i][1] - starts[i][1]) * b,
+            r: rot0[i] + spin[i] * Math.pow(1 - k, 2), f: k > 0.82 ? f : 1 + ((now / 70 + i * 2) | 0) % 6 }));
+          if (k < 1 && cv.isConnected) requestAnimationFrame(step); else ok();
+        };
+        requestAnimationFrame(step);
+      });
+      if (ti < rolls.length - 1) { const m = gEl(`<b>役なし… もう一回！</b>`, "grb mini"); await wait(1000); m.remove(); }
+    }
+    await wait(350);
+    const fx = await randFinish(s, yakuName(yaku), yakuBig(yaku));
+    await gEnd([dim, cv, tx, ...fx], 0);
+  }
+  // ルーレット：盤が回って、決まったマスで止まる
+  async function roulettePlay(s) {
+    const seg = Math.max(0, Math.min(7, Number(String(s.rand.code).replace(/^r/, "")) || 0));
+    const dim = gEl("", "gdim");
+    const { cv, x } = mkCv(); const U = Math.min(GW, GH) / 1080, cx = GW / 2, cy = GH * 0.61, R = 290 * U, N = RL_LABELS.length, st = (Math.PI * 2) / N;
+    const cols = ["#ff5fa8", "#ffd25e", "#6fd3ff", "#b6ff8a", "#c58bff", "#ff9f5a", "#8be3ff", "#ffe27a"];
+    const fin = -Math.PI / 2 - (seg + 0.5) * st - Math.PI * 2 * 6 + (Math.random() - 0.5) * st * 0.5;   // 6回転してから、決まったマスが上の矢印に来る
+    const T0 = performance.now(), DUR = 4600; let th = 0, done = false;
+    const tx = gEl(`<small><em>${esc(s.nick)}</em> さんのルーレット</small>`, "grb sub");
+    const draw = (now) => {
+      if (!cv.isConnected) return; const k = Math.min(1, (now - T0) / DUR); th = fin * (1 - Math.pow(1 - k, 4));
+      x.clearRect(0, 0, GW, GH);
+      x.fillStyle = "rgba(0,0,0,.35)"; x.beginPath(); x.arc(cx + 10 * U, cy + 16 * U, R * 1.08, 0, 7); x.fill();
+      x.fillStyle = "#3a2350"; x.beginPath(); x.arc(cx, cy, R * 1.08, 0, 7); x.fill();
+      for (let i = 0; i < N; i++) {
+        const a0 = th + i * st; x.fillStyle = cols[i % cols.length]; x.beginPath(); x.moveTo(cx, cy); x.arc(cx, cy, R, a0, a0 + st); x.closePath(); x.fill();
+        x.strokeStyle = "rgba(255,255,255,.8)"; x.lineWidth = 3 * U; x.stroke();
+        x.save(); x.translate(cx, cy); x.rotate(a0 + st / 2); x.fillStyle = "#2a1838"; x.font = `900 ${34 * U}px "Hiragino Sans","Noto Sans JP",sans-serif`; x.textAlign = "right"; x.textBaseline = "middle"; x.fillText(RL_LABELS[i], R - 22 * U, 0); x.restore();
+      }
+      for (let i = 0; i < 24; i++) { const a = (i / 24) * Math.PI * 2; x.fillStyle = (((now / 120) | 0) + i) % 2 ? "#fff6c8" : "#ffb000"; x.beginPath(); x.arc(cx + Math.cos(a) * R * 1.04, cy + Math.sin(a) * R * 1.04, 6 * U, 0, 7); x.fill(); }
+      x.fillStyle = "#fff"; x.beginPath(); x.arc(cx, cy, 54 * U, 0, 7); x.fill(); x.fillStyle = "#3a2350"; x.font = `900 ${30 * U}px sans-serif`; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText("V", cx, cy);
+      x.fillStyle = "#ffffff"; x.strokeStyle = "#3a2350"; x.lineWidth = 4 * U; x.beginPath(); x.moveTo(cx, cy - R + 26 * U); x.lineTo(cx - 26 * U, cy - R - 40 * U); x.lineTo(cx + 26 * U, cy - R - 40 * U); x.closePath(); x.fill(); x.stroke();
+      if (k >= 1) done = true; requestAnimationFrame(draw);
+    };
+    requestAnimationFrame(draw);
+    while (!done && cv.isConnected) await wait(100);
+    const rel = (((-Math.PI / 2 - th) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2); window.__rlLast = { seg, under: Math.floor(rel / st) };   // 確認用：矢印の下で止まったマス
+    await wait(300);
+    const fx = await randFinish(s, RL_LABELS[seg], RL_BIG.has(seg));
+    await gEnd([dim, cv, tx, ...fx], 0);
+  }
+  window.VBUI_RAND = { localResult, yakuOf, yakuName, RL_LABELS };   // 確認用
+
+  // ===== 覗き演出（静かな時間に、画面の右下から小さなキャラが覗く） =====
+  //  ・ギフトやコメントがない時間が5〜10分続いたら1回。ギフト・コメントが来たら数え直し
+  //  ・1時間に4回まで。配信者が設定で「出さない」にできる
+  //  ・素材は fx/peek.stack.mp4（ふわ納品予定）。まだ無い／読めないときは仮のキャラを出す
+  const PEEK_URL = "fx/peek.stack.mp4", PEEK_MAX_HOUR = 4;
+  const PQ = Number(q.get("peekq")) || 0;                           // 確認用：静かな時間を秒で指定（ふだんは使わない）
+  let peekLast = Date.now(), peekNeed = 0, peekLog = [], peekBusy = false;
+  const peekPick = () => (peekNeed = PQ ? PQ * 1000 : (5 + Math.random() * 5) * 60e3);
+  peekPick();
+  function peekReset() { peekLast = Date.now(); peekPick(); }
+  async function peekPlay() {
+    if (peekBusy) return false; peekBusy = true; peekLog.push(Date.now());
+    const box = gEl("", "gpeek", $("#gtop"));
+    let vid = null; try { vid = await gVideo(PEEK_URL, box); } catch {}
+    if (vid) { box.classList.add("vid"); await wait(Math.max(2500, vid.dur)); }
+    else { box.innerHTML = `<div class="pk"><span class="ear l"></span><span class="ear r"></span><span class="face"><i></i><i></i><b></b></span><em>…じーっ</em></div>`; box.classList.add("ph"); await wait(4200); }
+    box.classList.add("gout"); await wait(600); box.remove(); peekBusy = false; return true;
+  }
+  setInterval(() => {
+    if (!S.peek || DEMO && !PQ) return;
+    const now = Date.now(); peekLog = peekLog.filter((t) => now - t < 3600e3);
+    if (now - peekLast < peekNeed || peekLog.length >= PEEK_MAX_HOUR || fxBusy || peekBusy) return;
+    peekPlay(); peekReset();
+  }, PQ ? 500 : 15e3);
+  window.VBUI_PEEK = () => peekPlay();
+  window.VBUI_PEEK_STATE = () => ({ count: peekLog.length, quietMs: Date.now() - peekLast, needMs: peekNeed, on: !!S.peek });
   window.VBUI_CAT = (arr) => (arr || []).forEach((g) => (CAT[g.id] = g)); // お試し用：ギフトの一覧を外から渡す
-  window.VBUI_GIFT = (gid, nick, combo) => giftIn({ body: `gift:${gid}:${combo || 1}`, nickname: nick || "テスト" }); // 確認用
+  window.VBUI_GIFT = (gid, nick, combo, res) => giftIn({ body: `gift:${gid}:${combo || 1}:1${res ? ":" + res : ""}`, nickname: nick || "テスト" }); // 確認用
 
   // ---- 届いたものを、届いた順に1つずつ処理する（同じものが2回届いても1回だけ） ----
   const seen = new Set(); let chain = Promise.resolve();
@@ -757,6 +923,7 @@ img.gold,.gim.gold,#gdress .gdi.gold canvas{filter:grayscale(1) sepia(1) saturat
     }
   }
   async function handleOne(c) {
+    if (c.kind !== "sample" && c.kind !== "test") peekReset();         // コメント・救援が来たら「静かな時間」を数え直す
     if (c.kind === "gift") { try { giftIn(c); } catch {} return; } // ギフトはコメントとは別の列で順番に出す
     if (c.kind === "test") {
       ack = c.id; kick(); // 「設定確認」はすぐ返事する

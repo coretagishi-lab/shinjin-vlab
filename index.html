@@ -2156,7 +2156,7 @@ const OKEYS = {}, OSET = {};
 // 「このパソコンで設定した」の目印は、OBSのURL（カギ）ごとに覚える（URLを作り直したら、まっさらに戻る）
 const obsFlag = (ch) => "obsAdded:" + ch + ":" + String(OKEYS[ch] || "").slice(0, 8);
 const isMobileUA = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-const OSET0 = { pos: "bl", size: "m", show: "auto", side: "r", hero: true };
+const OSET0 = { pos: "bl", size: "m", show: "auto", side: "r", hero: true, peek: true };
 const overlayUrl = (k) => `${location.origin}/overlay.html?k=${encodeURIComponent(k)}`;
 // 見え方の違いの図（ミニ配信画面）
 function ocDiagram(kind) {
@@ -2287,7 +2287,10 @@ function obsLook(ch) {
   const seg = (f, opts) => `<div class="oseg" data-of="${f}" data-ch="${esc(ch)}">${opts.map(([v, t]) => `<button type="button" data-ov="${v}" aria-pressed="${String(o[f]) === String(v)}">${t}</button>`).join("")}</div>`;
   const hero = `<label class="sl">🦸 救援ヒーローの登場演出</label>
     ${seg("hero", [["true", "出す"], ["false", "出さない"]])}
-    <p class="note2">救援通知を見て駆けつけてくれたリスナーさんが、ヒーローになって画面に飛んでくる演出です。</p>`;
+    <p class="note2">救援通知を見て駆けつけてくれたリスナーさんが、ヒーローになって画面に飛んでくる演出です。</p>
+    <label class="sl">👀 静かな時間の「のぞき」演出</label>
+    ${seg("peek", [["true", "出す"], ["false", "出さない"]])}
+    <p class="note2">ギフトやコメントがしばらく（5〜10分）ないとき、画面の右下から小さなキャラがのぞきます。1時間に4回まで。</p>`;
   return `<div class="olook">
     <h5>表示のしかた <small>押すと自動で保存されます。わからなければ、さわらなくてOK！</small></h5>
     ${o.oc === "yes" ? `<p class="note2">💬 コメントは、<b>わんコメのコメント欄</b>（いつもの場所・見た目）に出ます。場所や大きさはわんコメ側で決まるので、ここで選ぶものはありません。</p>
@@ -2472,8 +2475,9 @@ const gAdminDemo = () => !!(SESSION && SESSION.user?.email === "core.tagishi@gma
 // お試しモード（運営だけ）。本物の決済を試すときは切れる（この端末だけ・あとで戻せる）
 const gDemo = () => gAdminDemo() && !store.get("gDemoOff", false);
 const G_DEMO_CAT = { ok: true, demo: true, coin: "ぶいコイン", packs: [500, 1000, 3000, 10000, 30000, 50000], pack_coins: { 500: 150, 1000: 300, 3000: 920, 10000: 3180, 30000: 9720, 50000: 16500 }, yen_per_coin: 10 / 3, expire_months: 6, stripe: true, gifts: [
-  { id: "clap", name: "拍手", price: 3, tier: "small", icon: "👏" }, { id: "heart", name: "ハート", price: 9, tier: "small", icon: "💗" },
-  { id: "ribbon", name: "リボン", price: 30, tier: "mid", icon: "🎀" }, { id: "bouquet", name: "花束", price: 90, tier: "mid", icon: "💐" },
+  { id: "clap", name: "拍手", price: 100, tier: "small", icon: "👏" }, { id: "heart", name: "ハート", price: 100, tier: "small", icon: "💗" },
+  { id: "ribbon", name: "リボン", price: 100, tier: "mid", icon: "🎀" }, { id: "bouquet", name: "花束", price: 100, tier: "mid", icon: "💐" },
+  { id: "chinchiro", name: "チンチロ", price: 100, tier: "mid", effect: "chinchiro", icon: "🎲" }, { id: "roulette", name: "ルーレット", price: 100, tier: "mid", effect: "roulette", icon: "🎡" },
   { id: "star", name: "流れ星", price: 300, tier: "large", icon: "🌠" }, { id: "galaxy", name: "鳳凰", price: 900, tier: "large", effect: "phoenix", icon: "🐦‍🔥", video_url: "fx/phoenix4.stack.mp4?v=4" }, { id: "catfamily", name: "猫家族", price: 1500, tier: "large", effect: "catfamily", icon: "🐱", video_url: "fx/cat.stack.mp4?v=1" }, { id: "cake", name: "甘〜いケーキ", price: 2340, tier: "large", effect: "cake", icon: "🎂", video_url: "fx/cake.stack.mp4?v=1" }, { id: "meteor", name: "隕石", price: 4500, tier: "large", effect: "meteor", icon: "☄️", video_url: "fx/meteor.stack.mp4?v=2" }, { id: "unicorn", name: "ユニコーン", price: 6900, tier: "large", effect: "unicorn", icon: "🦄", video_url: "fx/unicorn.stack.mp4?v=2" }, { id: "castle", name: "ガラスのお城", price: 15000, tier: "large", effect: "castle", icon: "🏰", video_url: "fx/castle.stack.mp4?v=2" }] };
 let GD = { balance: 0, hist: [] };
 try { GD = JSON.parse(localStorage.getItem("vbui_gift_demo")) || GD; } catch {}
@@ -2543,7 +2547,7 @@ function giftHTML() {
   }
   const rf = (GWAL?.refunds || []).length ? `<p class="gp-rf">↩︎ 演出が出なかったため返金しました：${GWAL.refunds.map((r) => `${esc((cat.gifts.find((x) => x.id === r.gift_id) || {}).name || "ギフト")} ${coinFmt(r.price)}`).join("、")}</p>` : "";
   const tier = { small: "小", mid: "中", large: "全画面" };
-  return `${head}${tabs}<div class="gp-body">${rf}<div class="gp-grid">${cat.gifts.map((x) => `<button class="gi" data-gtap="${esc(x.id)}"><span class="ic">${esc(x.icon || "🎁")}</span><b>${esc(x.name)}</b><span class="pr">${coinFmt(x.price)}</span><i>${tier[x.tier] || ""}</i><em class="x" hidden></em></button>`).join("")}</div></div>${wait}`;
+  return `${head}${tabs}<div class="gp-body">${rf}<div class="gp-grid">${cat.gifts.map((x) => `<button class="gi" data-gtap="${esc(x.id)}"><span class="ic">${esc(x.icon || "🎁")}</span><b>${esc(x.name)}</b><span class="pr">${coinFmt(x.price)}</span><i>${x.effect === "chinchiro" || x.effect === "roulette" ? "ランダム" : tier[x.tier] || ""}</i><em class="x" hidden></em></button>`).join("")}</div></div>${wait}`;
 }
 // いま開いているギフト画面（全画面中は右のパネル、ふだんは下から出る画面）
 const gHosts = () => [$("#gp:not([hidden]) .gp-in"), WP?.fs ? WP.el.querySelector(".pl-panel[data-mode='gift'] .pp-body") : null].filter(Boolean);
