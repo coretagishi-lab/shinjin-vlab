@@ -2770,8 +2770,7 @@ function earnRender() {
       <p class="note2">あなたの紹介でVTuberが本人登録すると、紹介した人数に応じて還元率が上がります（最大${pct(rf.tiers?.max ?? 0.4)}・翌月1日から）。</p>
       <div class="er-ref"><span>紹介コード</span><b>${esc(rf.code || "—")}</b>${link ? `<button class="sbtn gray" data-ecopy="${esc(link)}">紹介リンクをコピー</button>` : ""}</div>
       <p class="note2">紹介した人数：${rf.referred_total || 0}人${nx ? `／あと${nx.remaining}人で還元率${pct(nx.rate)}` : ""}${Number(rf.rate_next_month) > Number(rf.rate_now) ? `（来月から${pct(rf.rate_next_month)}）` : ""}</p>
-      ${rf.referred_by ? `<p class="okc">● ${esc(rf.referred_by.title || "ほかのVTuber")}さんの紹介で登録しました</p>`
-        : rf.can_enter ? `<div class="er-in"><b>紹介してくれた人のコード</b><div class="er-inrow"><input id="erCode" inputmode="text" autocomplete="off" autocapitalize="characters" maxlength="16" placeholder="例：AB12CD34"><button class="sbtn" data-erclaim>登録する</button></div><p class="note2">${rf.enter_until ? `${new Date(rf.enter_until).getMonth() + 1}月${new Date(rf.enter_until).getDate()}日まで` : "本人登録から30日以内"}に入力できます（1回だけ・あとから変更はできません）。</p></div>` : ""}</section>
+      ${!rf.referred_by && rf.can_enter ? `<div class="er-in"><b>紹介してくれた人のコード</b><div class="er-inrow"><input id="erCode" inputmode="text" autocomplete="off" autocapitalize="characters" maxlength="16" placeholder="例：AB12CD34"><button class="sbtn" data-erclaim>登録する</button></div><p class="note2">${rf.enter_until ? `${new Date(rf.enter_until).getMonth() + 1}月${new Date(rf.enter_until).getDate()}日まで` : "本人登録から30日以内"}に入力できます（1回だけ・あとから変更はできません）。</p></div>` : ""}</section>
     <section class="sbox"><h4>📤 払い出しの履歴</h4>${pays || `<p class="note2">まだありません</p>`}</section>
     <section class="sbox"><h4>🧾 明細</h4><div class="er-head"><span>日時</span><span>ギフト</span><span>金額</span><span>還元率</span><span>取り分</span><span>状態</span></div>${items || `<p class="note2">まだギフトは届いていません</p>`}</section></div>`);
 }
@@ -2791,7 +2790,7 @@ document.addEventListener("click", async (e) => {
     t.disabled = true; const r = await earnApi({ action: "referral_claim", code, channel_id: EARN?.channel?.id }).catch(() => ({}));
     t.disabled = false;
     if (!r.ok) return toast({ bad_code: "その紹介コードは見つかりませんでした", own_code: "自分の紹介コードは使えません", too_late: "入力できる期間（本人登録から30日）を過ぎています", already: "すでに紹介コードが登録されています", mutual: "おたがいに紹介しあうことはできません" }[r.error] || "登録できませんでした");
-    toast(`${r.referrer || "紹介した人"}さんの紹介として登録しました`); return openEarn(EARN.channel.id);
+    toast("紹介コードを登録しました"); return openEarn(EARN.channel.id);
   }
   if (t.dataset.ecopy) { try { await navigator.clipboard.writeText(t.dataset.ecopy); toast("紹介リンクをコピーしました"); } catch { toast(t.dataset.ecopy); } }
 });
