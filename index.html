@@ -1477,7 +1477,6 @@ function lockBox() {
       <div class="it"><b>コメント数</b>同期の中で何位か</div>
       <div class="it"><b>盛り上がりグラフ</b>配信のどこで盛り上がったか</div>
       <div class="it"><b>話題一覧</b>何分ごろに何を話したか。切り抜きにご活用ください</div>
-      <div class="it soon"><b>ギフト数</b>サイト内ギフトの数</div>
     </div>
     <details><summary>見られるようにする方法（無料・5分）</summary><ol>
       <li>このサイトにYouTubeのアカウントでログインして「本人登録」</li>
@@ -1490,23 +1489,29 @@ function renderRank() {
   CH.forEach((c) => { const k = cohortOf(c); if (!k) return; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(c); });
   const keys = [...groups.keys()].sort().reverse();
   if (!keys.length) { $("#dirRank").innerHTML = `<div class="empty"><strong>まだデータがありません</strong></div>`; return; }
-  if (!rkCohort || !groups.has(rkCohort)) rkCohort = keys[0];
+  // 先頭は「総合」（デビュー月に関係なく全員）
+  groups.set("all", [...groups.values()].flat());
+  if (!rkCohort || !groups.has(rkCohort)) rkCohort = "all";
   const M = { sec: ["配信時間", (c) => c.total_stream_sec, (v) => `${hours(v)}<small>h</small>`],
     cnt: ["配信回数", (c) => c.stream_count, (v) => `${v}<small>回</small>`],
     subs: ["登録者", (c) => (c.subscriber_hidden ? null : c.subscriber_count), (v) => `${v.toLocaleString("ja-JP")}<small>人</small>`],
-    gain: ["登録者の伸び(30日)", subGain, (v) => `${v > 0 ? "+" : ""}${v.toLocaleString("ja-JP")}<small>人</small>`] };
+    gain: ["登録者の伸び(30日)", subGain, (v) => `${v > 0 ? "+" : ""}${v.toLocaleString("ja-JP")}<small>人</small>`],
+    gift: ["今月のギフト", (c) => (GIFTM?.get(c.id) > 0 ? GIFTM.get(c.id) : null), (v) => `🪙${coinFmt(v)}`] };
+  if (rkMetric === "gift" && (!GIFTM || Date.now() - giftmAt >= 60000)) loadGiftMonth().then(() => { if (dirSeg === "rank" && rkMetric === "gift") renderRank(); });
   const [, get, fmt] = M[rkMetric];
   const list = groups.get(rkCohort).map((c) => ({ c, v: get(c) })).filter((x) => x.v != null).sort((a, b) => b.v - a.v);
-  const inRank = [...groups.values()].reduce((n, a) => n + a.length, 0), noDebut = CH.length - inRank;
+  const inRank = groups.get("all").length, noDebut = CH.length - inRank;
+  const lbl = (k) => (k === "all" ? "総合" : cohortLabel(k));
   $("#dirRank").innerHTML = `<div class="rk-intro"><b>同じ月にデビューした子同士で比べるランキング</b><br>
-    数字はYouTubeで公開されている情報だけを使っています。毎日コツコツ配信している子が上に来ます。<br>
+    先頭の「総合」は、デビュー月に関係なく全員で比べます。配信時間・回数・登録者はYouTubeで公開されている情報、ギフトはVぶいで今月届いたコインの数です。<br>
     <small>ランキングに入っているのは${inRank}人です。まだ初配信をしていない子（${noDebut}人）は、初配信すると入ります。デビューした子がいない月は表示されません。</small></div>
-    <div class="rk-sub">${keys.map((k) => `<button class="chip" data-rkc="${k}" aria-pressed="${k === rkCohort}">${cohortLabel(k)}<b>${groups.get(k).length}</b></button>`).join("")}</div>
+    <div class="rk-sub">${["all", ...keys].map((k) => `<button class="chip" data-rkc="${k}" aria-pressed="${k === rkCohort}">${lbl(k)}<b>${groups.get(k).length}</b></button>`).join("")}</div>
     <div class="rk-sub">${Object.entries(M).map(([k, [l]]) => `<button class="chip" data-rkm="${k}" aria-pressed="${k === rkMetric}">${l}</button>`).join("")}</div>
-    <div class="count">${cohortLabel(rkCohort)}・${list.length}人</div>
+    <div class="count">${lbl(rkCohort)}・${list.length}人</div>
     ${list.length ? list.map(({ c, v }, i) => `<button class="rk-row${favs.has(c.id) ? " me" : ""}" data-open="${esc(c.id)}"><span class="pos${i < 3 ? " top" : ""}">${i + 1}</span>
       <span class="av">${img(c.thumbnail_url, c)}</span><span class="bd"><div class="nm">${esc(c.title)}${c.registered ? `<span class="tag reg">本人登録</span>` : ""}</div>
       <div class="sm">${c.stream_count}回・${hours(c.total_stream_sec)}h・登録 ${fmtSubs(c)}</div></span><span class="val">${fmt(v)}</span></button>`).join("")
+      : rkMetric === "gift" ? `<div class="empty"><strong>${GIFTM ? "今月はまだギフトが届いていません" : "読み込み中…"}</strong>${GIFTM ? "ギフトが届くと、多い順にここに並びます。" : ""}</div>`
       : `<div class="empty"><strong>この項目のデータがまだありません</strong>毎日のデータがたまると表示されます。</div>`}
     ${lockBox()}`;
 }
